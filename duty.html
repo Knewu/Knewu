@@ -3,252 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>주간업무 및 출장·근태 관리 · 전력노조 집행부</title>
+    <title>전국전력노동조합 주간업무 시스템</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 
     <style>
         :root {
-            --accent: #1a73e8;
-            --accent-dk: #1557b0;
+            --accent: #1557b0;
             --ink: #202124;
             --ink-soft: #5f6368;
             --line: #dadce0;
-            --line-soft: #e8eaed;
-            --canvas: #ffffff;
             --page: #f1f3f4;
-            --radius: 12px;
+            --canvas: #ffffff;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
             font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
             background-color: var(--page);
             color: var(--ink);
-            padding-bottom: 60px;
+            padding-bottom: 80px;
         }
 
         /* ── 상단 바 ── */
         .topbar {
-            background: var(--canvas);
-            border-bottom: 1px solid var(--line);
-            padding: 0 24px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+            background: var(--canvas); border-bottom: 1px solid var(--line);
+            padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 14px;
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,.06);
         }
         .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            text-decoration: none;
-            color: var(--ink-soft);
-            font-size: 14px;
-            font-weight: 600;
-            padding: 7px 12px;
-            border-radius: 8px;
-            transition: background .15s;
+            display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+            color: var(--ink-soft); font-size: 14px; font-weight: 600; padding: 7px 12px; border-radius: 8px;
         }
         .back-btn:hover { background: var(--line-soft); }
-        .topbar .crumb { font-size: 14px; font-weight: 700; color: var(--ink); }
-        .topbar .crumb .sep { color: var(--line); margin: 0 8px; }
+        .topbar .crumb { font-size: 14px; font-weight: 700; }
 
-        .wrap { max-width: 1000px; margin: 0 auto; padding: 28px 24px; }
+        .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 22px;
-        }
-        .title-group h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
-        .title-group .sub { margin-top: 4px; font-size: 13px; color: var(--ink-soft); }
-
-        .btn-print {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            background: var(--canvas);
-            color: var(--accent);
-            border: 1px solid var(--line);
-            padding: 9px 18px;
-            border-radius: 999px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background .15s;
-        }
-        .btn-print:hover { background: #f8fbff; }
-
-        /* ── 부서 선택 탭 ── */
-        .dept-tabs {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 18px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-        }
-        .tab-btn {
-            padding: 10px 16px;
-            font-family: inherit;
-            font-size: 14px;
-            font-weight: 600;
-            background: var(--canvas);
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            cursor: pointer;
-            color: var(--ink-soft);
-            white-space: nowrap;
-        }
-        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-
-        /* ── 입력 패널 ── */
+        /* 입력 패널 컨트롤 */
         .panel {
-            background: var(--canvas);
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            padding: 24px;
-            margin-bottom: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
+            background: var(--canvas); border: 1px solid var(--line); border-radius: 16px;
+            padding: 20px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 16px;
         }
-        .panel-section-title {
-            font-size: 15px;
-            font-weight: 700;
-            border-left: 4px solid var(--accent);
-            padding-left: 8px;
-            margin-bottom: 12px;
+        .form-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        select, textarea, input, button {
+            padding: 9px 12px; font-family: inherit; font-size: 13.5px; border: 1px solid var(--line); border-radius: 8px;
         }
+        select { background: white; min-width: 160px; font-weight: 600; cursor: pointer; }
+        textarea { width: 100%; height: 90px; resize: vertical; line-height: 1.5; }
         
-        textarea {
-            width: 100%; height: 120px; padding: 12px;
-            font-family: inherit; font-size: 14px;
-            border: 1px solid var(--line); border-radius: 8px; resize: vertical;
+        .btn-save { background: var(--accent); color: white; border: none; font-weight: 700; cursor: pointer; padding: 9px 18px; }
+        .btn-save:hover { background: #0d47a1; }
+        .btn-print {
+            background: #28a745; color: white; border: none; font-weight: 700; cursor: pointer;
+            padding: 10px 20px; border-radius: 30px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;
+            box-shadow: 0 4px 10px rgba(40,167,69,0.25);
+        }
+        .btn-print:hover { background: #218838; transform: translateY(-1px); }
+
+        /* 부서 선택 전 블라인드 처리 */
+        .disabled-content { opacity: 0.3; pointer-events: none; }
+
+        /* ── 📱 주간업무 리포트 디자인 (초압축 스타일) ── */
+        .report-paper {
+            background: #ffffff;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            padding: 32px 36px;
+            position: relative;
+            overflow: hidden;
+        }
+        /* 상단 블루 탑 바 */
+        .report-paper::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 10px;
+            background: linear-gradient(90deg, #1557b0 0%, #1a73e8 100%);
         }
 
-        .btn-save {
-            background: var(--accent); color: white; border: none;
-            padding: 10px 20px; font-size: 14px; font-weight: 700;
-            border-radius: 6px; cursor: pointer; align-self: flex-end;
-        }
-        .btn-save:hover { background: var(--accent-dk); }
+        .rep-header { margin-bottom: 24px; border-bottom: 1px solid #edf2f7; padding-bottom: 12px; }
+        .rep-title { font-size: 24px; font-weight: 900; color: #1557b0; letter-spacing: -0.8px; margin-bottom: 2px; }
+        .rep-date { font-size: 13px; color: #95a5a6; font-weight: 600; font-family: monospace; }
 
-        /* 출장근태 입력 양식 레이아웃 */
-        .schedule-form {
-            background: var(--page);
-            padding: 16px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .form-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            font-size: 14px;
-        }
-        .radio-group { display: flex; gap: 14px; font-weight: 600; }
-        .radio-group input { margin-right: 4px; cursor: pointer; }
-        
-        input[type="date"], input[type="text"] {
-            padding: 8px 12px; font-family: inherit; font-size: 14px;
-            border: 1px solid var(--line); border-radius: 6px; background: white;
-        }
-        input[type="text"] { flex: 1; min-width: 250px; }
-        
-        .btn-add {
-            background: #202124; color: white; border: none;
-            padding: 9px 18px; font-weight: 700; border-radius: 6px; cursor: pointer;
-        }
-        .btn-add:hover { background: #000; }
+        .rep-section { margin-bottom: 24px; }
+        .rep-section-title { font-size: 15px; font-weight: 800; color: #2c3e50; margin-bottom: 12px; letter-spacing: -0.3px; }
 
-        /* 등록 리스트 출력 */
-        .item-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-        .list-item {
+        /* 리포트 카드 박스 여백 압축 */
+        .rep-card-box {
+            background: #fcfcfc; border: 1px solid #edf2f7; border-radius: 16px; padding: 16px 20px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .rep-item { display: flex; align-items: flex-start; gap: 12px; }
+        
+        /* 부서명 배지 스타일 */
+        .dept-badge {
+            width: 42px; padding: 3px 0; text-align: center; font-size: 11px; font-weight: 700; border-radius: 5px; flex-shrink: 0; margin-top: 2px;
+        }
+        .this-week .dept-badge { border: 1.5px solid #1a73e8; color: #1a73e8; background: #f4f8ff; }
+        .last-week .dept-badge { border: 1.5px solid #d4af37; color: #b8860b; background: #fffdf0; }
+
+        /* 업무 내용 (글씨 크기 줄여 가독성 최적화) */
+        .dept-content {
+            flex: 1; font-size: 13.5px; color: #2d3748; line-height: 1.6; font-weight: 500;
+            white-space: pre-wrap; outline: none; padding: 2px; border-radius: 4px;
+        }
+        .dept-content:hover { background: #fffde7; cursor: edit; box-shadow: 0 0 0 1px #ffd54f; }
+        .dept-content:focus { background: #fffde7; box-shadow: 0 0 0 2px #1a73e8; }
+        .no-data-text { color: #a0aec0; font-size: 13px; font-style: italic; font-weight: 400; }
+
+        .rep-footer {
+            margin-top: 36px; padding-top: 16px; border-top: 1px solid #edf2f7;
             display: flex; justify-content: space-between; align-items: center;
-            background: white; border: 1px solid var(--line);
-            padding: 8px 12px; border-radius: 6px; font-size: 13px;
+            font-size: 12px; color: #718096; font-weight: 600;
         }
-        .list-item .type-tag {
-            font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 6px;
-        }
-        .list-item .type-tag.출장 { background: #e3f2fd; color: #0d47a1; }
-        .list-item .type-tag.근태 { background: #fce4ec; color: #c2185b; }
-        .list-item .del-btn { color: #d93025; cursor: pointer; font-weight: 700; margin-left: 10px; }
 
-        /* ── 취합 현황판 테이블 스타일 ── */
-        .preview-section { background: var(--canvas); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
-        
-        .preview-title-wrap {
-            display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 24px;
-        }
-        .preview-title-wrap img { width: 32px; height: 32px; object-fit: contain; }
-        .preview-title { font-size: 19px; font-weight: 800; color: var(--ink); letter-spacing: -0.5px; }
-        
-        .preview-table { width: 100%; border-collapse: collapse; }
-        .preview-table th, .preview-table td { border: 1px solid var(--line); padding: 14px; font-size: 14px; vertical-align: top; }
-        .preview-table th { background: var(--page); font-weight: 700; text-align: center; width: 16%; }
-        .preview-table td { white-space: pre-wrap; line-height: 1.6; }
-        
-        /* 보고서용 출장/근태 소섹션 */
-        .report-sub-block { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 13px; }
-        .report-sub-block strong { font-weight: 700; }
-        .report-sub-block.biz { color: #1a73e8; }
-        .report-sub-block.vac { color: #b06000; }
-
-        /* ── 🖨️ 인쇄 전용 스타일 (세련된 고품격 기업형 양식 + A4 1장 타겟팅) ── */
+        /* ── 🖨️ 인쇄 제어 (A4 정비율 초압축) ── */
         @media print {
-            @page { size: A4 portrait; margin: 12mm 15mm; }
-            body { background: #fff; padding: 0; min-height: 0; color: #000 !important; }
-            .topbar, .dept-tabs, .panel, .btn-print, header, .del-btn, .schedule-form { display: none !important; }
-            .wrap { padding: 0; max-width: none; width: 100%; }
-            .preview-section { border: none; padding: 0; background: #fff; }
-            
-            /* 상단 헤더 깔끔한 언더라인 배치 */
-            .preview-title-wrap { margin-bottom: 25px; padding-bottom: 12px; border-bottom: 2px solid #222; gap: 10px; }
-            .preview-title-wrap img { width: 28px; height: 28px; display: inline-block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .preview-title { font-size: 17pt; font-weight: 800; color: #000 !important; letter-spacing: -0.5px; }
-            
-            /* 투박한 검은 테두리선을 얇고 세련된 연회색 선으로 변경 */
-            .preview-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-            .preview-table th, .preview-table td { 
-                padding: 8px 10px !important; 
-                font-size: 10pt !important; 
-                line-height: 1.5 !important; 
-                word-break: break-all;
-                border: 1px solid #bdc3c7 !important; /* 세련된 모던 라인 변경 */
-                height: auto !important;
-            }
-            
-            /* 좌측 부서명 칸 배경 처리 및 정렬 정돈 */
-            .preview-table th { 
-                background: #f8f9fa !important; 
-                color: #222 !important;
-                font-weight: 700; 
-                text-align: center; 
-                width: 100px !important; 
-                vertical-align: middle !important;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-            }
-            .preview-table td { color: #111 !important; }
-            
-            /* 미입력 부서 흐릿하게 축소해서 숨은 여백 확보 */
-            .no-data-text { color: #95a5a6 !important; font-size: 9.5pt !important; font-style: italic; }
-            
-            /* 출장/근태 서식 세련되게 정리 */
-            .report-sub-block { margin-top: 6px; padding-top: 5px; font-size: 9.5pt !important; color: #333 !important; border-top: 1px dashed #ced4da !important; }
-            .report-sub-block strong { color: #000 !important; font-weight: 700; }
+            @page { size: A4 portrait; margin: 0; }
+            body { background: #fff; padding: 0; color: #000; }
+            .topbar, .panel, .btn-print { display: none !important; }
+            .wrap { max-width: none; width: 100%; padding: 0; }
+            .report-paper { box-shadow: none; border-radius: 0; padding: 15mm 15mm; min-height: 297mm; }
+            .report-paper::before { height: 14px; }
+            .dept-content:hover { background: transparent !important; box-shadow: none !important; }
+            .rep-card-box { background: #fff !important; border: 1px solid #cbd5e0 !important; padding: 14px 18px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .dept-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-data-text { display: none !important; } /* 인쇄 시 미입력 부서는 공간 절약을 위해 가림 처리 */
         }
     </style>
 </head>
@@ -259,73 +138,67 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             업무포털
         </a>
-        <span class="crumb">집행부 업무포털 <span class="sep">/</span> 주간업무 및 출장·근태</span>
+        <span class="crumb">집행부 업무포털 <span class="sep">/</span> 주간업무 리포트</span>
     </div>
 
     <div class="wrap">
-        <header>
-            <div class="title-group">
-                <h1>주간업무 및 출장·근태 관리</h1>
-                <div class="sub">7개 실국별 다음주 주간계획 및 범위 지정 근태 등록 시스템</div>
-            </div>
-            <button class="btn-print" onclick="window.print()">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                주간보고서 인쇄
-            </button>
-        </header>
-
-        <div class="dept-tabs" id="deptTabs"></div>
-
+        
         <div class="panel">
-            <h2 id="currentDeptTitle" style="font-size: 18px; font-weight: 800; color: var(--accent);">부서</h2>
+            <h2 style="font-size: 15px; font-weight: 800; color: #1557b0;">⚡ 실·국별 주간 활동 내용 입력</h2>
+            <div class="form-row">
+                <select id="inputPeriod" onchange="updateDeptPanel()">
+                    <option value="thisWeek">이번 주 활동계획</option>
+                    <option value="lastWeek">지난 주 주요활동</option>
+                </select>
+                <select id="inputDept" onchange="updateDeptPanel()">
+                    <option value="">-- 실·국 선택 --</option>
+                    <option value="조직">조직국</option>
+                    <option value="복지">복지국</option>
+                    <option value="산안">산업안전국</option>
+                    <option value="교문">교육문화국</option>
+                    <option value="총무">총무국</option>
+                    <option value="기획">기획국</option>
+                    <option value="정책">정책국</option>
+                </select>
+            </div>
             
-            <div>
-                <div class="panel-section-title">다음주 주요 업무계획</div>
-                <textarea id="workInput" placeholder="진행될 주요 업무 계획을 자유롭게 입력해 주세요."></textarea>
-                <div style="display:flex; justify-content:flex-end; margin-top:8px;">
-                    <button class="btn-save" onclick="saveWork()">업무계획 저장</button>
+            <div id="inputFormBlock" class="disabled-content" style="display: flex; flex-direction: column; gap: 12px;">
+                <textarea id="textContent" placeholder="활동 계획을 입력하세요. 내용을 모두 지우고 저장을 누르면 리포트에서 삭제됩니다."></textarea>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 12px; color: #e67e22; font-weight: 600;">💡 텍스트를 비우고 저장하면 내용이 완전히 삭제됩니다.</span>
+                    <button class="btn-save" onclick="saveData()">리포트판에 저장</button>
                 </div>
-            </div>
-
-            <div>
-                <div class="panel-section-title">출장 및 근태 현황 등록 (기간 지정 가능)</div>
-                <div class="schedule-form">
-                    <div class="form-row">
-                        <div class="radio-group">
-                            <label><input type="radio" name="sType" value="출장" checked> 🏃 출장</label>
-                            <label><input type="radio" name="sType" value="근태"> 📄 근태 (휴가/반차 등)</label>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <label>기간 지정:</label>
-                        <input type="date" id="startDate">
-                        <span>~</span>
-                        <input type="date" id="endDate">
-                    </div>
-                    <div class="form-row">
-                        <input type="text" id="scheduleText" placeholder="세부 내용 입력 (예: 위원장 - 한전 본사 국회대응 출장 / 총무국장 - 연차)">
-                        <button class="btn-add" onclick="addSchedule()">일정 추가</button>
-                    </div>
-                </div>
-                <div class="item-list" id="deptScheduleList"></div>
             </div>
         </div>
 
-        <div class="preview-section">
-            <div class="preview-title-wrap">
-                <img src="https://knewu.netlify.app/icon-192.png" alt="전력노조 로고">
-                <div class="preview-title">제24대 집행부 주간업무 및 출장·근태 현황</div>
-            </div>
-            <table class="preview-table">
-                <thead>
-                    <tr>
-                        <th style="width:100px;">실·국별</th>
-                        <th>주요 업무 계획 및 출장 · 근태 현황</th>
-                    </tr>
-                </thead>
-                <tbody id="previewTableBody"></tbody>
-            </table>
+        <div style="text-align: right; margin-bottom: 16px;">
+            <button class="btn-print" onclick="window.print()">
+                🖨️ 주간보고서 인쇄하기
+            </button>
         </div>
+
+        <div class="report-paper">
+            <div class="rep-header">
+                <div class="rep-title">전국전력노동조합 주간업무</div>
+                <div class="rep-date">2026. 06. 15 ~ 06. 19</div>
+            </div>
+
+            <div class="rep-section this-week">
+                <div class="rep-section-title">■ 이번 주 활동</div>
+                <div class="rep-card-box" id="thisWeekContainer"></div>
+            </div>
+
+            <div class="rep-section last-week">
+                <div class="rep-section-title">■ 지난 주 활동</div>
+                <div class="rep-card-box" id="lastWeekContainer"></div>
+            </div>
+
+            <div class="rep-footer">
+                <span>발행 | 전국전력노동조합 복지국</span>
+                <span style="font-weight: normal; font-size: 11px; opacity: 0.6;">전국전력노동조합 제24대 집행부 내부문서</span>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -341,146 +214,108 @@
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        const dbRef = database.ref('weekly_reports_2026');
+        const dbRef = database.ref('official_weekly_report_2026');
 
-        const DEPTS = ["총무국", "조직쟁의실", "기획국", "정책국", "복지국", "산업안전국", "교육문화국"];
-        let currentDept = DEPTS[0];
-        let globalData = {};
+        const DEPTS_ORDER = ["조직", "복지", "산안", "교문", "총무", "기획", "정책"];
+        let serverData = { thisWeek: {}, lastWeek: {} };
 
-        function initTabs() {
-            const tabsContainer = document.getElementById('deptTabs');
-            tabsContainer.innerHTML = DEPTS.map((dept, idx) => `
-                <button class="tab-btn ${idx === 0 ? 'active' : ''}" onclick="switchDept('${dept}', this)">${dept}</button>
-            `).join('');
-            updateDeptPanel();
-        }
-
-        function switchDept(dept, btnEl) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btnEl.classList.add('active');
-            currentDept = dept;
-            updateDeptPanel();
-        }
-
+        // 부서나 주기가 바뀔 때 입력창 활성화 및 기존 텍스트 로드 제어
         function updateDeptPanel() {
-            document.getElementById('currentDeptTitle').innerText = `🏢 ${currentDept} 시스템 구성`;
-            const deptData = globalData[currentDept] || {};
-            document.getElementById('workInput').value = deptData.work || '';
+            const period = document.getElementById('inputPeriod').value;
+            const dept = document.getElementById('inputDept').value;
+            const formBlock = document.getElementById('inputFormBlock');
+            const textarea = document.getElementById('textContent');
 
-            const listEl = document.getElementById('deptScheduleList');
-            listEl.innerHTML = '';
-            
-            if (deptData.schedules) {
-                Object.keys(deptData.schedules).forEach(key => {
-                    const item = deptData.schedules[key];
-                    const period = item.start === item.end ? item.start : `${item.start} ~ ${item.end}`;
-                    listEl.innerHTML += `
-                        <div class="list-item">
-                            <span><span class="type-tag ${item.type}">${item.type}</span> [${period}] ${item.text}</span>
-                            <span class="del-btn" onclick="deleteSchedule('${key}')">× 삭제</span>
+            if (!dept) {
+                formBlock.classList.add('disabled-content');
+                textarea.value = '';
+                return;
+            }
+
+            formBlock.classList.remove('disabled-content');
+            textarea.value = serverData[period]?.[dept] || '';
+        }
+        
+        function saveData() {
+            const period = document.getElementById('inputPeriod').value;
+            const dept = document.getElementById('inputDept').value;
+            const text = document.getElementById('textContent').value.trim();
+
+            // 🚨 텍스트가 비어있으면 해당 경로를 완전히 삭제(remove)
+            if (text === "") {
+                dbRef.child(period).child(dept).remove().then(() => {
+                    alert(`${dept}국의 내용이 삭제되었습니다.`);
+                    document.getElementById('inputDept').value = "";
+                    updateDeptPanel();
+                });
+            } else {
+                dbRef.child(period).child(dept).set(text).then(() => {
+                    alert("리포트 보드에 정상 등록되었습니다.");
+                    document.getElementById('inputDept').value = "";
+                    updateDeptPanel();
+                });
+            }
+        }
+
+        function directBlurUpdate(period, dept, element) {
+            const updatedText = element.innerText.trim();
+            if (updatedText === "") {
+                dbRef.child(period).child(dept).remove();
+            } else {
+                dbRef.child(period).child(dept).set(updatedText);
+            }
+        }
+
+        function renderReportView() {
+            const thisContainer = document.getElementById('thisWeekContainer');
+            const lastContainer = document.getElementById('lastWeekContainer');
+
+            thisContainer.innerHTML = '';
+            lastContainer.innerHTML = '';
+
+            // 1. 이번주 활동 렌더링
+            let thisCount = 0;
+            DEPTS_ORDER.forEach(dept => {
+                const text = serverData.thisWeek?.[dept] || '';
+                if (text) {
+                    thisCount++;
+                    thisContainer.innerHTML += `
+                        <div class="rep-item">
+                            <div class="dept-badge">${dept}</div>
+                            <div class="dept-content" contenteditable="true" onblur="directBlurUpdate('thisWeek', '${dept}', this)">${text}</div>
                         </div>
                     `;
-                });
-            }
-        }
-
-        function saveWork() {
-            const text = document.getElementById('workInput').value;
-            dbRef.child(currentDept).child('work').set(text).then(() => {
-                alert(`${currentDept} 업무계획이 임시 저장되었습니다.`);
+                }
             });
-        }
+            if (thisCount === 0) thisContainer.innerHTML = '<div class="no-data-text">이번 주 활동 계획이 비어있습니다.</div>';
 
-        function addSchedule() {
-            const type = document.querySelector('input[name="sType"]:checked').value;
-            const start = document.getElementById('startDate').value;
-            let end = document.getElementById('endDate').value;
-            const text = document.getElementById('scheduleText').value;
-
-            if (!start || !text) {
-                alert('시작 날짜와 세부 내용을 반드시 입력해 주세요.');
-                return;
-            }
-            if (!end) end = start;
-
-            if (new Date(start) > new Date(end)) {
-                alert('종료일은 시작일보다 빠를 수 없습니다.');
-                return;
-            }
-
-            const newRef = dbRef.child(currentDept).child('schedules').push();
-            newRef.set({ type, start, end, text }).then(() => {
-                document.getElementById('scheduleText').value = '';
-                document.getElementById('startDate').value = '';
-                document.getElementById('endDate').value = '';
-            });
-        }
-
-        function deleteSchedule(key) {
-            if (confirm('해당 명단의 일정을 삭제하시겠습니까?')) {
-                dbRef.child(currentDept).child('schedules').child(key).remove();
-            }
-        }
-
-        function initFirebaseRealtime() {
-            dbRef.on('value', (snapshot) => {
-                globalData = snapshot.val() || {};
-                updateDeptPanel();
-
-                const tbody = document.getElementById('previewTableBody');
-                tbody.innerHTML = '';
-
-                DEPTS.forEach(dept => {
-                    const deptData = globalData[dept] || {};
-                    
-                    // 미입력 부서는 클래스를 주어 인쇄 시 폰트 크기 및 높이를 한 번 더 압축시킴
-                    const workText = deptData.work 
-                        ? `<div style="font-weight:500;">${deptData.work}</div>` 
-                        : `<div class="no-data-text">- 주요 업무 계획 미입력</div>`;
-                    
-                    let bizHTML = '';
-                    let vacHTML = '';
-
-                    if (deptData.schedules) {
-                        const sList = Object.values(deptData.schedules).sort((a, b) => new Date(a.start) - new Date(b.start));
-                        
-                        // 출장 현황 가로 콤팩트 나열
-                        const bizItems = sList.filter(s => s.type === '출장');
-                        if (bizItems.length > 0) {
-                            const bizStrings = bizItems.map(s => {
-                                const period = s.start === s.end ? s.start.slice(5) : `${s.start.slice(5)}~${s.end.slice(5)}`;
-                                return `[${period}] ${s.text}`;
-                            });
-                            bizHTML = `<div class="report-sub-block biz"><strong>🏃 [출장]</strong> ${bizStrings.join(', ')}</div>`;
-                        }
-
-                        // 근태 현황 가로 콤팩트 나열
-                        const vacItems = sList.filter(s => s.type === '근태');
-                        if (vacItems.length > 0) {
-                            const vacStrings = vacItems.map(s => {
-                                const period = s.start === s.end ? s.start.slice(5) : `${s.start.slice(5)}~${s.end.slice(5)}`;
-                                return `[${period}] ${s.text}`;
-                            });
-                            vacHTML = `<div class="report-sub-block vac"><strong>📄 [근태]</strong> ${vacStrings.join(', ')}</div>`;
-                        }
-                    }
-
-                    tbody.innerHTML += `
-                        <tr>
-                            <th style="text-align:center; font-weight:bold; vertical-align:middle;">${dept}</th>
-                            <td>
-                                ${workText}
-                                ${bizHTML}
-                                ${vacHTML}
-                            </td>
-                        </tr>
+            // 2. 지난주 활동 렌더링
+            let lastCount = 0;
+            DEPTS_ORDER.forEach(dept => {
+                const text = serverData.lastWeek?.[dept] || '';
+                if (text) {
+                    lastCount++;
+                    lastContainer.innerHTML += `
+                        <div class="rep-item">
+                            <div class="dept-badge">${dept}</div>
+                            <div class="dept-content" contenteditable="true" onblur="directBlurUpdate('lastWeek', '${dept}', this)">${text}</div>
+                        </div>
                     `;
-                });
+                }
             });
+            if (lastCount === 0) lastContainer.innerHTML = '<div class="no-data-text">지난 주 활동 내역이 비어있습니다.</div>';
         }
 
-        initTabs();
-        initFirebaseRealtime();
+        dbRef.on('value', (snapshot) => {
+            serverData = snapshot.val() || { thisWeek: {}, lastWeek: {} };
+            renderReportView();
+            // 데이터가 실시간으로 바뀔 때 입력창 텍스트도 동기화 유지
+            const period = document.getElementById('inputPeriod').value;
+            const dept = document.getElementById('inputDept').value;
+            if (dept) {
+                document.getElementById('textContent').value = serverData[period]?.[dept] || '';
+            }
+        });
     </script>
 </body>
 </html>
