@@ -154,26 +154,26 @@
         <button class="btn-print" onclick="window.print()">🖨️ 현황 인쇄하기</button>
     </header>
 
-    <div class="controls">
+     <div class="controls">
         <label for="userName"><strong>👤 집행부 성명:</strong></label>
         <select id="userName">
             <option value="">-- 선택하세요 (총 16명) --</option>
             <option value="위원장">위원장</option>
             <option value="수석부위원장">수석부위원장</option>
             <option value="사무처장">사무처장</option>
-            <option value="기획조정국장">기획조정국장</option>
-            <option value="조직쟁의국장">조직쟁의국장</option>
-            <option value="정책기획국장">정책기획국장</option>
-            <option value="문화홍보국장">문화홍보국장</option>
-            <option value="대외협력국장">대외협력국장</option>
-            <option value="총무관리국장">총무관리국장</option>
-            <option value="여성청년국장">여성청년국장</option>
-            <option value="집행위원1">집행위원1</option>
-            <option value="집행위원2">집행위원2</option>
-            <option value="집행위원3">집행위원3</option>
-            <option value="집행위원4">집행위원4</option>
-            <option value="집행위원5">집행위원5</option>
-            <option value="집행위원6">집행위원6</option>
+            <option value="기획처장">기획처장</option>
+            <option value="대외협력본부장">대외협력본부장</option>
+            <option value="총무국장">총무국장</option>
+            <option value="조직쟁의실장">조직쟁의실장</option>
+            <option value="기획국장">기획국장</option>
+            <option value="정책국장">정책국장</option>
+            <option value="복지국장">복지국장</option>
+            <option value="산업안전국장">산업안전국장</option>
+            <option value="교육문화국장">교육문화국장</option>
+            <option value="손혜석과장">손혜석과장</option>
+            <option value="홍수정부장">홍수정부장</option>
+            <option value="이종찬차장">이종찬차장</option>
+            <option value="이경현과장">이경현과장</option>
         </select>
         <span style="color: #666; font-size: 13px;">💡 이름을 선택하고 아래 달력에서 원하는 날짜를 클릭하면 휴가가 등록됩니다.</span>
     </div>
@@ -183,14 +183,14 @@
     <script>
         // 1. Firebase 환경 설정 (본인의 Firebase 콘솔 정보로 교체 필수)
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+          apiKey: "AIzaSyDUFwsNEBzTZxr8EJuY2BZkYTEBadQoMk8",
+          authDomain: "knewu-64318.firebaseapp.com",
+          databaseURL: "https://knewu-64318-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "knewu-64318",
+          storageBucket: "knewu-64318.firebasestorage.app",
+          messagingSenderId: "301755569133",
+          appId: "1:301755569133:web:9bd85133d084c041368de4"
+};
         
         // Firebase 초기화
         firebase.initializeApp(firebaseConfig);
