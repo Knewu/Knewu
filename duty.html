@@ -430,20 +430,20 @@
                         
                         const bizItems = sList.filter(s => s.type === '출장');
                         if (bizItems.length > 0) {
-                            bizHTML = `<div class="report-sub-block biz"><strong>🏃 [출장]</strong> ` + 
+                            bizHTML = `<div class="report-sub-block biz"><strong>🏃 [출장 현황]</strong><br>` + 
                                 bizItems.map(s => {
                                     const period = s.start === s.end ? s.start.slice(5) : `${s.start.slice(5)}~${s.end.slice(5)}`;
-                                    return `[${period}] ${s.text}`;
-                                }).join(', ') + `</div>`;
+                                    return `• [${period}] ${s.text}`;
+                                }).join('<br>') + `</div>`;
                         }
 
                         const vacItems = sList.filter(s => s.type === '근태');
                         if (vacItems.length > 0) {
-                            vacHTML = `<div class="report-sub-block vac"><strong>📄 [근태]</strong> ` + 
+                            vacHTML = `<div class="report-sub-block vac"><strong>📄 [근태 현황]</strong><br>` + 
                                 vacItems.map(s => {
                                     const period = s.start === s.end ? s.start.slice(5) : `${s.start.slice(5)}~${s.end.slice(5)}`;
-                                    return `[${period}] ${s.text}`;
-                                }).join(', ') + `</div>`;
+                                    return `• [${period}] ${s.text}`;
+                                }).join('<br>') + `</div>`;
                         }
                     }
 
