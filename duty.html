@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주간업무 및 출장·근태 관리 · 전력노조 집행부</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+
+    <style>
+        :root {
+            --accent: #1a73e8;
+            --accent-dk: #1557b0;
+            --ink: #202124;
+            --ink-soft: #5f6368;
+            --line: #dadce0;
+            --line-soft: #e8eaed;
+            --canvas: #ffffff;
+            --page: #f1f3f4;
+            --radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            background-color: var(--page);
+            color: var(--ink);
+            padding-bottom: 6px;
+        }
+
+        /* ── 상단 바 ── */
+        .topbar {
+            background: var(--canvas);
+            border-bottom: 1px solid var(--line);
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: var(--ink-soft);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 7px 12px;
+            border-radius: 8px;
+            transition: background .15s;
+        }
+        .back-btn:hover { background: var(--line-soft); }
+        .topbar .crumb {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink);
+        }
+        .topbar .crumb .sep { color: var(--line); margin: 0 8px; }
+
+        .wrap { max-width: 1000px; margin: 0 auto; padding: 28px 24px; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 22px;
+        }
+        .title-group h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .title-group .sub {
+            margin-top: 4px;
+            font-size: 13px;
+            color: var(--ink-soft);
+        }
+
+        .btn-print {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--canvas);
+            color: var(--accent);
+            border: 1px solid var(--line);
+            padding: 9px 18px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+        }
+        .btn-print:hover { background: #f8fbff; }
+
+        /* ── 부서 선택 탭 ── */
+        .dept-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 18px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .tab-btn {
+            padding: 10px 16px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            background: var(--canvas);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--ink-soft);
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* ── 입력 패널 구조 ── */
+        .panel {
+            background: var(--canvas);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .panel-section-title {
+            font-size: 15px;
+            font-weight: 700;
+            border-left: 4px solid var(--accent);
+            padding-left: 8px;
+            margin-bottom: 10px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 140px;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            resize: vertical;
+        }
+        textarea:focus, input[type="text"]:focus, input[type="date"]:focus {
+            outline: 2px solid var(--accent);
+            border-color: transparent;
+        }
+
+        .btn-save {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            align-self: flex-end;
+        }
+        .btn-save:hover { background: var(--accent-dk); }
+
+        /* 출장근태 인풋 그룹 */
+        .schedule-input-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        input[type="date"], input[type="text"] {
+            padding: 9px 12px;
+            font-family: inherit;
+            font-size: 14px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+        }
+        input[type="text"] { flex: 1; min-width: 200px; }
+        .btn-add {
+            background: #5f6368;
+            color: white;
+            border: none;
+            padding: 9px 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* 출장근태 리스트 아이템 */
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--page);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13.5px;
+        }
+        .list-item .del-btn {
+            color: #d93025;
+            cursor: pointer;
+            font-weight: 700;
+            margin-left: 10px;
+        }
+
+        /* ── 전체 취합 현황판 (화면 하단 미리보기) ── */
+        .preview-section {
+            background: var(--canvas);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 28px;
+        }
+        .preview-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #202124;
+        }
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .preview-table th, .preview-table td {
+            border: 1px solid var(--line);
+            padding: 12px;
+            font-size: 14px;
+            vertical-align: top;
+            text-align: left;
+        }
+        .preview-table th {
+            background: var(--page);
+            font-weight: 700;
+            text-align: center;
+            width: 15%;
+        }
+        .preview-table td { white-space: pre-wrap; line-height: 1.6; }
+        .sub-list { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); color: #1a73e8; font-size: 13px; }
+
+        /* ── 🖨️ 인쇄 전용 CSS (A4 세로 보고서용) ── */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .topbar, .dept-tabs, .panel, .btn-print, header, .del-btn { display: none !important; }
+            .wrap { padding: 0; max-width: none; }
+            .preview-section { border: none; padding: 0; }
+            .preview-title { font-size: 20pt; margin-bottom: 25px; font-weight: 900; }
+            .preview-table th { background: #f5f5f5 !important; font-size: 11pt; padding: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .preview-table td { font-size: 11pt; padding: 12px; color: #000 !important; }
+            .sub-list { color: #000 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <a class="back-btn" href="index.html">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            업무포털
+        </a>
+        <span class="crumb">집행부 업무포털 <span class="sep">/</span> 주간업무 및 출장·근태</span>
+    </div>
+
+    <div class="wrap">
+        <header>
+            <div class="title-group">
+                <h1>주간업무 및 출장·근태 관리</h1>
+                <div class="sub">7개 실국별 다음주 주간계획 및 근태 등록 시스템</div>
+            </div>
+            <button class="btn-print" onclick="window.print()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                주간보고서 인쇄
+            </button>
+        </header>
+
+        <div class="dept-tabs" id="deptTabs"></div>
+
+        <div class="panel">
+            <h2 id="currentDeptTitle" style="font-size: 18px; font-weight: 800; color: var(--accent);">부서 이름</h2>
+            
+            <div>
+                <div class="panel-section-title">다음주 주간 핵심 업무계획</div>
+                <textarea id="workInput" placeholder="다음주에 진행할 주요 업무 계획을 자유롭게 기술하세요."></textarea>
+                <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+                    <button class="btn-save" onclick="saveWork()">업무계획 저장</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="panel-section-title">출장 및 근태 일정 등록</div>
+                <div class="schedule-input-group">
+                    <input type="date" id="scheduleDate">
+                    <input type="text" id="scheduleText" placeholder="예) 위원장 - 본사 공무 출장 (또는 OOO 휴가)">
+                    <button class="btn-add" onclick="addSchedule()">추가</button>
+                </div>
+                <div class="item-list" id="deptScheduleList"></div>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <div class="preview-title">⚡ 제24대 집행부 주간업무 및 근태 현황 보고서</div>
+            <table class="preview-table">
+                <thead>
+                    <tr>
+                        <th>실·국별</th>
+                        <th>주요 업무 계획 및 출장·근태 현황</th>
+                    </tr>
+                </thead>
+                <tbody id="previewTableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 1. Firebase 환경 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUFwsNEBzTZxr8EJuY2BZkYTEBadQoMk8",
+            authDomain: "knewu-64318.firebaseapp.com",
+            databaseURL: "https://knewu-64318-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "knewu-64318",
+            storageBucket: "knewu-64318.firebasestorage.app",
+            messagingSenderId: "301755569133",
+            appId: "1:301755569133:web:9bd85133d084c041368de4"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const dbRef = database.ref('weekly_reports_2026');
+
+        // 7개 부서 리스트 정형화
+        const DEPTS = ["총무국", "조직쟁의실", "기획국", "정책국", "복지국", "산업안전국", "교육문화국"];
+        let currentDept = DEPTS[0];
+        let globalData = {};
+
+        // 2. 탭 생성 및 부서 초기화
+        function initTabs() {
+            const tabsContainer = document.getElementById('deptTabs');
+            tabsContainer.innerHTML = DEPTS.map((dept, idx) => `
+                <button class="tab-btn ${idx === 0 ? 'active' : ''}" onclick="switchDept('${dept}', this)">${dept}</button>
+            `).join('');
+            updateDeptPanel();
+        }
+
+        function switchDept(dept, btnEl) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+            currentDept = dept;
+            updateDeptPanel();
+        }
+
+        // 부서 변경 시 입력 창 내용 전환
+        function updateDeptPanel() {
+            document.getElementById('currentDeptTitle').innerText = `🏢 ${currentDept} 입력 시스템`;
+            
+            // 주간 업무 텍스트 채우기
+            const deptData = globalData[currentDept] || {};
+            document.getElementById('workInput').value = deptData.work || '';
+
+            // 출장 근태 리스트 채우기
+            const listEl = document.getElementById('deptScheduleList');
+            listEl.innerHTML = '';
+            
+            if (deptData.schedules) {
+                Object.keys(deptData.schedules).forEach(key => {
+                    const item = deptData.schedules[key];
+                    listEl.innerHTML += `
+                        <div class="list-item">
+                            <span>📅 [${item.date}] ${item.text}</span>
+                            <span class="del-btn" onclick="deleteSchedule('${key}')">× 삭제</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // 3. 데이터 저장 및 수정 함수들
+        function saveWork() {
+            const text = document.getElementById('workInput').value;
+            dbRef.child(currentDept).child('work').set(text).then(() => {
+                alert(`${currentDept} 주간 업무계획이 성공적으로 저장되었습니다.`);
+            });
+        }
+
+        function addSchedule() {
+            const dateInput = document.getElementById('scheduleDate').value;
+            const textInput = document.getElementById('scheduleText').value;
+
+            if (!dateInput || !textInput) {
+                alert('날짜와 근태 세부 내용을 모두 입력해 주세요.');
+                return;
+            }
+
+            const newScheduleRef = dbRef.child(currentDept).child('schedules').push();
+            newScheduleRef.set({
+                date: dateInput,
+                text: textInput
+            }).then(() => {
+                document.getElementById('scheduleText').value = '';
+                document.getElementById('scheduleDate').value = '';
+            });
+        }
+
+        function deleteSchedule(key) {
+            if (confirm('해당 일정을 삭제하시겠습니까?')) {
+                dbRef.child(currentDept).child('schedules').child(key).remove();
+            }
+        }
+
+        // 4. Firebase 실시간 전체 연동 및 취합 보고서 화면 출력
+        function initFirebaseRealtime() {
+            dbRef.on('value', (snapshot) => {
+                globalData = snapshot.val() || {};
+                
+                // 현재 열려있는 부서 패널 동기화
+                updateDeptPanel();
+
+                // 하단 전체 취합 보고서 자동 렌더링
+                const tbody = document.getElementById('previewTableBody');
+                tbody.innerHTML = '';
+
+                DEPTS.forEach(dept => {
+                    const deptData = globalData[dept] || {};
+                    const workText = deptData.work ? deptData.work : `<span style="color:#aaa;">- 입력된 업무 계획이 없습니다.</span>`;
+                    
+                    // 출장 근태 내역 정렬 후 파싱
+                    let scheduleHTML = '';
+                    if (deptData.schedules) {
+                        const sList = Object.values(deptData.schedules).sort((a, b) => new Date(a.date) - new Date(b.date));
+                        scheduleHTML = `<div class="sub-list">🏃 [출장/근태 현황]<br>` + 
+                            sList.map(s => `• [${s.date.slice(5)}] ${s.text}`).join('<br>') + 
+                            `</div>`;
+                    }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <th>${dept}</th>
+                            <td>
+                                <div>${workText}</div>
+                                ${scheduleHTML}
+                            </td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        // 초기 실행
+        initTabs();
+        initFirebaseRealtime();
+    </script>
+</body>
+</html>
