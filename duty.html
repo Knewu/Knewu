@@ -190,54 +190,65 @@
         .preview-section { background: var(--canvas); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
         
         .preview-title-wrap {
-            display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 24px;
         }
         .preview-title-wrap img { width: 32px; height: 32px; object-fit: contain; }
-        .preview-title { font-size: 18px; font-weight: 800; color: var(--ink); }
+        .preview-title { font-size: 19px; font-weight: 800; color: var(--ink); letter-spacing: -0.5px; }
         
         .preview-table { width: 100%; border-collapse: collapse; }
         .preview-table th, .preview-table td { border: 1px solid var(--line); padding: 14px; font-size: 14px; vertical-align: top; }
-        .preview-table th { background: var(--page); font-weight: 700; text-align: center; width: 15%; }
+        .preview-table th { background: var(--page); font-weight: 700; text-align: center; width: 16%; }
         .preview-table td { white-space: pre-wrap; line-height: 1.6; }
         
         /* 보고서용 출장/근태 소섹션 */
-        .report-sub-block { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 13px; }
+        .report-sub-block { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 13px; }
         .report-sub-block strong { font-weight: 700; }
         .report-sub-block.biz { color: #1a73e8; }
         .report-sub-block.vac { color: #b06000; }
 
-        /* ── 🖨️ 인쇄 전용 스타일 (축구장 여백 파괴, A4 1장 타겟팅 초압축) ── */
+        /* ── 🖨️ 인쇄 전용 스타일 (세련된 고품격 기업형 양식 + A4 1장 타겟팅) ── */
         @media print {
-            @page { size: A4 portrait; margin: 10mm 12mm; }
-            body { background: #fff; padding: 0; min-height: 0; }
+            @page { size: A4 portrait; margin: 12mm 15mm; }
+            body { background: #fff; padding: 0; min-height: 0; color: #000 !important; }
             .topbar, .dept-tabs, .panel, .btn-print, header, .del-btn, .schedule-form { display: none !important; }
             .wrap { padding: 0; max-width: none; width: 100%; }
             .preview-section { border: none; padding: 0; background: #fff; }
             
-            .preview-title-wrap { margin-bottom: 15px; gap: 8px; }
-            .preview-title-wrap img { width: 26px; height: 26px; display: inline-block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .preview-title { font-size: 16pt; font-weight: 900; color: #000 !important; }
+            /* 상단 헤더 깔끔한 언더라인 배치 */
+            .preview-title-wrap { margin-bottom: 25px; padding-bottom: 12px; border-bottom: 2px solid #222; gap: 10px; }
+            .preview-title-wrap img { width: 28px; height: 28px; display: inline-block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .preview-title { font-size: 17pt; font-weight: 800; color: #000 !important; letter-spacing: -0.5px; }
             
-            .preview-table { width: 100%; margin: 0; table-layout: fixed; }
+            /* 투박한 검은 테두리선을 얇고 세련된 연회색 선으로 변경 */
+            .preview-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
             .preview-table th, .preview-table td { 
-                padding: 6px 8px !important; 
+                padding: 8px 10px !important; 
                 font-size: 10pt !important; 
-                line-height: 1.4 !important; 
+                line-height: 1.5 !important; 
                 word-break: break-all;
-                border: 1px solid #444 !important;
-                height: auto !important; /* 고정 높이 강제 제거 */
+                border: 1px solid #bdc3c7 !important; /* 세련된 모던 라인 변경 */
+                height: auto !important;
             }
+            
+            /* 좌측 부서명 칸 배경 처리 및 정렬 정돈 */
             .preview-table th { 
-                background: #f2f2f2 !important; 
-                font-weight: bold; 
+                background: #f8f9fa !important; 
+                color: #222 !important;
+                font-weight: 700; 
                 text-align: center; 
-                width: 90px !important; /* 부서 칸 너비 */
+                width: 100px !important; 
                 vertical-align: middle !important;
                 -webkit-print-color-adjust: exact; 
                 print-color-adjust: exact; 
             }
-            .preview-table td { color: #000 !important; }
-            .report-sub-block { margin-top: 4px; padding-top: 4px; font-size: 9.5pt !important; color: #000 !important; border-top: 1px dotted #888 !important; }
+            .preview-table td { color: #111 !important; }
+            
+            /* 미입력 부서 흐릿하게 축소해서 숨은 여백 확보 */
+            .no-data-text { color: #95a5a6 !important; font-size: 9.5pt !important; font-style: italic; }
+            
+            /* 출장/근태 서식 세련되게 정리 */
+            .report-sub-block { margin-top: 6px; padding-top: 5px; font-size: 9.5pt !important; color: #333 !important; border-top: 1px dashed #ced4da !important; }
+            .report-sub-block strong { color: #000 !important; font-weight: 700; }
         }
     </style>
 </head>
@@ -308,7 +319,7 @@
             <table class="preview-table">
                 <thead>
                     <tr>
-                        <th style="width:90px;">실·국별</th>
+                        <th style="width:100px;">실·국별</th>
                         <th>주요 업무 계획 및 출장 · 근태 현황</th>
                     </tr>
                 </thead>
@@ -421,7 +432,11 @@
 
                 DEPTS.forEach(dept => {
                     const deptData = globalData[dept] || {};
-                    const workText = deptData.work ? deptData.work : `<span style="color:#aaa;">- 주요 업무 계획 미입력</span>`;
+                    
+                    // 미입력 부서는 클래스를 주어 인쇄 시 폰트 크기 및 높이를 한 번 더 압축시킴
+                    const workText = deptData.work 
+                        ? `<div style="font-weight:500;">${deptData.work}</div>` 
+                        : `<div class="no-data-text">- 주요 업무 계획 미입력</div>`;
                     
                     let bizHTML = '';
                     let vacHTML = '';
@@ -429,7 +444,7 @@
                     if (deptData.schedules) {
                         const sList = Object.values(deptData.schedules).sort((a, b) => new Date(a.start) - new Date(b.start));
                         
-                        // 1. [출장 현황] 가로 컴팩트 나열로 변경 (세로 낭비 제거)
+                        // 출장 현황 가로 콤팩트 나열
                         const bizItems = sList.filter(s => s.type === '출장');
                         if (bizItems.length > 0) {
                             const bizStrings = bizItems.map(s => {
@@ -439,7 +454,7 @@
                             bizHTML = `<div class="report-sub-block biz"><strong>🏃 [출장]</strong> ${bizStrings.join(', ')}</div>`;
                         }
 
-                        // 2. [근태 현황] 가로 컴팩트 나열로 변경 (세로 낭비 제거)
+                        // 근태 현황 가로 콤팩트 나열
                         const vacItems = sList.filter(s => s.type === '근태');
                         if (vacItems.length > 0) {
                             const vacStrings = vacItems.map(s => {
@@ -454,7 +469,7 @@
                         <tr>
                             <th style="text-align:center; font-weight:bold; vertical-align:middle;">${dept}</th>
                             <td>
-                                <div style="font-weight:500;">${workText}</div>
+                                ${workText}
                                 ${bizHTML}
                                 ${vacHTML}
                             </td>
