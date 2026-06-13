@@ -27,7 +27,7 @@
             font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
             background-color: var(--page);
             color: var(--ink);
-            padding-bottom: 6px;
+            padding-bottom: 60px;
         }
 
         /* ── 상단 바 ── */
@@ -57,11 +57,7 @@
             transition: background .15s;
         }
         .back-btn:hover { background: var(--line-soft); }
-        .topbar .crumb {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--ink);
-        }
+        .topbar .crumb { font-size: 14px; font-weight: 700; color: var(--ink); }
         .topbar .crumb .sep { color: var(--line); margin: 0 8px; }
 
         .wrap { max-width: 1000px; margin: 0 auto; padding: 28px 24px; }
@@ -72,16 +68,8 @@
             align-items: flex-end;
             margin-bottom: 22px;
         }
-        .title-group h1 {
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-        .title-group .sub {
-            margin-top: 4px;
-            font-size: 13px;
-            color: var(--ink-soft);
-        }
+        .title-group h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+        .title-group .sub { margin-top: 4px; font-size: 13px; color: var(--ink-soft); }
 
         .btn-print {
             display: inline-flex;
@@ -119,13 +107,9 @@
             color: var(--ink-soft);
             white-space: nowrap;
         }
-        .tab-btn.active {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
+        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        /* ── 입력 패널 구조 ── */
+        /* ── 입력 패널 ── */
         .panel {
             background: var(--canvas);
             border: 1px solid var(--line);
@@ -134,136 +118,98 @@
             margin-bottom: 30px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 24px;
         }
         .panel-section-title {
             font-size: 15px;
             font-weight: 700;
             border-left: 4px solid var(--accent);
             padding-left: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         
         textarea {
-            width: 100%;
-            height: 140px;
-            padding: 12px;
-            font-family: inherit;
-            font-size: 14px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            resize: vertical;
-        }
-        textarea:focus, input[type="text"]:focus, input[type="date"]:focus {
-            outline: 2px solid var(--accent);
-            border-color: transparent;
+            width: 100%; height: 120px; padding: 12px;
+            font-family: inherit; font-size: 14px;
+            border: 1px solid var(--line); border-radius: 8px; resize: vertical;
         }
 
         .btn-save {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: 700;
-            border-radius: 6px;
-            cursor: pointer;
-            align-self: flex-end;
+            background: var(--accent); color: white; border: none;
+            padding: 10px 20px; font-size: 14px; font-weight: 700;
+            border-radius: 6px; cursor: pointer; align-self: flex-end;
         }
         .btn-save:hover { background: var(--accent-dk); }
 
-        /* 출장근태 인풋 그룹 */
-        .schedule-input-group {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        input[type="date"], input[type="text"] {
-            padding: 9px 12px;
-            font-family: inherit;
-            font-size: 14px;
-            border: 1px solid var(--line);
-            border-radius: 6px;
-        }
-        input[type="text"] { flex: 1; min-width: 200px; }
-        .btn-add {
-            background: #5f6368;
-            color: white;
-            border: none;
-            padding: 9px 16px;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        /* 출장근태 리스트 아이템 */
-        .item-list {
+        /* 출장근태 입력 양식 레이아웃 */
+        .schedule-form {
+            background: var(--page);
+            padding: 16px;
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            margin-top: 10px;
+            gap: 12px;
         }
-        .list-item {
+        .form-row {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            background: var(--page);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 13.5px;
-        }
-        .list-item .del-btn {
-            color: #d93025;
-            cursor: pointer;
-            font-weight: 700;
-            margin-left: 10px;
-        }
-
-        /* ── 전체 취합 현황판 (화면 하단 미리보기) ── */
-        .preview-section {
-            background: var(--canvas);
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            padding: 28px;
-        }
-        .preview-title {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 20px;
-            text-align: center;
-            color: #202124;
-        }
-        .preview-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .preview-table th, .preview-table td {
-            border: 1px solid var(--line);
-            padding: 12px;
+            gap: 10px;
+            flex-wrap: wrap;
             font-size: 14px;
-            vertical-align: top;
-            text-align: left;
         }
-        .preview-table th {
-            background: var(--page);
-            font-weight: 700;
-            text-align: center;
-            width: 15%;
+        .radio-group { display: flex; gap: 14px; font-weight: 600; }
+        .radio-group input { margin-right: 4px; cursor: pointer; }
+        
+        input[type="date"], input[type="text"] {
+            padding: 8px 12px; font-family: inherit; font-size: 14px;
+            border: 1px solid var(--line); border-radius: 6px; background: white;
         }
-        .preview-table td { white-space: pre-wrap; line-height: 1.6; }
-        .sub-list { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); color: #1a73e8; font-size: 13px; }
+        input[type="text"] { flex: 1; min-width: 250px; }
+        
+        .btn-add {
+            background: #202124; color: white; border: none;
+            padding: 9px 18px; font-weight: 700; border-radius: 6px; cursor: pointer;
+        }
+        .btn-add:hover { background: #000; }
 
-        /* ── 🖨️ 인쇄 전용 CSS (A4 세로 보고서용) ── */
+        /* 등록 리스트 출력 */
+        .item-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: white; border: 1px solid var(--line);
+            padding: 8px 12px; border-radius: 6px; font-size: 13px;
+        }
+        .list-item .type-tag {
+            font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 6px;
+        }
+        .list-item .type-tag.출장 { background: #e3f2fd; color: #0d47a1; }
+        .list-item .type-tag.근태 { background: #fce4ec; color: #c2185b; }
+        .list-item .del-btn { color: #d93025; cursor: pointer; font-weight: 700; margin-left: 10px; }
+
+        /* ── 취합 현황판 테이블 스타일 ── */
+        .preview-section { background: var(--canvas); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
+        .preview-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; text-align: center; }
+        .preview-table { width: 100%; border-collapse: collapse; }
+        .preview-table th, .preview-table td { border: 1px solid var(--line); padding: 14px; font-size: 14px; vertical-align: top; }
+        .preview-table th { background: var(--page); font-weight: 700; text-align: center; width: 15%; }
+        .preview-table td { white-space: pre-wrap; line-height: 1.6; }
+        
+        /* 보고서용 출장/근태 소섹션 */
+        .report-sub-block { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 13px; }
+        .report-sub-block strong { font-weight: 700; }
+        .report-sub-block.biz { color: #1a73e8; }
+        .report-sub-block.vac { color: #b06000; }
+
+        /* ── 🖨️ 인쇄 스타일 (A4 세로) ── */
         @media print {
             body { background: #fff; padding: 0; }
-            .topbar, .dept-tabs, .panel, .btn-print, header, .del-btn { display: none !important; }
+            .topbar, .dept-tabs, .panel, .btn-print, header, .del-btn, .schedule-form { display: none !important; }
             .wrap { padding: 0; max-width: none; }
             .preview-section { border: none; padding: 0; }
             .preview-title { font-size: 20pt; margin-bottom: 25px; font-weight: 900; }
             .preview-table th { background: #f5f5f5 !important; font-size: 11pt; padding: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .preview-table td { font-size: 11pt; padding: 12px; color: #000 !important; }
-            .sub-list { color: #000 !important; }
+            .report-sub-block { color: #000 !important; }
         }
     </style>
 </head>
@@ -281,7 +227,7 @@
         <header>
             <div class="title-group">
                 <h1>주간업무 및 출장·근태 관리</h1>
-                <div class="sub">7개 실국별 다음주 주간계획 및 근태 등록 시스템</div>
+                <div class="sub">7개 실국별 다음주 주간계획 및 범위 지정 근태 등록 시스템</div>
             </div>
             <button class="btn-print" onclick="window.print()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -292,44 +238,55 @@
         <div class="dept-tabs" id="deptTabs"></div>
 
         <div class="panel">
-            <h2 id="currentDeptTitle" style="font-size: 18px; font-weight: 800; color: var(--accent);">부서 이름</h2>
+            <h2 id="currentDeptTitle" style="font-size: 18px; font-weight: 800; color: var(--accent);">부서</h2>
             
             <div>
-                <div class="panel-section-title">다음주 주간 핵심 업무계획</div>
-                <textarea id="workInput" placeholder="다음주에 진행할 주요 업무 계획을 자유롭게 기술하세요."></textarea>
+                <div class="panel-section-title">다음주 주요 업무계획</div>
+                <textarea id="workInput" placeholder="진행될 주요 업무 계획을 자유롭게 입력해 주세요."></textarea>
                 <div style="display:flex; justify-content:flex-end; margin-top:8px;">
                     <button class="btn-save" onclick="saveWork()">업무계획 저장</button>
                 </div>
             </div>
 
             <div>
-                <div class="panel-section-title">출장 및 근태 일정 등록</div>
-                <div class="schedule-input-group">
-                    <input type="date" id="scheduleDate">
-                    <input type="text" id="scheduleText" placeholder="예) 위원장 - 본사 공무 출장 (또는 OOO 휴가)">
-                    <button class="btn-add" onclick="addSchedule()">추가</button>
+                <div class="panel-section-title">출장 및 근태 현황 등록 (기간 지정 가능)</div>
+                <div class="schedule-form">
+                    <div class="form-row">
+                        <div class="radio-group">
+                            <label><input type="radio" name="sType" value="출장" checked> 🏃 출장</label>
+                            <label><input type="radio" name="sType" value="근태"> 📄 근태 (휴가/반차 등)</label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label>기간 지정:</label>
+                        <input type="date" id="startDate">
+                        <span>~</span>
+                        <input type="date" id="endDate">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="scheduleText" placeholder="세부 내용 입력 (예: 위원장 - 한전 본사 국회대응 출장 / 총무국장 - 연차)">
+                        <button class="btn-add" onclick="addSchedule()">일정 추가</button>
+                    </div>
                 </div>
                 <div class="item-list" id="deptScheduleList"></div>
             </div>
         </div>
 
         <div class="preview-section">
-            <div class="preview-title">⚡ 제24대 집행부 주간업무 및 근태 현황 보고서</div>
+            <div class="preview-title">⚡ 제24대 집행부 주간업무 및 출장·근태 현황</div>
             <table class="preview-table">
                 <thead>
                     <tr>
                         <th>실·국별</th>
-                        <th>주요 업무 계획 및 출장·근태 현황</th>
+                        <th>주요 업무 계획 및 출장 · 근태 현황</th>
                     </tr>
                 </thead>
-                <tbody id="previewTableBody">
-                    </tbody>
+                <tbody id="previewTableBody"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // 1. Firebase 환경 설정
         const firebaseConfig = {
             apiKey: "AIzaSyDUFwsNEBzTZxr8EJuY2BZkYTEBadQoMk8",
             authDomain: "knewu-64318.firebaseapp.com",
@@ -344,12 +301,10 @@
         const database = firebase.database();
         const dbRef = database.ref('weekly_reports_2026');
 
-        // 7개 부서 리스트 정형화
         const DEPTS = ["총무국", "조직쟁의실", "기획국", "정책국", "복지국", "산업안전국", "교육문화국"];
         let currentDept = DEPTS[0];
         let globalData = {};
 
-        // 2. 탭 생성 및 부서 초기화
         function initTabs() {
             const tabsContainer = document.getElementById('deptTabs');
             tabsContainer.innerHTML = DEPTS.map((dept, idx) => `
@@ -365,24 +320,21 @@
             updateDeptPanel();
         }
 
-        // 부서 변경 시 입력 창 내용 전환
         function updateDeptPanel() {
-            document.getElementById('currentDeptTitle').innerText = `🏢 ${currentDept} 입력 시스템`;
-            
-            // 주간 업무 텍스트 채우기
+            document.getElementById('currentDeptTitle').innerText = `🏢 ${currentDept} 시스템 구성`;
             const deptData = globalData[currentDept] || {};
             document.getElementById('workInput').value = deptData.work || '';
 
-            // 출장 근태 리스트 채우기
             const listEl = document.getElementById('deptScheduleList');
             listEl.innerHTML = '';
             
             if (deptData.schedules) {
                 Object.keys(deptData.schedules).forEach(key => {
                     const item = deptData.schedules[key];
+                    const period = item.start === item.end ? item.start : `${item.start} ~ ${item.end}`;
                     listEl.innerHTML += `
                         <div class="list-item">
-                            <span>📅 [${item.date}] ${item.text}</span>
+                            <span><span class="type-tag ${item.type}">${item.type}</span> [${period}] ${item.text}</span>
                             <span class="del-btn" onclick="deleteSchedule('${key}')">× 삭제</span>
                         </div>
                     `;
@@ -390,62 +342,81 @@
             }
         }
 
-        // 3. 데이터 저장 및 수정 함수들
         function saveWork() {
             const text = document.getElementById('workInput').value;
             dbRef.child(currentDept).child('work').set(text).then(() => {
-                alert(`${currentDept} 주간 업무계획이 성공적으로 저장되었습니다.`);
+                alert(`${currentDept} 업무계획이 임시 저장되었습니다.`);
             });
         }
 
         function addSchedule() {
-            const dateInput = document.getElementById('scheduleDate').value;
-            const textInput = document.getElementById('scheduleText').value;
+            const type = document.querySelector('input[name="sType"]:checked').value;
+            const start = document.getElementById('startDate').value;
+            let end = document.getElementById('endDate').value;
+            const text = document.getElementById('scheduleText').value;
 
-            if (!dateInput || !textInput) {
-                alert('날짜와 근태 세부 내용을 모두 입력해 주세요.');
+            if (!start || !text) {
+                alert('시작 날짜와 세부 내용을 반드시 입력해 주세요.');
+                return;
+            }
+            if (!end) end = start; // 종료일이 빈칸이면 당일 처리
+
+            if (new Date(start) > new Date(end)) {
+                alert('종료일은 시작일보다 빠를 수 없습니다.');
                 return;
             }
 
-            const newScheduleRef = dbRef.child(currentDept).child('schedules').push();
-            newScheduleRef.set({
-                date: dateInput,
-                text: textInput
-            }).then(() => {
+            const newRef = dbRef.child(currentDept).child('schedules').push();
+            newRef.set({ type, start, end, text }).then(() => {
                 document.getElementById('scheduleText').value = '';
-                document.getElementById('scheduleDate').value = '';
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
             });
         }
 
         function deleteSchedule(key) {
-            if (confirm('해당 일정을 삭제하시겠습니까?')) {
+            if (confirm('해당 명단의 일정을 삭제하시겠습니까?')) {
                 dbRef.child(currentDept).child('schedules').child(key).remove();
             }
         }
 
-        // 4. Firebase 실시간 전체 연동 및 취합 보고서 화면 출력
         function initFirebaseRealtime() {
             dbRef.on('value', (snapshot) => {
                 globalData = snapshot.val() || {};
-                
-                // 현재 열려있는 부서 패널 동기화
                 updateDeptPanel();
 
-                // 하단 전체 취합 보고서 자동 렌더링
                 const tbody = document.getElementById('previewTableBody');
                 tbody.innerHTML = '';
 
                 DEPTS.forEach(dept => {
                     const deptData = globalData[dept] || {};
-                    const workText = deptData.work ? deptData.work : `<span style="color:#aaa;">- 입력된 업무 계획이 없습니다.</span>`;
+                    const workText = deptData.work ? deptData.work : `<span style="color:#aaa;">- 주요 업무 계획 미입력</span>`;
                     
-                    // 출장 근태 내역 정렬 후 파싱
-                    let scheduleHTML = '';
+                    let bizHTML = '';
+                    let vacHTML = '';
+
                     if (deptData.schedules) {
-                        const sList = Object.values(deptData.schedules).sort((a, b) => new Date(a.date) - new Date(b.date));
-                        scheduleHTML = `<div class="sub-list">🏃 [출장/근태 현황]<br>` + 
-                            sList.map(s => `• [${s.date.slice(5)}] ${s.text}`).join('<br>') + 
-                            `</div>`;
+                        const sList = Object.values(deptData.schedules).sort((a, b) => new Date(a.start) - new Date(b.start));
+                        
+                        // 1. 출장 리스트 분류
+                        const bizItems = sList.filter(s => s.type === '출장');
+                        if (bizItems.length > 0) {
+                            bizHTML = `<div class="report-sub-block biz"><strong>🏃 [출장 현황]</strong><br>` + 
+                                bizItems.map(s => {
+                                    const period = s.start === s.end ? s.start.slice(5) : `${s.start.slice(5)}~${s.end.slice(5)}`;
+                                    return `• [${period}] ${s.text}`;
+                                }).join('<br>') + `</div>`;
+                        }
+
+                        // 2. 근태 리스트 분류
+                        const vacItems = sList.filter(s => s.type === '근태');
+                        if (vacItems.length > 0) {
+                            vacHTML = `<div class="report-sub-block vac"><strong>📄 [근태 현황]</strong><br>` + 
+                                vacItems.map(s => {
+                                    const period = s.start === s.end ? s.start.slice(5) : `${s.start.slice(5)}~${s.end.slice(5)}`;
+                                    return `• [${period}] ${s.text}`;
+                                }).join('<br>') + `</div>`;
+                        }
                     }
 
                     tbody.innerHTML += `
@@ -453,7 +424,8 @@
                             <th>${dept}</th>
                             <td>
                                 <div>${workText}</div>
-                                ${scheduleHTML}
+                                ${bizHTML}
+                                ${vacHTML}
                             </td>
                         </tr>
                     `;
@@ -461,7 +433,6 @@
             });
         }
 
-        // 초기 실행
         initTabs();
         initFirebaseRealtime();
     </script>
