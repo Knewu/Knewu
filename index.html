@@ -43,11 +43,12 @@
     }
     .logo-icon {
       width: 36px; height: 36px;
-      background: var(--blue);
       border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
+      flex-shrink: 0;
+      overflow: hidden;
     }
+    .logo-icon img { width: 100%; height: 100%; object-fit: contain; }
     .logo-text {
       font-size: 16px;
       font-weight: 700;
@@ -60,9 +61,19 @@
     .hero {
       background: linear-gradient(135deg, #1557b0 0%, #1a73e8 60%, #4285f4 100%);
       color: #fff;
-      padding: 48px 32px 44px;
+      padding: 44px 32px 40px;
       text-align: center;
     }
+    .hero .hero-logo {
+      width: 72px; height: 72px;
+      margin: 0 auto 16px;
+      background: #fff;
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,.18);
+      overflow: hidden;
+    }
+    .hero .hero-logo img { width: 84%; height: 84%; object-fit: contain; }
     .hero h1 {
       font-size: 26px;
       font-weight: 900;
@@ -176,11 +187,12 @@
 <body>
 
 <header>
-  <div class="logo-icon">⚡</div>
+  <div class="logo-icon"><img src="https://knewu.netlify.app/icon-192.png" alt="전국전력노동조합 로고"></div>
   <div class="logo-text">전국전력노동조합 <span>집행부 업무포털</span></div>
 </header>
 
 <div class="hero">
+  <div class="hero-logo"><img src="https://knewu.netlify.app/icon-192.png" alt="전국전력노동조합 로고"></div>
   <h1>제24대 집행부 업무포털</h1>
   <p>집행부 전용 내부 시스템입니다 · 전국전력노동조합</p>
 </div>
@@ -206,8 +218,8 @@
     <div class="card disabled">
       <div class="card-icon coming">📋</div>
       <div class="card-body">
-        <h2>출장·외근 관리</h2>
-        <p>집행부 출장 및 외근 일정을<br>등록하고 승인합니다.</p>
+        <h2>출장·근태 관리</h2>
+        <p>다음주 집행부 출장 및 근태 일정을<br>등록하고 승인합니다.</p>
       </div>
       <div class="card-footer">
         <span class="badge soon">준비 중</span>
