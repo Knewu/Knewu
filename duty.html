@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전국전력노동조합 주간업무 시스템</title>
+    <title>주간업무 및 출장·근태 관리 시스템 · 전력노조</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
@@ -11,10 +11,12 @@
     <style>
         :root {
             --accent: #1557b0;
+            --accent-soft: #f4f8ff;
             --ink: #202124;
             --ink-soft: #5f6368;
-            --line: #dadce0;
-            --page: #f1f3f4;
+            --line: #cbd5e0;
+            --line-soft: #e2e8f0;
+            --page: #f8fafc;
             --canvas: #ffffff;
         }
 
@@ -26,11 +28,11 @@
             padding-bottom: 80px;
         }
 
-        /* ── 상단 바 ── */
+        /* ── 상단 네비게이션 바 ── */
         .topbar {
-            background: var(--canvas); border-bottom: 1px solid var(--line);
+            background: var(--canvas); border-bottom: 1px solid var(--line-soft);
             padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 14px;
-            position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 2px rgba(0,0,0,.03);
         }
         .back-btn {
             display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
@@ -39,95 +41,121 @@
         .back-btn:hover { background: var(--line-soft); }
         .topbar .crumb { font-size: 14px; font-weight: 700; }
 
-        .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
+        .wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
 
-        /* 입력 패널 컨트롤 */
+        /* ── 입력 패널 디자인 ── */
         .panel {
-            background: var(--canvas); border: 1px solid var(--line); border-radius: 16px;
-            padding: 20px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 16px;
+            background: var(--canvas); border: 1px solid var(--line-soft); border-radius: 16px;
+            padding: 24px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
-        .form-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        select, textarea, input, button {
-            padding: 9px 12px; font-family: inherit; font-size: 13.5px; border: 1px solid var(--line); border-radius: 8px;
-        }
-        select { background: white; min-width: 160px; font-weight: 600; cursor: pointer; }
-        textarea { width: 100%; height: 90px; resize: vertical; line-height: 1.5; }
+        .panel h2 { font-size: 16px; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 6px; }
         
-        .btn-save { background: var(--accent); color: white; border: none; font-weight: 700; cursor: pointer; padding: 9px 18px; }
+        select {
+            padding: 10px 14px; font-family: inherit; font-size: 14px; border: 1px solid var(--line);
+            border-radius: 8px; background: white; min-width: 200px; font-weight: 700; cursor: pointer;
+        }
+        
+        .disabled-content { opacity: 0.25; pointer-events: none; transition: opacity 0.2s; }
+        
+        .input-grid { display: grid; grid-template-columns: 1.2f 1fr 1fr; gap: 14px; margin-top: 6px; }
+        @media (max-width: 768px) { .input-grid { grid-template-columns: 1fr; } }
+        
+        .input-cell { display: flex; flex-direction: column; gap: 6px; }
+        .input-cell label { font-size: 13px; font-weight: 700; color: #4a5568; }
+        
+        textarea {
+            width: 100%; height: 110px; padding: 10px; font-family: inherit; font-size: 13.5px;
+            border: 1px solid var(--line); border-radius: 8px; resize: none; line-height: 1.5;
+        }
+        textarea:focus { border-color: var(--accent); outline: none; }
+        
+        .btn-save {
+            background: var(--accent); color: white; border: none; font-weight: 700; cursor: pointer;
+            padding: 10px 20px; border-radius: 8px; font-size: 14px; align-self: flex-end; transition: background 0.15s;
+        }
         .btn-save:hover { background: #0d47a1; }
-        .btn-print {
-            background: #28a745; color: white; border: none; font-weight: 700; cursor: pointer;
-            padding: 10px 20px; border-radius: 30px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;
-            box-shadow: 0 4px 10px rgba(40,167,69,0.25);
-        }
-        .btn-print:hover { background: #218838; transform: translateY(-1px); }
-
-        /* 부서 선택 전 블라인드 처리 */
-        .disabled-content { opacity: 0.3; pointer-events: none; }
-
-        /* ── 📱 주간업무 리포트 디자인 (초압축 스타일) ── */
-        .report-paper {
-            background: #ffffff;
-            border-radius: 0 0 20px 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            padding: 32px 36px;
-            position: relative;
-            overflow: hidden;
-        }
-        /* 상단 블루 탑 바 */
-        .report-paper::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 10px;
-            background: linear-gradient(90deg, #1557b0 0%, #1a73e8 100%);
-        }
-
-        .rep-header { margin-bottom: 24px; border-bottom: 1px solid #edf2f7; padding-bottom: 12px; }
-        .rep-title { font-size: 24px; font-weight: 900; color: #1557b0; letter-spacing: -0.8px; margin-bottom: 2px; }
-        .rep-date { font-size: 13px; color: #95a5a6; font-weight: 600; font-family: monospace; }
-
-        .rep-section { margin-bottom: 24px; }
-        .rep-section-title { font-size: 15px; font-weight: 800; color: #2c3e50; margin-bottom: 12px; letter-spacing: -0.3px; }
-
-        /* 리포트 카드 박스 여백 압축 */
-        .rep-card-box {
-            background: #fcfcfc; border: 1px solid #edf2f7; border-radius: 16px; padding: 16px 20px;
-            display: flex; flex-direction: column; gap: 12px;
-        }
-        .rep-item { display: flex; align-items: flex-start; gap: 12px; }
         
-        /* 부서명 배지 스타일 */
-        .dept-badge {
-            width: 42px; padding: 3px 0; text-align: center; font-size: 11px; font-weight: 700; border-radius: 5px; flex-shrink: 0; margin-top: 2px;
+        .btn-print {
+            background: #10b981; color: white; border: none; font-weight: 700; cursor: pointer;
+            padding: 10px 20px; border-radius: 30px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;
+            box-shadow: 0 4px 10px rgba(16,185,129,0.2); transition: all 0.15s;
         }
-        .this-week .dept-badge { border: 1.5px solid #1a73e8; color: #1a73e8; background: #f4f8ff; }
-        .last-week .dept-badge { border: 1.5px solid #d4af37; color: #b8860b; background: #fffdf0; }
+        .btn-print:hover { background: #059669; transform: translateY(-1px); }
 
-        /* 업무 내용 (글씨 크기 줄여 가독성 최적화) */
-        .dept-content {
-            flex: 1; font-size: 13.5px; color: #2d3748; line-height: 1.6; font-weight: 500;
-            white-space: pre-wrap; outline: none; padding: 2px; border-radius: 4px;
+        /* ── 🖨️ 주간보고서 프리뷰 칠판 (정형 표 양식 초압축) ── */
+        .preview-section {
+            background: var(--canvas); border: 1px solid var(--line); border-radius: 12px;
+            padding: 35px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);
         }
-        .dept-content:hover { background: #fffde7; cursor: edit; box-shadow: 0 0 0 1px #ffd54f; }
-        .dept-content:focus { background: #fffde7; box-shadow: 0 0 0 2px #1a73e8; }
-        .no-data-text { color: #a0aec0; font-size: 13px; font-style: italic; font-weight: 400; }
+        
+        .preview-title-wrap {
+            display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 24px;
+        }
+        .preview-title-wrap img { width: 32px; height: 32px; object-fit: contain; }
+        .preview-title { font-size: 20px; font-weight: 800; color: #111; letter-spacing: -0.5px; }
+        
+        /* 세련된 격자 디자인 표 선 두께 최소화 */
+        .preview-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .preview-table th, .preview-table td { border: 1px solid var(--line); padding: 12px 14px; font-size: 13.5px; vertical-align: top; }
+        
+        /* 좌측 실국 헤더 스펙 (정밀 고정 순서) */
+        .preview-table th { 
+            background: #f8fafc; font-weight: 700; text-align: center; width: 110px; 
+            color: #1e293b; vertical-align: middle; 
+        }
+        
+        /* 우측 본문 데이터 영역 정돈 */
+        .data-container { display: flex; flex-direction: column; gap: 8px; }
+        .work-text { font-weight: 500; color: #1e293b; white-space: pre-wrap; line-height: 1.5; outline: none; }
+        
+        /* 출장/근태 한줄 인라인 라벨 배지 서식 */
+        .sub-block { font-size: 12.5px; line-height: 1.4; display: flex; align-items: flex-start; gap: 4px; padding-top: 4px; }
+        .sub-block.biz { color: #1d4ed8; border-top: 1px dashed #e2e8f0; }
+        .sub-block.vac { color: #b45309; }
+        .sub-block strong { font-weight: 700; flex-shrink: 0; }
+        .sub-block span { white-space: pre-wrap; }
 
-        .rep-footer {
-            margin-top: 36px; padding-top: 16px; border-top: 1px solid #edf2f7;
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 12px; color: #718096; font-weight: 600;
+        .no-data { color: #cbd5e1; font-style: italic; font-size: 13px; font-weight: 400; }
+
+        /* 하단 서명부 푸터 */
+        .preview-footer {
+            margin-top: 35px; padding-top: 14px; border-top: 1px solid var(--line-soft);
+            display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #64748b; font-weight: 600;
         }
 
-        /* ── 🖨️ 인쇄 제어 (A4 정비율 초압축) ── */
+        /* ── 🖨️ 인쇄 실행 시 강제 화면 최적화 압축 서식 ── */
         @media print {
-            @page { size: A4 portrait; margin: 0; }
-            body { background: #fff; padding: 0; color: #000; }
+            @page { size: A4 portrait; margin: 12mm 14mm; }
+            body { background: #fff; padding: 0; color: #000 !important; }
             .topbar, .panel, .btn-print { display: none !important; }
             .wrap { max-width: none; width: 100%; padding: 0; }
-            .report-paper { box-shadow: none; border-radius: 0; padding: 15mm 15mm; min-height: 297mm; }
-            .report-paper::before { height: 14px; }
-            .dept-content:hover { background: transparent !important; box-shadow: none !important; }
-            .rep-card-box { background: #fff !important; border: 1px solid #cbd5e0 !important; padding: 14px 18px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .dept-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .no-data-text { display: none !important; } /* 인쇄 시 미입력 부서는 공간 절약을 위해 가림 처리 */
+            .preview-section { border: none; padding: 0; background: #fff; }
+            
+            .preview-title-wrap { margin-bottom: 20px; }
+            .preview-title-wrap img { width: 26px; height: 26px; display: inline-block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .preview-title { font-size: 16pt; font-weight: 800; }
+            
+            /* 새 사진 요청 서식처럼 얇고 미려한 테두리선 정의 */
+            .preview-table { width: 100%; border-collapse: collapse; }
+            .preview-table th, .preview-table td { 
+                padding: 6px 8px !important; 
+                font-size: 10pt !important; 
+                line-height: 1.4 !important;
+                border: 1px solid #94a3b8 !important; /* 모던 아키텍처 슬림 그레이 라인 */
+                height: auto !important;
+            }
+            .preview-table th { 
+                background: #f1f5f9 !important; 
+                width: 95px !important;
+                font-weight: 700;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact; 
+            }
+            .work-text { font-size: 10pt !important; color: #000 !important; }
+            .sub-block { font-size: 9pt !important; margin-top: 2px; padding-top: 2px; }
+            .sub-block.biz { color: #000 !important; border-top: 1px dashed #cbd5e0 !important; }
+            .sub-block.vac { color: #000 !important; }
+            .no-data { display: none !important; }
         }
     </style>
 </head>
@@ -138,64 +166,75 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             업무포털
         </a>
-        <span class="crumb">집행부 업무포털 <span class="sep">/</span> 주간업무 리포트</span>
+        <span class="crumb">집행부 업무포털 <span class="sep">/</span> 주간업무 및 출장·근태 통합 관리</span>
     </div>
 
     <div class="wrap">
         
         <div class="panel">
-            <h2 style="font-size: 15px; font-weight: 800; color: #1557b0;">⚡ 실·국별 주간 활동 내용 입력</h2>
-            <div class="form-row">
-                <select id="inputPeriod" onchange="updateDeptPanel()">
-                    <option value="thisWeek">이번 주 활동계획</option>
-                    <option value="lastWeek">지난 주 주요활동</option>
-                </select>
-                <select id="inputDept" onchange="updateDeptPanel()">
-                    <option value="">-- 실·국 선택 --</option>
-                    <option value="조직">조직국</option>
-                    <option value="복지">복지국</option>
-                    <option value="산안">산업안전국</option>
-                    <option value="교문">교육문화국</option>
-                    <option value="총무">총무국</option>
-                    <option value="기획">기획국</option>
-                    <option value="정책">정책국</option>
+            <h2>🏢 실·국 선택 및 항목별 내용 입력</h2>
+            <div>
+                <select id="selectDept" onchange="checkDeptSelection()">
+                    <option value="">-- 실·국을 선택해 주세요 --</option>
+                    <option value="총무국">총무국</option>
+                    <option value="조직쟁의실">조직쟁의실</option>
+                    <option value="기획국">기획국</option>
+                    <option value="정책국">정책국</option>
+                    <option value="복지국">복지국</option>
+                    <option value="산업안전국">산업안전국</option>
+                    <option value="교육문화국">교육문화국</option>
                 </select>
             </div>
-            
-            <div id="inputFormBlock" class="disabled-content" style="display: flex; flex-direction: column; gap: 12px;">
-                <textarea id="textContent" placeholder="활동 계획을 입력하세요. 내용을 모두 지우고 저장을 누르면 리포트에서 삭제됩니다."></textarea>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 12px; color: #e67e22; font-weight: 600;">💡 텍스트를 비우고 저장하면 내용이 완전히 삭제됩니다.</span>
-                    <button class="btn-save" onclick="saveData()">리포트판에 저장</button>
+
+            <div id="inputFormForm" class="disabled-content">
+                <div class="input-grid">
+                    <div class="input-cell">
+                        <label>✍️ 주간 주요 업무계획</label>
+                        <textarea id="workInput" placeholder="이번 주 및 다음 주 주요 계획을 작성하세요."></textarea>
+                    </div>
+                    <div class="input-cell">
+                        <label>🏃 출장 현황</label>
+                        <textarea id="bizInput" placeholder="예) [6/15] 위원장-한전본사 국회대응 출장&#10;[6/17] 국장-지역본부 순회"></textarea>
+                    </div>
+                    <div class="input-cell">
+                        <label>📄 근태 현황 (휴가/연차 등)</label>
+                        <textarea id="vacInput" placeholder="예) [6/16] 총무국장-연차&#10;[6/19 오후] 기획실장-반차"></textarea>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
+                    <span style="font-size: 12px; color: #e2e8f0; font-weight: 500; background:#475569; padding:4px 8px; border-radius:4px;">💡 입력칸을 완전히 비우고 저장하면 해당 항목이 깔끔히 삭제됩니다.</span>
+                    <button class="btn-save" onclick="saveDataToServer()">통합 내용 저장</button>
                 </div>
             </div>
         </div>
 
         <div style="text-align: right; margin-bottom: 16px;">
             <button class="btn-print" onclick="window.print()">
-                🖨️ 주간보고서 인쇄하기
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                지정 양식 보고서 인쇄 (A4 1장 압축)
             </button>
         </div>
 
-        <div class="report-paper">
-            <div class="rep-header">
-                <div class="rep-title">전국전력노동조합 주간업무</div>
-                <div class="rep-date">2026. 06. 15 ~ 06. 19</div>
+        <div class="preview-section">
+            <div class="preview-title-wrap">
+                <img src="https://knewu.netlify.app/icon-192.png" alt="전력노조 로고">
+                <div class="preview-title">주간 업무 계획 및 출장·근태 현황</div>
             </div>
+            
+            <table class="preview-table">
+                <thead>
+                    <tr>
+                        <th style="width: 110px;">실 · 국별</th>
+                        <th>주 요 업 무 계 획  및  출 장 · 근 태  현 황</th>
+                    </tr>
+                </thead>
+                <tbody id="reportRenderBody">
+                    </tbody>
+            </table>
 
-            <div class="rep-section this-week">
-                <div class="rep-section-title">■ 이번 주 활동</div>
-                <div class="rep-card-box" id="thisWeekContainer"></div>
-            </div>
-
-            <div class="rep-section last-week">
-                <div class="rep-section-title">■ 지난 주 활동</div>
-                <div class="rep-card-box" id="lastWeekContainer"></div>
-            </div>
-
-            <div class="rep-footer">
-                <span>발행 | 전국전력노동조합 복지국</span>
-                <span style="font-weight: normal; font-size: 11px; opacity: 0.6;">전국전력노동조합 제24대 집행부 내부문서</span>
+            <div class="preview-footer">
+                <span>전국전력노동조합 집행부</span>
+                <span style="font-weight: normal; font-size: 11px; opacity: 0.6;">제24대 집행부 내부 마감문서</span>
             </div>
         </div>
 
@@ -214,106 +253,123 @@
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        const dbRef = database.ref('official_weekly_report_2026');
+        const dbRef = database.ref('unified_weekly_report_2026');
 
-        const DEPTS_ORDER = ["조직", "복지", "산안", "교문", "총무", "기획", "정책"];
-        let serverData = { thisWeek: {}, lastWeek: {} };
+        // 🚨 요청하신 완벽한 실국 고정 배치 순서 정의
+        const DEPTS_ORDER = ["총무국", "조직쟁의실", "기획국", "정책국", "복지국", "산업안전국", "교육문화국"];
+        let localDataCache = {};
 
-        // 부서나 주기가 바뀔 때 입력창 활성화 및 기존 텍스트 로드 제어
-        function updateDeptPanel() {
-            const period = document.getElementById('inputPeriod').value;
-            const dept = document.getElementById('inputDept').value;
-            const formBlock = document.getElementById('inputFormBlock');
-            const textarea = document.getElementById('textContent');
-
-            if (!dept) {
+        function checkDeptSelection() {
+            const dept = document.getElementById('selectDept').value;
+            const formBlock = document.getElementById('inputFormForm');
+            
+            if(!dept) {
                 formBlock.classList.add('disabled-content');
-                textarea.value = '';
+                document.getElementById('workInput').value = '';
+                document.getElementById('bizInput').value = '';
+                document.getElementById('vacInput').value = '';
                 return;
             }
-
+            
             formBlock.classList.remove('disabled-content');
-            textarea.value = serverData[period]?.[dept] || '';
+            const cached = localDataCache[dept] || {};
+            document.getElementById('workInput').value = cached.work || '';
+            document.getElementById('bizInput').value = cached.biz || '';
+            document.getElementById('vacInput').value = cached.vac || '';
         }
-        
-        function saveData() {
-            const period = document.getElementById('inputPeriod').value;
-            const dept = document.getElementById('inputDept').value;
-            const text = document.getElementById('textContent').value.trim();
 
-            // 🚨 텍스트가 비어있으면 해당 경로를 완전히 삭제(remove)
-            if (text === "") {
-                dbRef.child(period).child(dept).remove().then(() => {
-                    alert(`${dept}국의 내용이 삭제되었습니다.`);
-                    document.getElementById('inputDept').value = "";
-                    updateDeptPanel();
+        function saveDataToServer() {
+            const dept = document.getElementById('selectDept').value;
+            if(!dept) return;
+
+            const work = document.getElementById('workInput').value.trim();
+            const biz = document.getElementById('bizInput').value.trim();
+            const vac = document.getElementById('vacInput').value.trim();
+
+            const packageData = {};
+            if(work) packageData.work = work;
+            if(biz) packageData.biz = biz;
+            if(vac) packageData.vac = vac;
+
+            // 만약 세 칸이 다 비어있다면 데이터베이스 노드 자체를 파괴(완전삭제 구현)
+            if(!work && !biz && !vac) {
+                dbRef.child(dept).remove().then(() => {
+                    alert(`${dept}의 데이터가 성공적으로 완전 삭제되었습니다.`);
+                    document.getElementById('selectDept').value = "";
+                    checkDeptSelection();
                 });
             } else {
-                dbRef.child(period).child(dept).set(text).then(() => {
-                    alert("리포트 보드에 정상 등록되었습니다.");
-                    document.getElementById('inputDept').value = "";
-                    updateDeptPanel();
+                dbRef.child(dept).set(packageData).then(() => {
+                    alert(`${dept}의 통합 정보가 등록 및 업데이트되었습니다.`);
+                    document.getElementById('selectDept').value = "";
+                    checkDeptSelection();
                 });
             }
         }
 
-        function directBlurUpdate(period, dept, element) {
-            const updatedText = element.innerText.trim();
-            if (updatedText === "") {
-                dbRef.child(period).child(dept).remove();
+        // 화면 표 내부를 직접 마우스 클릭 연동하여 실시간 라이브 수정 기능 연계
+        function liveBlurBackup(dept, type, element) {
+            const rawText = element.innerText.trim();
+            if(rawText === "" || rawText === "-") {
+                dbRef.child(dept).child(type).remove();
             } else {
-                dbRef.child(period).child(dept).set(updatedText);
+                dbRef.child(dept).child(type).set(rawText);
             }
         }
 
-        function renderReportView() {
-            const thisContainer = document.getElementById('thisWeekContainer');
-            const lastContainer = document.getElementById('lastWeekContainer');
+        function renderStructuredTable() {
+            const tbody = document.getElementById('reportRenderBody');
+            tbody.innerHTML = '';
 
-            thisContainer.innerHTML = '';
-            lastContainer.innerHTML = '';
-
-            // 1. 이번주 활동 렌더링
-            let thisCount = 0;
             DEPTS_ORDER.forEach(dept => {
-                const text = serverData.thisWeek?.[dept] || '';
-                if (text) {
-                    thisCount++;
-                    thisContainer.innerHTML += `
-                        <div class="rep-item">
-                            <div class="dept-badge">${dept}</div>
-                            <div class="dept-content" contenteditable="true" onblur="directBlurUpdate('thisWeek', '${dept}', this)">${text}</div>
-                        </div>
-                    `;
-                }
-            });
-            if (thisCount === 0) thisContainer.innerHTML = '<div class="no-data-text">이번 주 활동 계획이 비어있습니다.</div>';
+                const data = localDataCache[dept] || {};
+                
+                const workContent = data.work ? data.work : '';
+                const bizContent = data.biz ? data.biz : '';
+                const vacContent = data.vac ? data.vac : '';
 
-            // 2. 지난주 활동 렌더링
-            let lastCount = 0;
-            DEPTS_ORDER.forEach(dept => {
-                const text = serverData.lastWeek?.[dept] || '';
-                if (text) {
-                    lastCount++;
-                    lastContainer.innerHTML += `
-                        <div class="rep-item">
-                            <div class="dept-badge">${dept}</div>
-                            <div class="dept-content" contenteditable="true" onblur="directBlurUpdate('lastWeek', '${dept}', this)">${text}</div>
-                        </div>
+                // 만약 아무것도 안 적혔으면 깔끔하게 미입력 한 줄 안내 출력
+                if(!workContent && !bizContent && !vacContent) {
+                    tbody.innerHTML += `
+                        <tr>
+                            <th>${dept}</th>
+                            <td class="no-data">- 주요 활동 및 출장·근태 계획 없음</td>
+                        </tr>
                     `;
+                    return;
                 }
+
+                let workHTML = workContent ? `<div class="work-text" contenteditable="true" onblur="liveBlurBackup('${dept}', 'work', this)">${workContent}</div>` : '';
+                let bizHTML = bizContent ? `<div class="sub-block biz"><strong>🏃 [출장]</strong> <span contenteditable="true" onblur="liveBlurBackup('${dept}', 'biz', this)">${bizContent}</span></div>` : '';
+                let vacHTML = vacContent ? `<div class="sub-block vac"><strong>📄 [근태]</strong> <span contenteditable="true" onblur="liveBlurBackup('${dept}', 'vac', this)">${vacContent}</span></div>` : '';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <th>${dept}</th>
+                        <td>
+                            <div class="data-container">
+                                ${workHTML}
+                                ${bizHTML}
+                                ${vacHTML}
+                            </div>
+                        </td>
+                    </tr>
+                `;
             });
-            if (lastCount === 0) lastContainer.innerHTML = '<div class="no-data-text">지난 주 활동 내역이 비어있습니다.</div>';
         }
 
+        // 실시간 스트리밍 소켓 바인딩
         dbRef.on('value', (snapshot) => {
-            serverData = snapshot.val() || { thisWeek: {}, lastWeek: {} };
-            renderReportView();
-            // 데이터가 실시간으로 바뀔 때 입력창 텍스트도 동기화 유지
-            const period = document.getElementById('inputPeriod').value;
-            const dept = document.getElementById('inputDept').value;
-            if (dept) {
-                document.getElementById('textContent').value = serverData[period]?.[dept] || '';
+            localDataCache = snapshot.val() || {};
+            renderStructuredTable();
+            
+            // 입력창 열려있을 때 실시간 동기화 데이터 유지
+            const dept = document.getElementById('selectDept').value;
+            if(dept) {
+                const cached = localDataCache[dept] || {};
+                document.getElementById('workInput').value = cached.work || '';
+                document.getElementById('bizInput').value = cached.biz || '';
+                document.getElementById('vacInput').value = cached.vac || '';
             }
         });
     </script>
