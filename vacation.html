@@ -305,7 +305,9 @@
             font-size: 11.5px;
             font-weight: 600;
             letter-spacing: -0.3px;
-            border-left: 3px solid currentColor;
+            border-left: 3px solid var(--c, #5f6368);
+            color: var(--c, #5f6368);
+            background: var(--c-tint, #f1f3f4);
             line-height: 1.4;
         }
         .vacation-badge .vname {
@@ -375,20 +377,36 @@
             .day-number .num { width: 14px; height: 14px; }
             .holiday-name { font-size: 7pt; }
 
-            /* 인쇄 시: 풀네임 숨기고 약칭 표시 + 뱃지 초압축 */
-            .vacation-list { gap: 1.5px; }
-            .vacation-badge {
-                border-radius: 2px;
-                font-size: 7.5pt;
-                font-weight: 700;
-                padding: 0.5px 3px;
-                line-height: 1.25;
-                border-left-width: 2px;
-                letter-spacing: -0.4px;
-                break-inside: avoid;
+            /* 인쇄 시: 약칭만 표시 + 작은 네모 칩을 한 줄에 3개씩 가로 배치 */
+            .vacation-list {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2px;
             }
-            .vacation-badge .vname-full  { display: none; }
-            .vacation-badge .vname-short { display: inline; }
+            .vacation-badge {
+                display: block;
+                border: none;
+                border-radius: 3px;
+                font-size: 7pt;
+                font-weight: 700;
+                padding: 1.5px 1px;
+                line-height: 1.2;
+                letter-spacing: -0.5px;
+                text-align: center;
+                break-inside: avoid;
+                background: var(--c, #5f6368) !important;
+                color: #fff !important;
+            }
+            /* 칩 배경을 사람별 색으로 꽉 채우기 (연한 틴트 → 진한 단색) */
+            .vacation-badge .vname-full,
+            .vacation-badge .del-btn { display: none; }
+            .vacation-badge .vname-short {
+                display: block;
+                color: #fff;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
             .month-section:not(:first-child) .legend { display: none; }
         }
     </style>
@@ -695,8 +713,8 @@
                             const c = colorFor(name);
                             const badge = document.createElement('div');
                             badge.className = 'vacation-badge';
-                            badge.style.color = c;
-                            badge.style.background = tint(c, 0.10);
+                            badge.style.setProperty('--c', c);
+                            badge.style.setProperty('--c-tint', tint(c, 0.10));
                             badge.innerHTML = `
                                 <span class="vname vname-full">${name}</span>
                                 <span class="vname vname-short">${shortName(name)}</span>
