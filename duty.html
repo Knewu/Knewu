@@ -189,11 +189,10 @@
         /* ── 취합 현황판 테이블 스타일 ── */
         .preview-section { background: var(--canvas); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
         
-        /* 웹 화면용 인쇄 타이틀 로고 세팅 */
         .preview-title-wrap {
             display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px;
         }
-        .preview-title-wrap img { width: 28px; height: 28px; object-fit: contain; }
+        .preview-title-wrap img { width: 32px; height: 32px; object-fit: contain; }
         .preview-title { font-size: 18px; font-weight: 800; color: var(--ink); }
         
         .preview-table { width: 100%; border-collapse: collapse; }
@@ -202,22 +201,22 @@
         .preview-table td { white-space: pre-wrap; line-height: 1.6; }
         
         /* 보고서용 출장/근태 소섹션 */
-        .report-sub-block { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 13px; }
+        .report-sub-block { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 13px; }
         .report-sub-block strong { font-weight: 700; }
         .report-sub-block.biz { color: #1a73e8; }
         .report-sub-block.vac { color: #b06000; }
 
-        /* ── 🖨️ 인쇄 전용 스타일 (초압축 A4 1장 타겟팅) ── */
+        /* ── 🖨️ 인쇄 전용 스타일 (축구장 여백 파괴, A4 1장 타겟팅 초압축) ── */
         @media print {
-            @page { size: A4; margin: 12mm 15mm; }
+            @page { size: A4 portrait; margin: 10mm 12mm; }
             body { background: #fff; padding: 0; min-height: 0; }
             .topbar, .dept-tabs, .panel, .btn-print, header, .del-btn, .schedule-form { display: none !important; }
             .wrap { padding: 0; max-width: none; width: 100%; }
             .preview-section { border: none; padding: 0; background: #fff; }
             
             .preview-title-wrap { margin-bottom: 15px; gap: 8px; }
-            .preview-title-wrap img { width: 24px; height: 24px; display: inline-block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .preview-title { font-size: 15pt; font-weight: 900; color: #000 !important; }
+            .preview-title-wrap img { width: 26px; height: 26px; display: inline-block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .preview-title { font-size: 16pt; font-weight: 900; color: #000 !important; }
             
             .preview-table { width: 100%; margin: 0; table-layout: fixed; }
             .preview-table th, .preview-table td { 
@@ -225,13 +224,15 @@
                 font-size: 10pt !important; 
                 line-height: 1.4 !important; 
                 word-break: break-all;
-                border: 1px solid #555 !important;
+                border: 1px solid #444 !important;
+                height: auto !important; /* 고정 높이 강제 제거 */
             }
             .preview-table th { 
                 background: #f2f2f2 !important; 
                 font-weight: bold; 
                 text-align: center; 
-                width: 65px !important;
+                width: 90px !important; /* 부서 칸 너비 */
+                vertical-align: middle !important;
                 -webkit-print-color-adjust: exact; 
                 print-color-adjust: exact; 
             }
@@ -301,13 +302,13 @@
 
         <div class="preview-section">
             <div class="preview-title-wrap">
-                <img src="https://knewu.netlify.app/icon-192.png" alt="로고">
+                <img src="https://knewu.netlify.app/icon-192.png" alt="전력노조 로고">
                 <div class="preview-title">제24대 집행부 주간업무 및 출장·근태 현황</div>
             </div>
             <table class="preview-table">
                 <thead>
                     <tr>
-                        <th style="width:75px;">실·국별</th>
+                        <th style="width:90px;">실·국별</th>
                         <th>주요 업무 계획 및 출장 · 근태 현황</th>
                     </tr>
                 </thead>
@@ -428,22 +429,24 @@
                     if (deptData.schedules) {
                         const sList = Object.values(deptData.schedules).sort((a, b) => new Date(a.start) - new Date(b.start));
                         
+                        // 1. [출장 현황] 가로 컴팩트 나열로 변경 (세로 낭비 제거)
                         const bizItems = sList.filter(s => s.type === '출장');
                         if (bizItems.length > 0) {
-                            bizHTML = `<div class="report-sub-block biz"><strong>🏃 [출장 현황]</strong><br>` + 
-                                bizItems.map(s => {
-                                    const period = s.start === s.end ? s.start.slice(5) : `${s.start.slice(5)}~${s.end.slice(5)}`;
-                                    return `• [${period}] ${s.text}`;
-                                }).join('<br>') + `</div>`;
+                            const bizStrings = bizItems.map(s => {
+                                const period = s.start === s.end ? s.start.slice(5) : `${s.start.slice(5)}~${s.end.slice(5)}`;
+                                return `[${period}] ${s.text}`;
+                            });
+                            bizHTML = `<div class="report-sub-block biz"><strong>🏃 [출장]</strong> ${bizStrings.join(', ')}</div>`;
                         }
 
+                        // 2. [근태 현황] 가로 컴팩트 나열로 변경 (세로 낭비 제거)
                         const vacItems = sList.filter(s => s.type === '근태');
                         if (vacItems.length > 0) {
-                            vacHTML = `<div class="report-sub-block vac"><strong>📄 [근태 현황]</strong><br>` + 
-                                vacItems.map(s => {
-                                    const period = s.start === s.end ? s.start.slice(5) : `${s.start.slice(5)}~${s.end.slice(5)}`;
-                                    return `• [${period}] ${s.text}`;
-                                }).join('<br>') + `</div>`;
+                            const vacStrings = vacItems.map(s => {
+                                const period = s.start === s.end ? s.start.slice(5) : `${s.start.slice(5)}~${s.end.slice(5)}`;
+                                return `[${period}] ${s.text}`;
+                            });
+                            vacHTML = `<div class="report-sub-block vac"><strong>📄 [근태]</strong> ${vacStrings.join(', ')}</div>`;
                         }
                     }
 
