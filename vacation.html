@@ -314,6 +314,8 @@
             white-space: nowrap;
             color: var(--ink);
         }
+        /* 화면에서는 풀네임만, 약칭은 숨김 */
+        .vacation-badge .vname-short { display: none; }
         .vacation-badge .del-btn {
             cursor: pointer;
             font-weight: 700;
@@ -355,27 +357,38 @@
                 page-break-after: always; break-after: page;
             }
             .month-section:last-child { page-break-after: auto; break-after: auto; }
-            .month-title { font-size: 17px; margin-bottom: 8px; }
+            .month-title { font-size: 16px; margin-bottom: 7px; }
             .calendar-grid { border-color: #9aa0a6; }
-            .day-header { background: #f1f3f4 !important; border-color: #9aa0a6; }
+            .day-header { background: #f1f3f4 !important; border-color: #9aa0a6; padding: 4px 0; font-size: 8pt; }
             /* 고정 높이를 풀어 인원이 많아도 잘리지 않게 함.
                최소 높이만 주고, 휴가 인원수만큼 칸이 늘어나도록. */
-            .calendar-grid { grid-auto-rows: minmax(2.4cm, auto); }
+            .calendar-grid { grid-auto-rows: minmax(2.0cm, auto); }
             .day-cell {
-                min-height: 2.4cm; height: auto;
+                min-height: 2.0cm; height: auto;
+                padding: 3px 4px;
                 border-color: #c5c8cc;
                 cursor: default;
                 overflow: visible;
             }
             .day-cell:hover { background: #fff; }
-            /* 한 주(행)가 페이지 경계에서 잘리지 않도록 */
-            .vacation-list { gap: 2px; }
+            .day-number { font-size: 9pt; margin-bottom: 3px; }
+            .day-number .num { width: 14px; height: 14px; }
+            .holiday-name { font-size: 7pt; }
+
+            /* 인쇄 시: 풀네임 숨기고 약칭 표시 + 뱃지 초압축 */
+            .vacation-list { gap: 1.5px; }
             .vacation-badge {
-                border-radius: 3px;
-                font-size: 8pt;
-                padding: 1px 5px;
+                border-radius: 2px;
+                font-size: 7.5pt;
+                font-weight: 700;
+                padding: 0.5px 3px;
+                line-height: 1.25;
+                border-left-width: 2px;
+                letter-spacing: -0.4px;
                 break-inside: avoid;
             }
+            .vacation-badge .vname-full  { display: none; }
+            .vacation-badge .vname-short { display: inline; }
             .month-section:not(:first-child) .legend { display: none; }
         }
     </style>
@@ -486,6 +499,17 @@
             const n = parseInt(hex.slice(1), 16);
             return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
         }
+
+        // 인쇄 전용 약칭 (화면에서는 풀네임, 인쇄 시에만 짧게 표시)
+        const SHORT_NAME = {
+            "위원장": "長", "수석부위원장": "수석", "사무처장": "사무長",
+            "기획처장": "기획長", "대외협력본부장": "대협長", "총무국장": "총무",
+            "조직쟁의실장": "조직", "기획국장": "기획", "정책국장": "정책",
+            "복지국장": "복지", "산업안전국장": "산안", "교육문화국장": "교문",
+            "손혜석과장": "혜석", "홍수정부장": "수정", "이종찬차장": "종찬",
+            "이경현과장": "경현"
+        };
+        function shortName(name) { return SHORT_NAME[name] || name; }
 
         const monthsToRender = [
             { year: 2026, month: 7 },
@@ -674,7 +698,8 @@
                             badge.style.color = c;
                             badge.style.background = tint(c, 0.10);
                             badge.innerHTML = `
-                                <span class="vname">${name}</span>
+                                <span class="vname vname-full">${name}</span>
+                                <span class="vname vname-short">${shortName(name)}</span>
                                 <span class="del-btn" onclick="deleteVacation('${dateStr}', '${name}')">×</span>
                             `;
                             listEl.appendChild(badge);
