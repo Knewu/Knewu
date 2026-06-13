@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전국전력노동조합 주간업무 및 출장·근태 현황</title>
+    <title>주간업무 및 출장·근태 현황 시스템</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
@@ -11,15 +11,12 @@
     <style>
         :root {
             --accent: #1557b0;
-            --accent-soft: #e8f0fe;
-            --ink: #202124;
+            --ink: #111111;
             --ink-soft: #5f6368;
-            --line: #7f8c8d;
+            --line: #000000;
             --line-light: #cbd5e1;
             --page: #f8fafc;
             --canvas: #ffffff;
-            --biz-color: #d1c4e9; /* 실물 사진 속 출장 보라색 톤 */
-            --vac-color: #e0e0e0; /* 실물 사진 속 휴가 회색 톤 */
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,115 +29,111 @@
         .topbar {
             background: var(--canvas); border-bottom: 1px solid var(--line-light);
             padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 14px;
-            position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,.05);
+            position: sticky; top: 0; z-index: 100;
         }
         .back-btn {
             display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
             color: var(--ink-soft); font-size: 14px; font-weight: 600; padding: 7px 12px; border-radius: 8px;
         }
-        .back-btn:hover { background: var(--line-light); }
+        .back-btn:hover { background: #e2e8f0; }
         .topbar .crumb { font-size: 14px; font-weight: 700; }
 
-        .wrap { max-width: 1060px; margin: 0 auto; padding: 24px 16px; }
+        .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
 
-        /* ── 대시보드 컨트롤 패널 ── */
+        /* ── 관리자 대시보드 패널 ── */
         .panel {
-            background: var(--canvas); border: 1px solid var(--line-light); border-radius: 16px;
-            padding: 24px; margin-bottom: 30px; display: flex; flex-direction: column; gap: 20px;
+            background: var(--canvas); border: 1px solid var(--line-light); border-radius: 12px;
+            padding: 24px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 18px;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
-        .panel h2 { font-size: 16px; font-weight: 800; color: var(--accent); }
+        .panel h2 { font-size: 15px; font-weight: 800; color: var(--accent); }
 
-        /* 부서 네모칸 선택 버튼 그룹 */
-        .dept-btn-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-        .dept-select-btn {
-            padding: 10px 16px; font-family: inherit; font-size: 14px; font-weight: 700;
-            background: #f1f5f9; border: 1px solid var(--line-light); border-radius: 8px;
-            color: #475569; cursor: pointer; transition: all 0.15s;
+        /* 부서 네모 단추 그리드 */
+        .dept-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+        .dept-btn {
+            padding: 10px 16px; font-family: inherit; font-size: 13.5px; font-weight: 700;
+            background: #f1f5f9; border: 1px solid var(--line-light); border-radius: 6px;
+            color: #475569; cursor: pointer; transition: all 0.1s;
         }
-        .dept-select-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .dept-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        .disabled-content { opacity: 0.2; pointer-events: none; transition: opacity 0.2s; }
+        .disabled-content { opacity: 0.15; pointer-events: none; }
 
-        /* 입력 폼 그리드 구조 */
-        .main-form-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; margin-top: 6px; }
-        @media (max-width: 850px) { .main-form-grid { grid-template-columns: 1fr; } }
+        /* 입력 메인 영역 슬림화 */
+        .form-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; }
+        @media (max-width: 850px) { .form-layout { grid-template-columns: 1fr; } }
 
-        .form-section { display: flex; flex-direction: column; gap: 10px; }
-        .form-section h3 { font-size: 14px; font-weight: 700; color: #334155; border-left: 4px solid var(--accent); padding-left: 8px; }
-
+        .form-cell { display: flex; flex-direction: column; gap: 6px; }
+        .form-cell label { font-size: 13px; font-weight: 700; color: #334155; }
+        
         textarea {
-            width: 100%; height: 160px; padding: 12px; font-family: inherit; font-size: 14px;
-            border: 1px solid var(--line-light); border-radius: 8px; resize: none; line-height: 1.6;
+            width: 100%; height: 100px; padding: 10px; font-family: inherit; font-size: 13.5px;
+            border: 1px solid var(--line-light); border-radius: 6px; resize: none; line-height: 1.5;
+        }
+        textarea:focus { border-color: var(--accent); outline: none; }
+
+        /* 📅 7일 직관적 다중 선택 달력 판 */
+        .cal-box { background: #f8fafc; border: 1px solid var(--line-light); border-radius: 8px; padding: 12px; }
+        .cal-days-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; }
+        .day-node {
+            background: white; border: 1px solid var(--line-light); border-radius: 4px;
+            padding: 8px 2px; text-align: center; cursor: pointer; user-select: none;
+        }
+        .day-node .n-w { font-size: 12px; font-weight: 700; color: #1e293b; }
+        .day-node .n-d { font-size: 10px; color: #64748b; margin-top: 1px; }
+        
+        /* 다중 선택 온오프 칼라 */
+        .day-node.active { background: #2563eb !important; border-color: #2563eb; }
+        .day-node.active * { color: white !important; }
+
+        .btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+        .btn-submit { background: var(--accent); color: white; border: none; font-weight: 700; cursor: pointer; padding: 10px 20px; border-radius: 6px; font-size: 13.5px; }
+        .btn-clear { background: #dc2626; color: white; border: none; font-weight: 700; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13.5px; }
+
+        .btn-print-trigger {
+            background: #22c55e; color: white; border: none; font-weight: 700; cursor: pointer;
+            padding: 12px 24px; border-radius: 30px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;
+            box-shadow: 0 4px 10px rgba(34,197,94,0.2);
         }
 
-        /* 📅 숙박 예약식 5일 기간 선택 달력 서식 */
-        .scheduler-box { background: #f8fafc; border: 1px solid var(--line-light); border-radius: 10px; padding: 16px; }
-        .radio-inline { display: flex; gap: 16px; margin-bottom: 12px; font-size: 14px; font-weight: 700; }
-        .radio-inline input { margin-right: 4px; cursor: pointer; }
+        /* ── 🖨️ 인쇄/출력용 정형 문서 스타일 (실물 완벽 일치 서식) ── */
+        .doc-page-wrap { display: flex; flex-direction: column; gap: 40px; }
+        .doc-sheet { background: var(--canvas); border: 1px solid var(--line); padding: 40px 45px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+
+        .doc-header-title { text-align: center; font-size: 24px; font-weight: 800; text-decoration: underline; margin-bottom: 24px; color: #000; }
         
-        .calendar-week-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px; }
-        .cal-day-node {
-            background: white; border: 1px solid var(--line-light); border-radius: 6px;
-            padding: 10px 4px; text-align: center; cursor: pointer; transition: all 0.15s;
-        }
-        .cal-day-node .d-name { font-size: 13px; font-weight: 700; color: #1e293b; }
-        .cal-day-node .d-date { font-size: 11px; color: #64748b; margin-top: 2px; }
-        .cal-day-node:hover { background: #f1f5f9; }
+        /* 1) 상단 주요업무 요약 표 */
+        .report-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 10px; }
+        .report-table th, .report-table td { border: 1px solid var(--line); padding: 8px 10px; font-size: 13.5px; vertical-align: top; color: #000; }
+        .report-table th { background: #fdd7cc; font-weight: 700; text-align: center; vertical-align: middle; }
+        .report-table td.center-lbl { text-align: center; vertical-align: middle; font-weight: 700; }
+        .report-table td.txt-cell { white-space: pre-wrap; line-height: 1.6; font-weight: 500; }
+
+        /* 2) 하단 출장/근태 종합 현황판 격자 표 (월~일 7일 스펙) */
+        .grid-table { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: center; }
+        .grid-table th, .grid-table td { border: 1px solid var(--line); padding: 6px 2px; font-size: 12.5px; height: 40px; vertical-align: middle; color: #000; }
+        .grid-table th { background: #d9e1f2; font-weight: 700; }
+        .grid-table td.m-name { font-weight: 700; background: #fff; }
+        .grid-table td.m-duty { font-weight: 600; background: #fff; }
         
-        /* 숙박 예약 지정 상태 칼라셋 */
-        .cal-day-node.sel-click { background: #3b82f6 !important; color: white !important; }
-        .cal-day-node.sel-click * { color: white !important; }
-        .cal-day-node.sel-range { background: #eff6ff; border-color: #3b82f6; }
+        /* 현황판 셀 내부 텍스트 노출 스타일 */
+        .badge-cell { font-size: 11px; font-weight: 700; line-height: 1.3; }
+        .badge-cell.출장 { background: #efe9f8 !important; } /* 심플 보라 회색톤 */
+        .badge-cell.근태 { background: #e2e8f0 !important; }
 
-        .btn-action-group { display: flex; justify-content: space-between; align-items: center; }
-        .btn-submit { background: var(--accent); color: white; border: none; font-weight: 700; cursor: pointer; padding: 10px 20px; border-radius: 6px; }
-        .btn-clear { background: #ef4444; color: white; border: none; font-weight: 700; cursor: pointer; padding: 10px 14px; border-radius: 6px; }
-
-        .btn-print {
-            background: #28a745; color: white; border: none; font-weight: 700; cursor: pointer;
-            padding: 12px 24px; border-radius: 30px; font-size: 15px; display: inline-flex; align-items: center; gap: 8px;
-            box-shadow: 0 4px 12px rgba(40,167,69,0.25);
-        }
-
-        /* ── 🖨️ 인쇄 스크린 출력 서식 보드 (실물 사진 대조 100% 매칭 구조) ── */
-        .document-container { display: flex; flex-direction: column; gap: 40px; }
-        .page-sheet { background: var(--canvas); border: 1px solid var(--line); padding: 40px 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-
-        .sheet-title { text-align: center; font-size: 24px; font-weight: 800; text-decoration: underline; margin-bottom: 24px; letter-spacing: -0.5px; }
-        
-        /* 1) 주간업무 요약 표 서식 (두 번째 사진 완벽 일치) */
-        .work-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .work-table th, .work-table td { border: 1px solid #000; padding: 8px 12px; font-size: 14px; vertical-align: top; }
-        .work-table th { background: #fdd7cc; font-weight: 700; text-align: center; font-size: 14px; color: #000; }
-        .work-table td.center-title { text-align: center; vertical-align: middle; font-weight: 700; }
-        .work-table td.content-cell { white-space: pre-wrap; line-height: 1.6; }
-
-        /* 2) 출장/휴가 종합 현황판 격자 서식 (세 번째 사진 완벽 일치) */
-        .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: center; }
-        .schedule-table th, .schedule-table td { border: 1px solid #000; padding: 6px 4px; font-size: 13px; height: 38px; vertical-align: middle; }
-        .schedule-table th { background: #d9e1f2; font-weight: 700; }
-        .schedule-table td.name-lbl { font-weight: 700; background: #fff; }
-        .schedule-table td.duty-lbl { font-weight: 600; background: #fff; }
-        
-        /* 격자 내부 출장/근태 고정 컬러링 색조 */
-        .cell-filled { font-size: 11.5px; font-weight: 700; line-height: 1.3; color: #000; }
-        .cell-filled.출장 { background: var(--biz-color) !important; }
-        .cell-filled.근태 { background: var(--vac-color) !important; }
-
-        /* ── 🖨️ 인쇄 명령어 제어 (실물 복사본 출력 최적화) ── */
+        /* ── 🖨️ 진짜 인쇄 제어 서식 ── */
         @media print {
-            @page { size: A4 portrait; margin: 12mm 15mm; }
+            @page { size: A4 portrait; margin: 12mm 12mm; }
             body { background: #fff; padding: 0; color: #000 !important; }
-            .topbar, .panel, .btn-print { display: none !important; }
+            .topbar, .panel, .btn-print-trigger { display: none !important; }
             .wrap { max-width: none; width: 100%; padding: 0; }
-            .page-sheet { border: none; padding: 0; background: #fff; page-break-after: always; break-after: page; box-shadow: none; }
-            .page-sheet:last-child { page-break-after: auto; break-after: auto; }
+            .doc-sheet { border: none; padding: 0; background: #fff; page-break-after: always; break-after: page; box-shadow: none; }
+            .doc-sheet:last-child { page-break-after: auto; break-after: auto; }
             
-            .work-table th { background: #fdd7cc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .schedule-table th { background: #d9e1f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .cell-filled.출장 { background: var(--biz-color) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .cell-filled.근태 { background: var(--vac-color) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .report-table th { background: #fdd7cc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .grid-table th { background: #d9e1f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .badge-cell.출장 { background: #efe9f8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .badge-cell.근태 { background: #e2e8f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
 </head>
@@ -151,69 +144,65 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             업무포털
         </a>
-        <span class="crumb">집행부 업무포털 <span class="sep">/</span> 주간업무 및 출장·근태 통합 관리</span>
+        <span class="crumb">집행부 업무포털 <span class="sep">/</span> 주간 현황 종합 관리</span>
     </div>
 
     <div class="wrap">
         
         <div class="panel">
-            <h2>🏢 담당 실·국 단추 선택</h2>
-            <div class="dept-btn-grid" id="deptBtnGroup">
-                </div>
+            <h2>🏢 실·국 선택 단추</h2>
+            <div class="dept-grid" id="deptBtnZone"></div>
 
-            <div id="formContainerBlock" class="disabled-content">
-                <div class="main-form-grid">
+            <div id="inputFormBlock" class="disabled-content">
+                <div class="form-layout">
                     
-                    <div class="form-section">
-                        <h3 id="formWorkTitle">✍️ 주간 주요 업무내용 입력</h3>
-                        <textarea id="workTextArea" placeholder="진행 상황 및 계획을 입력하세요. 엔터(줄바꿈)를 치며 자유롭게 작성하시면 요약본 칸에 그대로 정렬됩니다."></textarea>
-                        <div style="text-align: right; margin-top: 4px;">
-                            <button class="btn-submit" onclick="saveWorkText()">업무내용 임시저장</button>
-                        </div>
+                    <div class="form-cell">
+                        <label id="lblWorkTitle">✍️ 주요 업무계획 입력</label>
+                        <textarea id="txWork" placeholder="이번 주 및 다음 주 주요 업무 내용을 기술하세요."></textarea>
                     </div>
 
-                    <div class="form-section">
-                        <h3>📅 출장 · 근태 일정 기간 지정 (숙박 예약식 클릭)</h3>
-                        <div class="scheduler-box">
-                            <div class="radio-inline">
-                                <label><input type="radio" name="scheduleType" value="출장" checked> 🏃 출장 등록</label>
-                                <label><input type="radio" name="scheduleType" value="근태"> 📄 근태 등록 (연차/휴가/반차)</label>
+                    <div class="form-cell">
+                        <label>📅 출장 · 근태 요일 다중 선택 (클릭 시 온/오프)</label>
+                        <div class="cal-box">
+                            <div style="display: flex; gap: 14px; margin-bottom: 8px; font-size: 13.5px; font-weight: 700;">
+                                <label><input type="radio" name="scType" value="출장" checked> 🏃 출장</label>
+                                <label><input type="radio" name="scType" value="근태"> 📄 근태 (휴가/연차)</label>
                             </div>
                             
-                            <div class="calendar-week-row" id="calWeekRow">
-                                <div class="cal-day-node" data-day="월" onclick="handleRangeClick('월')"><div class="d-name">월요일</div><div class="d-date">6/15</div></div>
-                                <div class="cal-day-node" data-day="화" onclick="handleRangeClick('화')"><div class="d-name">화요일</div><div class="d-date">6/16</div></div>
-                                <div class="cal-day-node" data-day="수" onclick="handleRangeClick('수')"><div class="d-name">수요일</div><div class="d-date">6/17</div></div>
-                                <div class="cal-day-node" data-day="목" onclick="handleRangeClick('목')"><div class="d-name">목요일</div><div class="d-date">6/18</div></div>
-                                <div class="cal-day-node" data-day="금" onclick="handleRangeClick('금')"><div class="d-name">금요일</div><div class="d-date">6/19</div></div>
+                            <div class="cal-days-row" id="calDaysRow">
+                                <div class="day-node" data-w="월" onclick="toggleDayNode('월')"><div class="n-w">월</div><div class="n-d" id="cd-월"></div></div>
+                                <div class="day-node" data-w="화" onclick="toggleDayNode('화')"><div class="n-w">화</div><div class="n-d" id="cd-화"></div></div>
+                                <div class="day-node" data-w="수" onclick="toggleDayNode('수')"><div class="n-w">수</div><div class="n-d" id="cd-수"></div></div>
+                                <div class="day-node" data-w="목" onclick="toggleDayNode('목')"><div class="n-w">목</div><div class="n-d" id="cd-목"></div></div>
+                                <div class="day-node" data-w="금" onclick="toggleDayNode('금')"><div class="n-w">금</div><div class="n-d" id="cd-금"></div></div>
+                                <div class="day-node" data-w="토" onclick="toggleDayNode('토')"><div class="n-w">토</div><div class="n-d" id="cd-토"></div></div>
+                                <div class="day-node" data-w="일" onclick="toggleDayNode('일')"><div class="n-w">일</div><div class="n-d" id="cd-일"></div></div>
                             </div>
 
-                            <div style="margin-bottom: 12px;">
-                                <input type="text" id="scheduleDetailText" style="width:100%;" placeholder="출장지 또는 사유 기재 (예: 노사합동 봉사활동 참석(제주) / 연차휴가)">
-                            </div>
-
-                            <div class="btn-action-group">
-                                <button class="btn-clear" onclick="clearDeptSchedulesAll()">🔥 이 부서 일정 전체 초기화</button>
-                                <button class="btn-submit" onclick="saveScheduleRange()">범위 일정 추가확정</button>
-                            </div>
+                            <input type="text" id="txScDetail" style="width:100%; margin-top:10px; padding:8px; font-size:13px; border:1px solid var(--line-light); border-radius:4px;" placeholder="출장지 또는 사유 입력 (예: 본사 대외협력 / 연차휴가)">
                         </div>
                     </div>
 
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn-clear" onclick="clearAllDataForDept()">🔥 내용 전체 초기화(삭제)</button>
+                    <button class="btn-submit" onclick="saveDataToServer()">통합 내용 저장</button>
                 </div>
             </div>
         </div>
 
-        <div style="text-align: right; margin-bottom: 24px;">
-            <button class="btn-print" onclick="window.print()">
-                🖨️ 양식 보고서 최종 인쇄하기 (A4 정형 보관용)
+        <div style="text-align: right; margin-bottom: 20px;">
+            <button class="btn-print-trigger" onclick="window.print()">
+                🖨️ 서식 보고서 최종 인쇄 (A4 규격 마감)
             </button>
         </div>
 
-        <div class="document-container">
+        <div class="doc-page-wrap">
             
-            <div class="page-sheet">
-                <div class="sheet-title" id="workSheetTitle">주간업무 (2026. 6. 15 ~ 6. 19)</div>
-                <table class="work-table">
+            <div class="doc-sheet">
+                <div class="doc-header-title" id="printTitle1">주간업무 계획 보고</div>
+                <table class="report-table">
                     <thead>
                         <tr>
                             <th style="width: 15%;">실·국별</th>
@@ -221,27 +210,27 @@
                             <th style="width: 12%;">비 고</th>
                         </tr>
                     </thead>
-                    <tbody id="workTableRenderBody">
-                        </tbody>
+                    <tbody id="domWorkBody"></tbody>
                 </table>
             </div>
 
-            <div class="page-sheet">
-                <div class="sheet-title">노조본부 주간 출장·휴가 현황 [26년 6월 3주]</div>
-                <table class="schedule-table">
+            <div class="doc-sheet">
+                <div class="doc-header-title" id="printTitle2">노조본부 주간 출장·근태 현황</div>
+                <table class="grid-table">
                     <thead>
                         <tr>
-                            <th style="width: 11%;">성명</th>
-                            <th style="width: 14%;">직책</th>
-                            <th style="width: 15%;">6/15(월)</th>
-                            <th style="width: 15%;">6/16(화)</th>
-                            <th style="width: 15%;">6/17(수)</th>
-                            <th style="width: 15%;">6/18(목)</th>
-                            <th style="width: 15%;">6/19(금)</th>
+                            <th style="width: 10%;">성명</th>
+                            <th style="width: 12%;">직책</th>
+                            <th id="th-월">월</th>
+                            <th id="th-화">화</th>
+                            <th id="th-수">수</th>
+                            <th id="th-목">목</th>
+                            <th id="th-금">금</th>
+                            <th id="th-토">토</th>
+                            <th id="th-일">일</th>
                         </tr>
                     </thead>
-                    <tbody id="scheduleTableRenderBody">
-                        </tbody>
+                    <tbody id="domGridBody"></tbody>
                 </table>
             </div>
 
@@ -262,13 +251,12 @@
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        const dbRef = database.ref('final_grid_weekly_report_2026');
+        const dbRef = database.ref('perfect_clean_report_2026');
 
-        // 정형 서식 배치용 부서 정의 및 전원 명단 매핑 딕셔너리
         const DEPTS = ["총무국", "조직쟁의실", "기획국", "정책국", "복지국", "산업안전국", "교육문화국"];
-        
-        // 실물 사진 속 16명 성명-직책 서열 구조 완벽 동기화
-        const MEMBERS_DATA = [
+        const WEEKS = ["월", "화", "수", "목", "금", "토", "일"];
+
+        const MEMBERS = [
             { name: "조창연", duty: "위원장", dept: "위원장" },
             { name: "이창용", duty: "수석부위원장", dept: "수석부위원장" },
             { name: "최순희", duty: "사무처장", dept: "사무처장" },
@@ -287,201 +275,197 @@
             { name: "손혜석", duty: "과장", dept: "총무국" }
         ];
 
-        const DAYS_LIST = ["월", "화", "수", "목", "금"];
-        
         let selectedDept = "";
-        let serverDataCache = {};
+        let serverCache = {};
+        let activeDays = []; // 다중 클릭 선택 보관 어레이
         
-        // 숙박 예약식 클릭 추적 변수
-        let rangeStart = null;
-        let rangeEnd = null;
+        // 📅 매주 날짜를 자동으로 추적 연동하는 엔진 함수
+        let dateStrings = {};
+        function calculateWeeklyDates() {
+            const current = new Date();
+            const currentDay = current.getDay(); // 0:일, 1:월, ... 6:토
+            const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+            
+            const monday = new Date(current);
+            monday.setDate(current.getDate() + distanceToMonday);
 
-        function initDashboard() {
-            const btnGroup = document.getElementById('deptBtnGroup');
-            btnGroup.innerHTML = DEPTS.map(d => `
-                <button class="dept-select-btn" id="btn-dept-${d}" onclick="selectDeptMode('${d}')">${d}</button>
+            WEEKS.forEach((w, idx) => {
+                const target = new Date(monday);
+                target.setDate(monday.getDate() + idx);
+                const m = target.getMonth() + 1;
+                const d = target.getDate();
+                dateStrings[w] = `${m}/${d}`;
+                
+                // 대시보드 달력 노출구조 바인딩
+                document.getElementById(`cd-${w}`).innerText = `${m}/${d}`;
+                // 인쇄 표 헤더 바인딩
+                document.getElementById(`th-${w}`).innerText = `${m}/${d}(${w})`;
+            });
+
+            // 타이틀 기간명 동적 매핑
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            const periodStr = `(${monday.getFullYear()}. ${monday.getMonth()+1}. ${monday.getDate()} ~ ${sunday.getMonth()+1}. ${sunday.getDate()})`;
+            
+            document.getElementById('printTitle1').innerText = `주간업무 계획 보고 ${periodStr}`;
+            document.getElementById('printTitle2').innerText = `노조본부 주간 출장·근태 현황 ${periodStr}`;
+        }
+
+        function initApp() {
+            calculateWeeklyDates();
+            const btnZone = document.getElementById('deptBtnZone');
+            btnZone.innerHTML = DEPTS.map(d => `
+                <button class="dept-btn" id="b-dept-${d}" onclick="clickDeptBtn('${d}')">${d}</button>
             `).join('');
         }
 
-        function selectDeptMode(dept) {
-            document.querySelectorAll('.dept-select-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-dept-${dept}`).classList.add('active');
-            
+        function clickDeptBtn(dept) {
+            document.querySelectorAll('.dept-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`b-dept-${dept}`).classList.add('active');
+
             selectedDept = dept;
-            document.getElementById('formContainerBlock').classList.remove('disabled-content');
-            document.getElementById('formWorkTitle').innerText = `✍️ [${dept}] 주간 주요 업무내용 입력`;
-            
-            // 기존 캐시 데이터 로드
-            const deptData = serverDataCache[dept] || {};
-            document.getElementById('workTextArea').value = deptData.work || '';
-            resetCalendarRangeSelection();
+            document.getElementById('inputFormBlock').classList.remove('disabled-content');
+            document.getElementById('lblWorkTitle').innerText = `✍️ [${dept}] 업무 내용 기술`;
+
+            const data = serverCache[dept] || {};
+            document.getElementById('txWork').value = data.work || '';
+            document.getElementById('txScDetail').value = '';
+            activeDays = [];
+            refreshDayNodesUI();
         }
 
-        function saveWorkText() {
-            if(!selectedDept) return;
-            const text = document.getElementById('workTextArea').value;
-            dbRef.child(selectedDept).child('work').set(text).then(() => {
-                alert(`${selectedDept} 업무내용이 임시 저장되었습니다.`);
-            });
-        }
-
-        // 📅 달력 범위 선택 핸들러 알고리즘 (숙박 예약식 기능 구현)
-        function handleRangeClick(day) {
-            const idx = DAYS_LIST.indexOf(day);
-            
-            if(!rangeStart || (rangeStart && rangeEnd)) {
-                rangeStart = day;
-                rangeEnd = null;
+        // 📅 숙박 예약 끄고 단순 온오프 토글로 교체 구현
+        function toggleDayNode(day) {
+            const idx = activeDays.indexOf(day);
+            if(idx > -1) {
+                activeDays.splice(idx, 1);
             } else {
-                const startIdx = DAYS_LIST.indexOf(rangeStart);
-                if(idx < startIdx) {
-                    rangeStart = day;
-                    rangeEnd = null;
+                activeDays.push(day);
+            }
+            refreshDayNodesUI();
+        }
+
+        function refreshDayNodesUI() {
+            document.querySelectorAll('.day-node').forEach(node => {
+                const w = node.getAttribute('data-w');
+                if(activeDays.includes(w)) {
+                    node.classList.add('active');
                 } else {
-                    rangeEnd = day;
-                }
-            }
-            refreshCalendarUI();
-        }
-
-        function refreshCalendarUI() {
-            document.querySelectorAll('.cal-day-node').forEach(node => {
-                const day = node.getAttribute('data-day');
-                node.className = 'cal-day-node';
-                
-                if(day === rangeStart || day === rangeEnd) {
-                    node.classList.add('sel-click');
-                } else if(rangeStart && rangeEnd) {
-                    const sIdx = DAYS_LIST.indexOf(rangeStart);
-                    const eIdx = DAYS_LIST.indexOf(rangeEnd);
-                    const cIdx = DAYS_LIST.indexOf(day);
-                    if(cIdx > sIdx && cIdx < eIdx) {
-                        node.classList.add('sel-range');
-                    }
+                    node.className = 'day-node';
                 }
             });
         }
 
-        function resetCalendarRangeSelection() {
-            rangeStart = null; rangeEnd = null;
-            document.getElementById('scheduleDetailText').value = '';
-            refreshCalendarUI();
-        }
-
-        function saveScheduleRange() {
+        function saveDataToServer() {
             if(!selectedDept) return;
-            if(!rangeStart) { alert("달력에서 날짜 범위를 먼저 선택해 주세요."); return; }
-            const type = document.querySelector('input[name="scheduleType"]:checked').value;
-            const detail = document.getElementById('scheduleDetailText').value.trim();
+            const work = document.getElementById('txWork').value.trim();
+            const scType = document.querySelector('input[name="scType"]:checked').value;
+            const scDetail = document.getElementById('txScDetail').value.trim();
 
-            if(!detail) { alert("출장지 또는 근태 사유 내용을 입력하세요."); return; }
-            
-            const startIdx = DAYS_LIST.indexOf(rangeStart);
-            const endIdx = rangeEnd ? DAYS_LIST.indexOf(rangeEnd) : startIdx;
-            
-            const updateObj = {};
-            for(let i=startIdx; i<=endIdx; i++) {
-                const currentDay = DAYS_LIST[i];
-                updateObj[currentDay] = { type, text: detail };
+            // 1. 업무 계획 저장
+            dbRef.child(selectedDept).child('work').set(work);
+
+            // 2. 다중 선택된 요일에 정보 빌드업 파싱
+            if(activeDays.length > 0 && scDetail) {
+                const daysObj = serverCache[selectedDept]?.days || {};
+                activeDays.forEach(w => {
+                    daysObj[w] = { type: scType, text: scDetail };
+                });
+                dbRef.child(selectedDept).child('days').set(daysObj);
             }
 
-            dbRef.child(selectedDept).child('days').update(updateObj).then(() => {
-                alert(`${selectedDept} 일정 범위 지정이 완료되었습니다.`);
-                resetCalendarRangeSelection();
-            });
+            alert(`${selectedDept}의 통합 현황 서식이 실시간 저장되었습니다.`);
+            activeDays = [];
+            document.getElementById('txScDetail').value = '';
+            refreshDayNodesUI();
         }
 
-        function clearDeptSchedulesAll() {
+        function clearAllDataForDept() {
             if(!selectedDept) return;
-            if(confirm(`${selectedDept}의 주간 출장·근태 일정을 모두 초기화하시겠습니까?`)) {
-                dbRef.child(selectedDept).child('days').remove().then(() => {
-                    alert("일정이 초기화 복구되었습니다.");
-                    resetCalendarRangeSelection();
+            if(confirm(`[${selectedDept}]의 이번 주 모든 데이터(업무계획+출장근태)를 삭제 초기화하시겠습니까?`)) {
+                dbRef.child(selectedDept).remove().then(() => {
+                    alert("성공적으로 완전 삭제되었습니다.");
+                    document.getElementById('txWork').value = '';
+                    document.getElementById('txScDetail').value = '';
+                    activeDays = [];
+                    refreshDayNodesUI();
                 });
             }
         }
 
-        // ── 🖨️ 메인 동적 테이블 결합 파서 ──
-        function renderDocumentReports() {
-            // 1. 주요 업무내용 파트 빌드 (두 번째 사진 완벽 싱크)
-            const workBody = document.getElementById('workTableRenderBody');
-            workBody.innerHTML = '';
+        // 화면 표 요소를 더블클릭이나 직접 터치하여 즉시 부분 지우기 연동 핸들러
+        function removeSpecificDayLive(dept, day) {
+            dbRef.child(dept).child('days').child(day).remove();
+        }
 
-            // 실물 조직 체계 소분류 결합 대응 레이아웃 파싱
-            let officeLabelRendered = false;
-            let planLabelRendered = false;
+        function drawPrintDocument() {
+            // 1. 주요내용 서식 그리기 (사무처 / 기획처 소분류 완벽 동기화)
+            const workBody = document.getElementById('domWorkBody');
+            workBody.innerHTML = '';
+            let officeRendered = false;
+            let planningRendered = false;
 
             DEPTS.forEach(dept => {
-                const data = serverDataCache[dept] || {};
-                const text = data.work || '';
+                const data = serverCache[dept] || {};
+                const workText = data.work || '';
 
-                let leftGroupTd = '';
+                let leftTd = '';
                 if(dept === "총무국" || dept === "조직쟁의실") {
-                    if(!officeLabelRendered) {
-                        leftGroupTd = `<td rowspan="2" class="center-title" style="background:#fcfcfc; font-weight:700;">사 무 처</td>`;
-                        officeLabelRendered = true;
-                    }
+                    if(!officeRendered) { leftTd = `<td rowspan="2" class="center-lbl" style="background:#fafafa;">사 무 처</td>`; officeRendered = true; }
                 } else if(dept === "교육문화국") {
-                    leftGroupTd = `<td class="center-title" style="background:#fcfcfc; font-weight:700;">대외협력본부</td>`;
+                    leftTd = `<td class="center-lbl" style="background:#fafafa;">대외협력본부</td>`;
                 } else {
-                    if(!planLabelRendered) {
-                        leftGroupTd = `<td rowspan="4" class="center-title" style="background:#fcfcfc; font-weight:700;">기 획 처</td>`;
-                        planLabelRendered = true;
-                    }
+                    if(!planningRendered) { leftTd = `<td rowspan="4" class="center-lbl" style="background:#fafafa;">기 획 처</td>`; planningRendered = true; }
                 }
 
-                // 부서 이름 라벨 매핑 보정
-                let printDeptName = dept;
-                if(dept === "조직쟁의실") printDeptName = "조직실";
-                if(dept === "교육문화국") printDeptName = "교문국";
+                let dName = dept;
+                if(dept === "조직쟁의실") dName = "조직실";
+                if(dept === "교육문화국") dName = "교문국";
 
                 workBody.innerHTML += `
                     <tr>
-                        ${leftGroupTd}
-                        <td class="center-title" style="font-weight:600;">${printDeptName}</td>
-                        <td class="content-cell">${text ? text : '<span style="color:#bbb;">- 주요 업무 계획 미입력</span>'}</td>
+                        ${leftTd}
+                        <td class="center-lbl">${dName}</td>
+                        <td class="txt-cell">${workText ? workText : '<span style="color:#ccc;">- 주요 계획 없음</span>'}</td>
                         <td></td>
                     </tr>
                 `;
             });
 
-            // 2. 16인 출장·휴가 전수 격자 현황판 빌드 (세 번째 사진 완벽 싱크)
-            const scheduleBody = document.getElementById('scheduleTableRenderBody');
-            scheduleBody.innerHTML = '';
+            // 2. 16인 출장/근태 전수 격자판 그리기 (월~일 7일 스펙)
+            const gridBody = document.getElementById('domGridBody');
+            gridBody.innerHTML = '';
 
-            MEMBERS_DATA.forEach(member => {
-                let rowHTML = `<tr><td class="name-lbl">${member.name}</td><td class="duty-lbl">${member.duty}</td>`;
+            MEMBERS.forEach(m => {
+                let row = `<tr><td class="m-name">${m.name}</td><td class="m-duty">${m.duty}</td>`;
                 
-                DAYS_LIST.forEach(day => {
-                    // 해당 직책/부서 데이터 추적 파싱
-                    const deptData = serverDataCache[member.dept] || {};
-                    const daySchedule = deptData.days?.[day];
+                WEEKS.forEach(w => {
+                    const deptData = serverCache[m.dept] || {};
+                    const sc = deptData.days?.[w];
 
-                    if(daySchedule) {
-                        rowHTML += `<td class="cell-filled ${daySchedule.type}">${daySchedule.type}<br>${daySchedule.text}</td>`;
+                    if(sc) {
+                        row += `<td class="badge-cell ${sc.type}" title="더블클릭 시 삭제" ondblclick="removeSpecificDayLive('${m.dept}', '${w}')">${sc.type}<br>${sc.text}</td>`;
                     } else {
-                        rowHTML += `<td></td>`;
+                        row += `<td></td>`;
                     }
                 });
 
-                rowHTML += `</tr>`;
-                scheduleBody.innerHTML += rowHTML;
+                row += `</tr>`;
+                gridBody.innerHTML += row;
             });
         }
 
-        // 파이어베이스 데이터 실시간 리스닝 스트리밍 연동
         dbRef.on('value', (snapshot) => {
-            serverDataCache = snapshot.val() || {};
-            renderDocumentReports();
+            serverCache = snapshot.val() || {};
+            drawPrintDocument();
             
-            // 입력 활성화 모드 중 실시간 동기화 상태 유지
             if(selectedDept) {
-                const deptData = serverDataCache[selectedDept] || {};
-                document.getElementById('workTextArea').value = deptData.work || '';
+                const data = serverCache[selectedDept] || {};
+                document.getElementById('txWork').value = data.work || '';
             }
         });
 
-        initDashboard();
+        initApp();
     </script>
 </body>
 </html>
