@@ -71,7 +71,7 @@
         @media (max-width: 760px) { .fields { grid-template-columns: 1fr; } }
         .field { display: flex; flex-direction: column; gap: 6px; }
         textarea {
-            width: 100%; height: 130px; padding: 11px; font-family: inherit; font-size: 13.5px;
+            width: 100%; height: 104px; padding: 11px; font-family: inherit; font-size: 13.5px;
             border: 1px solid var(--line); border-radius: 9px; resize: vertical; line-height: 1.55;
             color: var(--ink); background: #fcfdfe;
         }
@@ -81,16 +81,11 @@
 
         .disabled-content { opacity: .25; pointer-events: none; }
 
-        /* 출장근태 접이식 */
-        details.att { border: 1px solid var(--line); border-radius: 9px; padding: 0 14px; background: #fbfcfd; }
-        details.att summary {
-            cursor: pointer; font-size: 13px; font-weight: 700; color: var(--ink-soft);
-            padding: 12px 0; list-style: none; display: flex; align-items: center; gap: 7px;
-        }
-        details.att summary::-webkit-details-marker { display: none; }
-        details.att summary::before { content: "▸"; color: var(--ink-faint); }
-        details.att[open] summary::before { content: "▾"; }
-        .att-inner { padding: 4px 0 16px; display: flex; flex-direction: column; gap: 10px; }
+        /* 출장근태 (항상 펼침, 필수) */
+        .att-block { border-top: 1px solid var(--line); padding-top: 15px; }
+        .att-head { font-size: 13px; font-weight: 800; color: var(--ink); margin-bottom: 11px; display: flex; align-items: center; gap: 8px; }
+        .req-tag { font-size: 10.5px; font-weight: 800; color: #c0392b; background: #fdecea; border: 1px solid #f3c6c0; padding: 1px 8px; border-radius: 999px; }
+        .att-inner { display: flex; flex-direction: column; gap: 10px; }
         .seg { display:inline-flex; background:#e9edf3; border-radius:7px; padding:3px; align-self:flex-start; }
         .seg input { position:absolute; opacity:0; pointer-events:none; }
         .seg label { padding:6px 14px; font-size:12.5px; font-weight:700; color:var(--ink-soft); border-radius:5px; cursor:pointer; }
@@ -273,10 +268,10 @@
                         <textarea id="txLastWeek" placeholder="제목을 첫 줄에, 세부항목은 ○ 또는 - 로 시작"></textarea>
                     </div>
                 </div>
-                <div class="hint">예) &nbsp;노사합동 봉사활동 시행 &nbsp;⏎&nbsp; ○ 3차 : 6.15(월) ~ 16(화) &nbsp;⏎&nbsp; ○ 4차 : 6.17(수) ~ 18(목)</div>
+                <div class="hint">첫 줄에 제목, 다음 줄부터 ○ 로 세부항목 (예: ○ 3차 : 6.15(월)~16(화))</div>
 
-                <details class="att">
-                    <summary>출장 · 근태 입력 (선택 · 부속 현황표용)</summary>
+                <div class="att-block">
+                    <div class="att-head">출장 · 근태 입력 <span class="req-tag">필수</span></div>
                     <div class="att-inner">
                         <div class="seg">
                             <input type="radio" name="scType" id="sc-trip" value="출장" checked>
@@ -295,7 +290,7 @@
                         </div>
                         <input type="text" id="txScDetail" class="detail-input" placeholder="상세 사유 (예: 본사 국회대응 출장 / 연차휴가)">
                     </div>
-                </details>
+                </div>
 
                 <div class="btn-row">
                     <button class="btn-clear" onclick="clearDataForMember()">이번 주 정보 초기화</button>
