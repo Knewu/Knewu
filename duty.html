@@ -185,6 +185,44 @@
         .badge-cell .b-tag { font-size:9px; opacity:.85; } .badge-cell .b-txt { display:block; font-weight:600; }
         @media screen { body.preview-mode.with-att .att-sheet { display: block; } }
 
+        /* ═════════ 최종본 컨트롤 ═════════ */
+        .btn-final { background:#0e7490; color:#fff; border:none; padding:9px 16px; border-radius:999px; font-size:13px; font-weight:800; font-family:inherit; cursor:pointer; }
+        .btn-final:hover { background:#0b5e75; }
+        .view-seg { display:inline-flex; background:#e6ebf1; border-radius:999px; padding:3px; }
+        .view-seg .vt { border:none; background:transparent; padding:6px 15px; font-size:12.5px; font-weight:700; color:var(--ink-soft); border-radius:999px; cursor:pointer; font-family:inherit; }
+        .view-seg .vt.active { background:#fff; color:var(--accent); box-shadow:0 1px 2px rgba(0,0,0,.12); }
+        .final-stat { font-size:12px; color:var(--ink-faint); font-weight:600; }
+
+        .view-badge { display:none; }
+        @media screen { body:not(.preview-mode) .view-badge { display:inline-block; margin-bottom:9px; font-size:12px; font-weight:800; padding:4px 12px; border-radius:999px; } }
+        .view-badge.draft { background:#fdf0db; color:#9a6a13; }
+        .view-badge.final { background:#e0f4ee; color:#0b6e5e; }
+
+        /* 최종본 모달 */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(20,28,40,.55); z-index:500; padding:18px; }
+        .modal-overlay.open { display:flex; align-items:flex-start; justify-content:center; }
+        .modal { background:var(--paper); border-radius:14px; width:100%; max-width:760px; max-height:88vh; margin-top:3vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.32); }
+        .modal-head { padding:17px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
+        .modal-head h3 { font-size:16px; font-weight:800; color:var(--ink); }
+        .modal-head .x { background:none; border:none; font-size:24px; color:var(--ink-faint); cursor:pointer; line-height:1; padding:0 4px; }
+        .modal-sub { padding:13px 22px 0; font-size:12.5px; color:var(--ink-soft); line-height:1.55; }
+        .modal-body { padding:14px 22px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
+        .fin-block { border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+        .fin-block h4 { font-size:13.5px; font-weight:800; color:var(--accent); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+        .tag-mini { font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px; }
+        .tag-mini.y { background:#e0f4ee; color:#0b6e5e; }
+        .tag-mini.n { background:#f1f3f5; color:#9aa6b2; }
+        .fin-pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        @media (max-width:640px){ .fin-pair { grid-template-columns:1fr; } }
+        .fin-pair label { font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px; }
+        .fin-pair textarea { height:80px; font-size:13px; }
+        .modal-foot { padding:14px 22px; border-top:1px solid var(--line); display:flex; gap:9px; align-items:center; flex-wrap:wrap; }
+        .modal-foot .mspacer { flex:1; }
+        .btn-load { background:#fff; color:var(--accent); border:1px solid var(--line); padding:9px 14px; border-radius:8px; font-size:12.5px; font-weight:700; font-family:inherit; cursor:pointer; }
+        .btn-del { background:#fff; color:#c0392b; border:1px solid #e7c4be; padding:9px 14px; border-radius:8px; font-size:12.5px; font-weight:700; font-family:inherit; cursor:pointer; }
+        .btn-confirm { background:#0e7490; color:#fff; border:none; padding:10px 22px; border-radius:8px; font-size:13.5px; font-weight:800; font-family:inherit; cursor:pointer; }
+        .btn-confirm:hover { background:#0b5e75; }
+
         /* ═════════ 인쇄 ═════════ */
         @media print {
             @page { size: A4 portrait; margin: 0; }
@@ -201,6 +239,7 @@
             .att-sheet { display: none; border: none; border-radius: 0; margin-top: 0; }
             body.with-att .att-sheet { display: block; page-break-before: always; }
             .att-pad { padding: 16mm; }
+            .modal-overlay, .view-badge { display: none !important; }
         }
     </style>
 </head>
@@ -267,9 +306,15 @@
 
         <!-- 툴바 -->
         <div class="toolbar">
-            <button class="btn-ghost" id="prevBtn" onclick="togglePreview()">인쇄 미리보기</button>
-            <label class="chk"><input type="checkbox" id="attChk" onchange="toggleAtt()"> 출장·근태 현황표 함께 인쇄</label>
+            <button class="btn-final" id="finalBtn" onclick="openFinalModal()">📋 최종본 만들기</button>
+            <div class="view-seg" id="viewSeg" style="display:none;">
+                <button class="vt" id="vtDraft" onclick="setViewMode('draft')">초안</button>
+                <button class="vt active" id="vtFinal" onclick="setViewMode('final')">최종본</button>
+            </div>
+            <span class="final-stat" id="finalStat"></span>
             <span class="spacer"></span>
+            <button class="btn-ghost" id="prevBtn" onclick="togglePreview()">인쇄 미리보기</button>
+            <label class="chk"><input type="checkbox" id="attChk" onchange="toggleAtt()"> 출장·근태표 함께</label>
             <button class="btn-print" onclick="window.print()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 인쇄 (A4 세로)
@@ -277,6 +322,7 @@
         </div>
 
         <!-- 붙임 뉴스레터 -->
+        <div class="view-badge draft" id="viewBadge">초안 미리보기</div>
         <div class="news" id="news">
             <div class="news-topbar"></div>
             <div class="news-pad">
@@ -319,6 +365,24 @@
             </div>
         </div>
 
+        <!-- 최종본 편집 모달 -->
+        <div class="modal-overlay" id="finalModal">
+            <div class="modal">
+                <div class="modal-head">
+                    <h3>최종본 편집</h3>
+                    <button class="x" onclick="closeFinalModal()">&times;</button>
+                </div>
+                <div class="modal-sub">각 부서 제출(초안)을 확인·수정한 뒤 <b>[최종 확정]</b>을 누르면 그 내용이 인쇄용 최종본이 됩니다. 부서별 초안은 그대로 유지됩니다.</div>
+                <div class="modal-body" id="finalBody"></div>
+                <div class="modal-foot">
+                    <button class="btn-load" onclick="fillFinalFromDrafts()">초안에서 다시 불러오기</button>
+                    <button class="btn-del" id="finDelBtn" onclick="deleteFinal()" style="display:none;">최종본 삭제</button>
+                    <span class="mspacer"></span>
+                    <button class="btn-confirm" onclick="confirmFinal()">최종 확정</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -342,6 +406,12 @@
         let selectedUser = "";
         let serverCache = {};
         let activeDays = [];
+
+        // 최종본 (초안과 분리 저장)
+        const finalRef = database.ref('perfect_clean_report_2026_final');
+        let finalCache = null;
+        let viewMode = 'draft';
+        let viewUserSet = false;
 
         function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
         function pad(n){ return String(n).padStart(2,'0'); }
@@ -466,16 +536,17 @@
         }
 
         function draw() {
+            const src = (viewMode === 'final' && finalCache) ? finalCache : serverCache;
             let cur = '';
             MEMBERS.forEach(m => {
-                const tw = (serverCache[m]?.thisWeek ?? serverCache[m]?.work ?? '').trim();
+                const tw = (src[m]?.thisWeek ?? src[m]?.work ?? '').trim();
                 if (tw) cur += rowHtml(m, tw, 'cur');
             });
             document.getElementById('curBody').innerHTML = cur || '<div class="empty-hint">입력된 이번 주 활동이 없습니다.</div>';
 
             let prev = '';
             MEMBERS.forEach(m => {
-                const lw = (serverCache[m]?.lastWeek ?? '').trim();
+                const lw = (src[m]?.lastWeek ?? '').trim();
                 if (lw) prev += rowHtml(m, lw, 'prev');
             });
             document.getElementById('prevBody').innerHTML = prev || '<div class="empty-hint">입력된 지난 주 활동이 없습니다.</div>';
@@ -484,7 +555,7 @@
             MEMBERS.forEach(m => {
                 let row = `<tr><td class="m-name">${m}</td><td class="m-role">국장급</td>`;
                 WEEKS.forEach(w => {
-                    const sc = serverCache[m]?.days?.[w];
+                    const sc = src[m]?.days?.[w];
                     const wk = WKND[w] ? ' wknd' : '';
                     if (sc) row += `<td class="badge-cell ${sc.type}${wk}" title="더블클릭 삭제" ondblclick="removeDayLive('${m}','${w}')"><span class="b-tag">${sc.type}</span><span class="b-txt">${escapeHtml(sc.text)}</span></td>`;
                     else row += `<td class="${wk.trim()}"></td>`;
@@ -493,6 +564,96 @@
             });
             document.getElementById('domGridBody').innerHTML = grid;
         }
+
+        /* ───── 최종본 ───── */
+        function setViewMode(m) { viewUserSet = true; viewMode = m; updateFinalUI(); draw(); }
+
+        function updateFinalUI() {
+            if (!finalCache) viewMode = 'draft';
+            const seg = document.getElementById('viewSeg');
+            const stat = document.getElementById('finalStat');
+            const fbtn = document.getElementById('finalBtn');
+            const badge = document.getElementById('viewBadge');
+            if (finalCache) {
+                seg.style.display = 'inline-flex';
+                document.getElementById('vtDraft').classList.toggle('active', viewMode === 'draft');
+                document.getElementById('vtFinal').classList.toggle('active', viewMode === 'final');
+                const t = new Date(finalCache.__finalizedAt);
+                stat.innerText = `최종본 확정 ${t.getMonth()+1}/${t.getDate()} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
+                fbtn.innerText = '📋 최종본 편집';
+            } else {
+                seg.style.display = 'none';
+                stat.innerText = '';
+                fbtn.innerText = '📋 최종본 만들기';
+            }
+            badge.className = 'view-badge ' + (viewMode === 'final' ? 'final' : 'draft');
+            badge.innerText = viewMode === 'final' ? '최종본' : '초안 미리보기';
+        }
+
+        function buildFinalFields(srcObj) {
+            const src = srcObj || serverCache;
+            document.getElementById('finalBody').innerHTML = MEMBERS.map(m => {
+                const tw = escapeHtml(src[m]?.thisWeek ?? src[m]?.work ?? '');
+                const lw = escapeHtml(src[m]?.lastWeek ?? '');
+                const submitted = (serverCache[m]?.thisWeek ?? serverCache[m]?.work ?? serverCache[m]?.lastWeek);
+                const tag = submitted ? '<span class="tag-mini y">제출됨</span>' : '<span class="tag-mini n">미제출</span>';
+                return `<div class="fin-block">
+                    <h4>${m} ${tag}</h4>
+                    <div class="fin-pair">
+                        <div><label>이번 주 활동</label><textarea id="fin-tw-${m}">${tw}</textarea></div>
+                        <div><label>지난 주 활동</label><textarea id="fin-lw-${m}">${lw}</textarea></div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function openFinalModal() {
+            buildFinalFields(finalCache || serverCache);
+            document.getElementById('finDelBtn').style.display = finalCache ? 'inline-block' : 'none';
+            document.getElementById('finalModal').classList.add('open');
+        }
+        function closeFinalModal() { document.getElementById('finalModal').classList.remove('open'); }
+
+        function fillFinalFromDrafts() {
+            if (confirm('현재 부서별 제출(초안) 내용으로 모든 칸을 다시 채울까요? 편집 중이던 내용은 사라집니다.'))
+                buildFinalFields(serverCache);
+        }
+
+        function confirmFinal() {
+            const data = {};
+            MEMBERS.forEach(m => {
+                const tw = (document.getElementById(`fin-tw-${m}`).value || '').trim();
+                const lw = (document.getElementById(`fin-lw-${m}`).value || '').trim();
+                const entry = { thisWeek: tw, lastWeek: lw };
+                const days = serverCache[m]?.days;
+                if (days) entry.days = days;
+                data[m] = entry;
+            });
+            data.__finalizedAt = new Date().toISOString();
+            finalRef.set(data).then(() => {
+                viewUserSet = true; viewMode = 'final';
+                closeFinalModal();
+                alert('최종본이 확정되었습니다. 이제 인쇄하면 최종본이 출력됩니다.');
+            });
+        }
+
+        function deleteFinal() {
+            if (confirm('최종본을 삭제할까요? 초안은 그대로 남고, 다시 만들 수 있습니다.')) {
+                finalRef.remove().then(() => {
+                    viewUserSet = false; viewMode = 'draft';
+                    closeFinalModal();
+                    alert('최종본이 삭제되었습니다.');
+                });
+            }
+        }
+
+        finalRef.on('value', (snap) => {
+            const v = snap.val();
+            finalCache = (v && v.__finalizedAt) ? v : null;
+            if (finalCache && !viewUserSet) viewMode = 'final';
+            updateFinalUI();
+            draw();
+        });
 
         dbRef.on('value', (snap) => {
             serverCache = snap.val() || {};
