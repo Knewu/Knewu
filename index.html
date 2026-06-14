@@ -28,153 +28,124 @@
       flex-direction: column;
     }
 
-    /* ── 상단 헤더 ── */
+    /* ── 슬림 헤더 ── */
     header {
       background: var(--white);
       border-bottom: 1px solid var(--line);
-      padding: 0 32px;
-      height: 60px;
+      padding: 0 18px;
+      height: 54px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 1px 3px rgba(0,0,0,.08);
     }
     .logo-icon {
-      width: 36px; height: 36px;
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+      width: 30px; height: 30px;
+      border-radius: 7px;
       overflow: hidden;
+      flex-shrink: 0;
     }
     .logo-icon img { width: 100%; height: 100%; object-fit: contain; }
     .logo-text {
-      font-size: 16px;
+      font-size: 14.5px;
       font-weight: 700;
-      color: var(--ink);
       letter-spacing: -0.3px;
     }
     .logo-text span { color: var(--blue); }
 
-    /* ── 히어로 배너 ── */
+    /* ── 컴팩트 히어로 ── */
     .hero {
       background: linear-gradient(135deg, #1557b0 0%, #1a73e8 60%, #4285f4 100%);
       color: #fff;
-      padding: 50px 32px 46px;
+      padding: 22px 20px 24px;
       text-align: center;
     }
-    .hero .hero-logo {
-      width: 72px; height: 72px;
-      margin: 0 auto 16px;
+    .hero-logo {
+      width: 50px; height: 50px;
+      margin: 0 auto 10px;
       background: #fff;
-      border-radius: 18px;
+      border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 166px rgba(0,0,0,.18);
+      box-shadow: 0 3px 12px rgba(0,0,0,.16);
       overflow: hidden;
     }
-    .hero .hero-logo img { width: 84%; height: 84%; object-fit: contain; }
-    .hero h1 {
-      font-size: 26px;
-      font-weight: 900;
-      letter-spacing: -0.6px;
-      margin-bottom: 8px;
-    }
-    .hero p {
-      font-size: 14px;
-      opacity: .82;
-      letter-spacing: -0.2px;
-    }
+    .hero-logo img { width: 84%; height: 84%; object-fit: contain; }
+    .hero h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; }
 
-    /* ── 메인 콘텐츠 ── */
+    /* ── 메인 ── */
     main {
-      max-width: 960px;
+      max-width: 720px;
       width: 100%;
       margin: 0 auto;
-      padding: 40px 24px 80px;
+      padding: 22px 16px 60px;
       flex: 1;
     }
-
     .section-label {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: 1.2px;
+      letter-spacing: 1px;
       color: var(--ink2);
       text-transform: uppercase;
-      margin-bottom: 18px;
+      margin: 4px 4px 14px;
     }
 
-    /* ── 깔끔한 2열 카드 그리드 ── */
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
+    /* ── 앱 아이콘 그리드 ── */
+    .app-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
     }
-
-    .card {
-      background: var(--white);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 28px;
+    .tile {
+      width: 104px;
       text-decoration: none;
       color: inherit;
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      transition: box-shadow .2s, transform .2s, border-color .2s;
-      cursor: pointer;
-    }
-    .card:hover {
-      box-shadow: 0 6px 20px rgba(0,0,0,.08);
-      transform: translateY(-3px);
-      border-color: #4285f4;
-    }
-
-    .card-icon {
-      width: 52px; height: 52px;
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 26px;
-      flex-shrink: 0;
-    }
-    .card-icon.summer { background: #e8f0fe; }
-    .card-icon.duty { background: #e3f2fd; }
-
-    .card-body h2 {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-      margin-bottom: 6px;
-    }
-    .card-body p {
-      font-size: 13.5px;
-      color: var(--ink2);
-      line-height: 1.6;
-    }
-
-    .card-footer {
-      margin-top: auto;
-      padding-top: 8px;
-      display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 9px;
+      padding: 12px 6px 11px;
+      border-radius: 16px;
+      transition: background .15s, transform .15s, box-shadow .15s;
     }
-    .badge {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 999px;
+    .tile:hover {
+      background: var(--white);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,.08);
     }
-    .badge.live   { background: #e6f4ea; color: #188038; }
-    .arrow { font-size: 20px; color: var(--line); transition: color .2s; }
-    .card:hover .arrow { color: var(--blue); }
+    .tile-icon {
+      position: relative;
+      width: 54px; height: 54px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 27px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.07);
+    }
+    .tile-icon.c1 { background: #e8f0fe; }
+    .tile-icon.c2 { background: #e3f2fd; }
+    .tile-icon.c3 { background: #fef7e0; }
+    .tile-icon.c4 { background: #e6f4ea; }
+    .tile-icon .dot {
+      position: absolute; top: -3px; right: -3px;
+      width: 13px; height: 13px; border-radius: 50%;
+      background: #34a853; border: 2.5px solid var(--bg);
+    }
+    .tile:hover .tile-icon .dot { border-color: var(--white); }
+    .tile-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.35;
+      letter-spacing: -0.3px;
+      color: var(--ink);
+    }
 
     /* ── 푸터 ── */
     footer {
       text-align: center;
-      padding: 24px;
-      font-size: 12px;
+      padding: 18px;
+      font-size: 11.5px;
       color: var(--ink2);
       border-top: 1px solid var(--line);
       background: var(--white);
@@ -184,43 +155,35 @@
 <body>
 
 <header>
-  <div class="logo-icon"><img src="https://knewu.netlify.app/icon-192.png" alt="⚡"></div>
+  <div class="logo-icon"><img src="https://knewu.netlify.app/icon-192.png" alt="로고"></div>
   <div class="logo-text">전국전력노동조합 <span>집행부 업무포털</span></div>
 </header>
 
 <div class="hero">
-  <div class="hero-logo"><img src="https://knewu.netlify.app/icon-192.png" alt="⚡"></div>
+  <div class="hero-logo"><img src="https://knewu.netlify.app/icon-192.png" alt="로고"></div>
   <h1>제24대 집행부 업무포털</h1>
-  <p>집행부 전용 내부 시스템입니다 · 전국전력노동조합</p>
 </div>
 
 <main>
-  <div class="section-label">활성화된 서비스</div>
-  <div class="card-grid">
+  <div class="section-label">서비스</div>
+  <div class="app-grid">
 
-    <a href="vacation.html" class="card">
-      <div class="card-icon summer">🏖️</div>
-      <div class="card-body">
-        <h2>여름휴가 일정 등록</h2>
-        <p>집행부 16명의 7~9월 여름휴가 일정을<br>실시간으로 공유하고 한눈에 확인합니다.</p>
-      </div>
-      <div class="card-footer">
-        <span class="badge live">● 시스템 운영 중</span>
-        <span class="arrow">›</span>
-      </div>
+    <a href="vacation.html" class="tile">
+      <div class="tile-icon c1">🏖️<span class="dot"></span></div>
+      <div class="tile-label">여름휴가<br>일정</div>
     </a>
 
-    <a href="duty.html" class="card">
-      <div class="card-icon duty">📋</div>
-      <div class="card-body">
-        <h2>주간업무 및 출장·근태 관리</h2>
-        <p>각 실·국별 다음주 주요 업무 계획과<br>기간 지정 출장 및 근태 현황을 취합합니다.</p>
-      </div>
-      <div class="card-footer">
-        <span class="badge live">● 시스템 운영 중</span>
-        <span class="arrow">›</span>
-      </div>
+    <a href="duty.html" class="tile">
+      <div class="tile-icon c2">📋<span class="dot"></span></div>
+      <div class="tile-label">주간업무<br>·근태</div>
     </a>
+
+    <!-- 서비스 추가 시 아래 형식으로 복사해서 붙이면 됩니다.
+    <a href="새주소.html" class="tile">
+      <div class="tile-icon c3">🗂️<span class="dot"></span></div>
+      <div class="tile-label">새 서비스</div>
+    </a>
+    -->
 
   </div>
 </main>
