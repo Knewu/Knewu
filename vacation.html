@@ -280,15 +280,21 @@
         .day-cell.today .num { background: var(--accent); color: #fff; }
 
         .holiday-name {
-            font-size: 10px;
+            display: block;
+            font-size: 9px;
             font-weight: 700;
             color: var(--holiday);
             background: #fdecea;
-            padding: 1px 6px;
-            border-radius: 999px;
+            padding: 1px 5px;
+            border-radius: 4px;
             letter-spacing: -0.3px;
-            line-height: 1.5;
+            line-height: 1.45;
+            margin-bottom: 3px;
+            text-align: center;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
         }
         .day-cell.holiday .num { color: var(--holiday); }
 
@@ -329,8 +335,9 @@
             white-space: nowrap;
             color: var(--ink);
         }
-        /* 화면에서는 풀네임만, 약칭은 숨김 */
-        .vacation-badge .vname-short { display: none; }
+        /* 화면·인쇄 모두 2글자 약칭 표시 (풀네임 숨김) */
+        .vacation-badge .vname-full { display: none; }
+        .vacation-badge .vname-short { display: block; }
         .vacation-badge .del-btn {
             cursor: pointer;
             font-weight: 700;
@@ -364,6 +371,7 @@
             .calendar-container { gap: 0; }
             .month-section {
                 border: none; padding: 0; border-radius: 0;
+                break-inside: avoid; page-break-inside: avoid;
                 page-break-after: always; break-after: page;
             }
             .month-section:last-child { page-break-after: auto; break-after: auto; }
@@ -384,13 +392,14 @@
                 letter-spacing: 1.5px;
             }
             /* 인쇄는 종이라 스크롤 불가 → 고정 높이를 풀어 인원이 많아도 다 보이게 함 */
-            .calendar-grid { grid-auto-rows: minmax(2.0cm, auto); }
+            .calendar-grid { grid-auto-rows: minmax(1.7cm, auto); }
             .day-cell {
                 display: block;
-                min-height: 2.0cm; height: auto;
+                min-height: 1.7cm; height: auto;
                 padding: 3px 4px;
                 border-color: #d6d9dd;
                 cursor: default;
+                break-inside: avoid; page-break-inside: avoid;
                 overflow: visible;
             }
             .day-cell:hover { background: #fff; }
@@ -511,10 +520,10 @@
         const holidays2026 = {
             "2026-07-17": "제헌절",
             "2026-08-15": "광복절",
-            "2026-08-17": "대체공휴일",
-            "2026-09-24": "추석 연휴",
+            "2026-08-17": "대체휴일",
+            "2026-09-24": "추석연휴",
             "2026-09-25": "추석",
-            "2026-09-26": "추석 연휴"
+            "2026-09-26": "추석연휴"
         };
 
         // 집행부 명단 + 사람별 고정 색상 (텍스트로 읽기 좋은 진한 톤)
@@ -610,14 +619,14 @@
                     let holidayHTML = '';
                     if (holidays2026[dateStr]) {
                         cell.classList.add('holiday');
-                        holidayHTML = `<span class="holiday-name">${holidays2026[dateStr]}</span>`;
+                        holidayHTML = `<div class="holiday-name">${holidays2026[dateStr]}</div>`;
                     }
 
                     cell.innerHTML = `
                         <div class="day-number">
                             <span class="num">${date}</span>
-                            ${holidayHTML}
                         </div>
+                        ${holidayHTML}
                         <div class="vacation-list" id="list-${dateStr}"></div>
                     `;
 
