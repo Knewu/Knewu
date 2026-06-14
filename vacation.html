@@ -332,6 +332,8 @@
             transition: opacity .12s;
         }
         .vacation-badge:hover { opacity: .82; }
+        /* 3글자 직책(대협長 등)만 살짝 작게·자간 좁게 → 안 잘리게 */
+        .vacation-badge.sm { font-size: 8.5px; letter-spacing: -0.9px; padding: 2px 1px; }
         .vacation-badge .vname {
             display: block;
             overflow: hidden;
@@ -352,6 +354,7 @@
             .day-number { font-size: 11px; }
             .vacation-list { gap: 2px; }
             .vacation-badge { font-size: 9px; padding: 1px 2px; letter-spacing: -0.6px; }
+            .vacation-badge.sm { font-size: 7.5px; letter-spacing: -1px; padding: 1px 1px; }
             .month-section { padding: 14px; }
             select { min-width: 100%; }
             #guideText { min-width: 100%; }
@@ -516,9 +519,9 @@
             "2026-07-17": "제헌절",
             "2026-08-15": "광복절",
             "2026-08-17": "대체휴일",
-            "2026-09-24": "추석연휴",
+            "2026-09-24": "추석",
             "2026-09-25": "추석",
-            "2026-09-26": "추석연휴"
+            "2026-09-26": "추석"
         };
 
         // 집행부 명단 + 사람별 고정 색상 (텍스트로 읽기 좋은 진한 톤)
@@ -730,8 +733,9 @@
                         const users = data[dateStr];
                         Object.keys(users).forEach(name => {
                             const c = colorFor(name);
+                            const sn = shortName(name);
                             const badge = document.createElement('div');
-                            badge.className = 'vacation-badge';
+                            badge.className = 'vacation-badge' + (sn.length >= 3 ? ' sm' : '');
                             badge.style.setProperty('--c', c);
                             badge.title = `${name} · 클릭 시 삭제`;
                             badge.onclick = (e) => { e.stopPropagation(); deleteVacation(dateStr, name); };
