@@ -3,141 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>주간업무 및 출장·근태 통합관리 · 전력노조</title>
+    <title>전국전력노동조합 주간업무</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 
     <style>
         :root {
-            --accent: #1a73e8;
-            --accent-dk: #1557b0;
-            --ink: #202124;
-            --ink-soft: #5f6368;
-            --line: #cbd5e1;
-            --line-black: #000000;
-            --canvas: #ffffff;
-            --page: #f1f3f4;
+            --accent: #2a3a82;
+            --accent-soft: #4666c4;
+            --ink: #1c2530;
+            --ink-soft: #5b6776;
+            --ink-faint: #9aa6b2;
+            --line: #dde3ea;
+            --page: #eef1f5;
+            --paper: #ffffff;
             --radius: 12px;
-            --biz-tint: #e8f0fe;
-            --vac-tint: #f1f3f4;
+
+            /* 붙임 디자인 색 */
+            --nv: #2a3a82;          /* 제목 네이비 */
+            --bar: #4666c4;         /* 상단 블루바 */
+            --blue-bd: #6f8fd8;     /* 이번주 태그 테두리 */
+            --blue-bg: #eef2fc;     /* 이번주 태그 배경 */
+            --gold-bd: #c7a73c;     /* 지난주 태그 테두리 */
+            --gold-bg: #fbf6e4;     /* 지난주 태그 배경 */
+            --card: #f4f6fc;        /* 이번주 카드 배경 */
+            --trip-ink:#1d4271; --trip-bg:#e9f0f8;
+            --leave-ink:#8a560a; --leave-bg:#fbf3e3;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Pretendard', 'Malgun Gothic', -apple-system, sans-serif;
-            background-color: var(--page); color: var(--ink); padding-bottom: 80px;
-            -webkit-font-smoothing: antialiased;
+            background: var(--page); color: var(--ink); padding-bottom: 80px;
+            -webkit-font-smoothing: antialiased; letter-spacing: -.01em;
         }
 
-        /* ── 상단 바 ── */
+        /* ───────── 앱 크롬 (화면 전용) ───────── */
         .topbar {
-            background: var(--canvas); border-bottom: 1px solid var(--line);
-            padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 14px;
-            position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+            background: var(--paper); border-bottom: 1px solid var(--line);
+            padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 12px;
+            position: sticky; top: 0; z-index: 100;
         }
-        .back-btn {
-            display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
-            color: var(--ink-soft); font-size: 14px; font-weight: 600; padding: 7px 12px; border-radius: 8px;
-            transition: background .15s;
+        .back-btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+            color: var(--ink-soft); font-size:13.5px; font-weight:600; padding:7px 11px; border-radius:8px; }
+        .back-btn:hover { background: var(--page); color: var(--accent); }
+        .crumb { font-size:14px; font-weight:800; color: var(--ink); }
+
+        .wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px; }
+
+        /* ───────── 입력 에디터 (심플) ───────── */
+        .editor {
+            background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+            padding: 20px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 16px;
         }
-        .back-btn:hover { background: var(--page); }
-        .topbar .crumb { font-size: 14px; font-weight: 700; color: var(--ink); }
-
-        .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
-
-        /* ── 입력 컨트롤러 대시보드 ── */
-        .panel {
-            background: var(--canvas); border: 1px solid var(--line); border-radius: var(--radius);
-            padding: 22px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 18px;
-        }
-        .panel-title { font-size: 15px; font-weight: 700; border-left: 4px solid var(--accent); padding-left: 8px; }
-
-        /* 직책 전용 네모칸 단추 배치 */
+        .ed-label { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
         .member-grid { display: flex; flex-wrap: wrap; gap: 6px; }
         .member-btn {
-            padding: 10px 18px; font-family: inherit; font-size: 14.5px; font-weight: 700;
-            background: #f8fafc; border: 1px solid var(--line); border-radius: 8px;
-            color: #475569; cursor: pointer; transition: all 0.12s;
+            padding: 8px 14px; font-family: inherit; font-size: 13.5px; font-weight: 700;
+            background: #f5f7fa; border: 1px solid var(--line); border-radius: 999px;
+            color: #46586b; cursor: pointer; transition: all .12s;
         }
-        .member-btn:hover { background: #f1f5f9; }
-        .member-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .member-btn:hover { border-color: var(--accent-soft); color: var(--accent-soft); }
+        .member-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-        .disabled-content { opacity: 0.18; pointer-events: none; }
-
-        /* 양식 세부 그리드 */
-        .form-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
-        @media (max-width: 850px) { .form-grid { grid-template-columns: 1fr; } }
-
+        .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 760px) { .fields { grid-template-columns: 1fr; } }
+        .field { display: flex; flex-direction: column; gap: 6px; }
         textarea {
-            width: 100%; height: 110px; padding: 12px; font-family: inherit; font-size: 14px;
-            border: 1px solid var(--line); border-radius: 8px; resize: none; line-height: 1.5;
+            width: 100%; height: 130px; padding: 11px; font-family: inherit; font-size: 13.5px;
+            border: 1px solid var(--line); border-radius: 9px; resize: vertical; line-height: 1.55;
+            color: var(--ink); background: #fcfdfe;
         }
-        textarea:focus { outline: 2px solid var(--accent); }
+        textarea:focus { outline: none; border-color: var(--accent-soft); box-shadow: 0 0 0 3px #eef2fc; }
+        textarea::placeholder { color: var(--ink-faint); }
+        .hint { font-size: 11.5px; color: var(--ink-faint); line-height: 1.5; }
 
-        /* 📅 월~일 7일 직관적 다중 토글 달력 */
-        .cal-selector-box { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
-        .radio-inline { display: flex; gap: 16px; margin-bottom: 10px; font-size: 14px; font-weight: 700; }
-        .radio-inline input { margin-right: 4px; cursor: pointer; }
-        
-        .days-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .day-node {
-            background: white; border: 1px solid var(--line); border-radius: 6px;
-            padding: 9px 2px; text-align: center; cursor: pointer; user-select: none;
+        .disabled-content { opacity: .25; pointer-events: none; }
+
+        /* 출장근태 접이식 */
+        details.att { border: 1px solid var(--line); border-radius: 9px; padding: 0 14px; background: #fbfcfd; }
+        details.att summary {
+            cursor: pointer; font-size: 13px; font-weight: 700; color: var(--ink-soft);
+            padding: 12px 0; list-style: none; display: flex; align-items: center; gap: 7px;
         }
-        .day-node .n-w { font-size: 13px; font-weight: 800; color: #1e293b; }
-        .day-node .n-d { font-size: 10.5px; color: #64748b; margin-top: 1px; }
-        .day-node.active { background: #2563eb !important; border-color: #2563eb; }
-        .day-node.active * { color: white !important; }
+        details.att summary::-webkit-details-marker { display: none; }
+        details.att summary::before { content: "▸"; color: var(--ink-faint); }
+        details.att[open] summary::before { content: "▾"; }
+        .att-inner { padding: 4px 0 16px; display: flex; flex-direction: column; gap: 10px; }
+        .seg { display:inline-flex; background:#e9edf3; border-radius:7px; padding:3px; align-self:flex-start; }
+        .seg input { position:absolute; opacity:0; pointer-events:none; }
+        .seg label { padding:6px 14px; font-size:12.5px; font-weight:700; color:var(--ink-soft); border-radius:5px; cursor:pointer; }
+        .seg input:checked + label { background:#fff; color:var(--accent); box-shadow:0 1px 2px rgba(0,0,0,.12); }
+        .days-row { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+        .day-node { background:#fff; border:1px solid var(--line); border-radius:7px; padding:8px 2px; text-align:center; cursor:pointer; user-select:none; }
+        .day-node .n-w { font-size:12.5px; font-weight:800; color:#1e293b; }
+        .day-node .n-d { font-size:10px; color:var(--ink-faint); margin-top:1px; }
+        .day-node[data-w="토"] .n-w { color:#2563a8; }
+        .day-node[data-w="일"] .n-w { color:#c0392b; }
+        .day-node.active { background:var(--accent)!important; border-color:var(--accent); }
+        .day-node.active * { color:#fff!important; }
+        .detail-input { width:100%; padding:9px 11px; font-size:12.5px; font-family:inherit; border:1px solid var(--line); border-radius:7px; }
+        .detail-input:focus { outline:none; border-color:var(--accent-soft); }
 
-        .btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-        .btn-submit { background: var(--accent); color: white; border: none; font-weight: 700; cursor: pointer; padding: 10px 20px; border-radius: 6px; }
-        .btn-submit:hover { background: var(--accent-dk); }
-        .btn-clear { background: #ea580c; color: white; border: none; font-weight: 700; cursor: pointer; padding: 10px 14px; border-radius: 6px; }
+        .btn-row { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+        .btn-submit { background:var(--accent); color:#fff; border:none; font-weight:700; font-size:13.5px; font-family:inherit; cursor:pointer; padding:10px 20px; border-radius:8px; }
+        .btn-submit:hover { background:var(--accent-soft); }
+        .btn-clear { background:#fff; color:#c0392b; border:1px solid #e7c4be; font-weight:700; font-size:13px; font-family:inherit; cursor:pointer; padding:9px 14px; border-radius:8px; }
 
-        .btn-print {
-            display: inline-flex; align-items: center; gap: 7px; background: var(--canvas); color: var(--accent);
-            border: 1px solid var(--line); padding: 10px 20px; border-radius: 999px; font-size: 14px; font-weight: 600;
-            cursor: pointer; box-shadow: 0 1px 3px rgba(60,64,67,.08);
+        /* 툴바 */
+        .toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:22px; }
+        .toolbar .spacer { flex:1; }
+        .chk { display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; }
+        .chk input { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+        .btn-ghost { background:#fff; color:var(--accent); border:1px solid var(--line); padding:9px 16px; border-radius:999px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; }
+        .btn-ghost:hover { background:#f5f7fc; }
+        .btn-ghost.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+        .btn-print { display:inline-flex; align-items:center; gap:7px; background:var(--accent); color:#fff; border:none; padding:10px 20px; border-radius:999px; font-size:13.5px; font-weight:700; font-family:inherit; cursor:pointer; box-shadow:0 3px 12px rgba(42,58,130,.25); }
+        .btn-print:hover { background:var(--accent-soft); }
+
+        /* ═════════ 붙임 뉴스레터 (인쇄/미리보기 풀디자인) ═════════ */
+        .news { position: relative; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+        .news-topbar { height: 9px; background: var(--bar); }
+        .news-pad { padding: 34px 40px 30px; position: relative; z-index: 2; }
+        .news-title { font-size: 33px; font-weight: 900; color: var(--nv); letter-spacing: -.02em; line-height: 1.1; }
+        .news-date { font-size: 15px; font-weight: 600; color: var(--ink-faint); margin-top: 8px; letter-spacing: .04em; }
+
+        .sec-h { font-size: 18px; font-weight: 800; color: var(--nv); margin: 30px 0 14px; }
+        .sec-h.prev { margin-top: 34px; }
+
+        .cur-card { background: var(--card); border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 16px; }
+        .prev-body { display: flex; flex-direction: column; gap: 16px; padding: 0 4px; }
+
+        .news-row { display: flex; gap: 14px; align-items: flex-start; }
+        .dept-tag {
+            flex-shrink: 0; min-width: 50px; text-align: center; padding: 3px 6px; font-size: 13px; font-weight: 700;
+            letter-spacing: .18em; border-radius: 4px; line-height: 1.5; margin-top: 1px;
         }
-        .btn-print:hover { background: #f8fbff; }
+        .dept-tag.cur { color: var(--nv); border: 1.5px solid var(--blue-bd); background: var(--blue-bg); }
+        .dept-tag.prev { color: #6b5a14; border: 1.5px solid var(--gold-bd); background: var(--gold-bg); }
+        .act { flex: 1; min-width: 0; }
+        .act-head { font-size: 15.5px; font-weight: 600; color: #232a35; line-height: 1.5; }
+        .act-subs { list-style: none; margin: 5px 0 0; padding-left: 14px; display: flex; flex-direction: column; gap: 3px; }
+        .act-subs li { position: relative; font-size: 14.5px; color: #3a4250; line-height: 1.5; padding-left: 16px; }
+        .act-subs li::before { content: "○"; position: absolute; left: 0; color: #6a7484; font-size: 11px; top: 3px; }
+        .empty-hint { color: var(--ink-faint); font-size: 14px; }
 
-        /* ── 📄 진짜 인쇄용 공인 서식 보드 (여름휴가 시스템 매칭) ── */
-        .doc-page-belt { display: flex; flex-direction: column; gap: 40px; }
-        .page-sheet { background: var(--canvas); border: 1px solid var(--line-black); padding: 40px 45px; }
-        .sheet-title { text-align: center; font-size: 24px; font-weight: 800; text-decoration: underline; margin-bottom: 24px; color: #000; }
-        
-        /* 1) 상단 주요 업무 추진계획 표 서식 */
-        .report-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 10px; }
-        .report-table th, .report-table td { border: 1px solid var(--line-black); padding: 9px 11px; font-size: 14px; vertical-align: top; color: #000; }
-        .report-table th { background: #fdd7cc; font-weight: 700; text-align: center; vertical-align: middle; }
-        .report-table td.center-lbl { text-align: center; vertical-align: middle; font-weight: 700; background: #fafafa; }
-        .report-table td.txt-cell { white-space: pre-wrap; line-height: 1.6; font-weight: 500; }
+        .news-footer { margin-top: 30px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); position: relative; z-index: 2; }
 
-        /* 2) 하단 주간 출장·근태 격자 현황판 서식 */
-        .grid-table { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: center; }
-        .grid-table th, .grid-table td { border: 1px solid var(--line-black); padding: 5px 2px; font-size: 13px; height: 42px; vertical-align: middle; color: #000; }
-        .grid-table th { background: #d9e1f2; font-weight: 700; }
-        .grid-table td.m-name { font-weight: 700; background: #fff; }
-        
-        /* 현황판 셀 내부 한정 스타일 정의 */
-        .badge-cell { font-size: 11.5px; font-weight: 700; line-height: 1.35; outline: none; }
-        .badge-cell.출장 { background: var(--biz-tint) !important; color: #1967d2 !important; }
-        .badge-cell.근태 { background: var(--vac-tint) !important; color: #5f6368 !important; }
+        /* 전기 테마 데코 (우하단) */
+        .news-deco { position: absolute; right: 0; bottom: 0; width: 320px; height: 230px; z-index: 1; pointer-events: none; }
+        .news-mascot { position: absolute; right: 34px; bottom: 26px; width: 150px; z-index: 2; pointer-events: none; }
 
-        /* ── 🖨️ 인쇄 제어 매커니즘 ── */
+        /* ── 화면(미리보기 아님): 심플하게 ── */
+        @media screen {
+            body:not(.preview-mode) .news-topbar { display: none; }
+            body:not(.preview-mode) .news-deco,
+            body:not(.preview-mode) .news-mascot { display: none; }
+            body:not(.preview-mode) .news-pad { padding: 26px 26px 24px; }
+            body:not(.preview-mode) .news-title { font-size: 24px; }
+            body:not(.preview-mode) .cur-card { background: transparent; border-radius: 0; padding: 0; }
+            body:not(.preview-mode) .sec-h { border-left: 4px solid var(--accent-soft); padding-left: 9px; }
+        }
+
+        /* 부속: 출장·근태 현황표 */
+        .att-sheet { display: none; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 26px; }
+        .att-sheet .news-topbar { background: #5f6f93; }
+        .att-pad { padding: 30px 36px; }
+        .att-title { font-size: 21px; font-weight: 800; color: var(--nv); text-align: center; margin-bottom: 4px; }
+        .att-date { font-size: 13px; color: var(--ink-faint); text-align: center; margin-bottom: 18px; }
+        .grid-table { width:100%; border-collapse:collapse; table-layout:fixed; text-align:center; }
+        .grid-table th, .grid-table td { border:1px solid #1c2530; padding:5px 3px; font-size:12.5px; height:42px; vertical-align:middle; color:#000; }
+        .grid-table th { background:#dce4ee; font-weight:700; }
+        .grid-table th[data-w="토"]{color:#2563a8;} .grid-table th[data-w="일"]{color:#c0392b;}
+        .grid-table td.m-name { font-weight:700; background:#fff; }
+        .grid-table td.m-role { font-weight:500; background:#fafbfc; color:#333; font-size:12px; }
+        .grid-table td.wknd { background:#f9fafc; }
+        .badge-cell { font-size:11px; font-weight:700; line-height:1.3; outline:none; }
+        .badge-cell.출장 { background:var(--trip-bg)!important; color:var(--trip-ink)!important; }
+        .badge-cell.근태 { background:var(--leave-bg)!important; color:var(--leave-ink)!important; }
+        .badge-cell .b-tag { font-size:9px; opacity:.85; } .badge-cell .b-txt { display:block; font-weight:600; }
+        @media screen { body.preview-mode.with-att .att-sheet { display: block; } }
+
+        /* ═════════ 인쇄 ═════════ */
         @media print {
-            @page { size: A4 portrait; margin: 12mm; }
-            body { background: #fff; padding: 0; color: #000 !important; }
-            .topbar, .panel, .btn-print { display: none !important; }
+            @page { size: A4 portrait; margin: 0; }
+            body { background: #fff; padding: 0; }
+            .topbar, .editor, .toolbar { display: none !important; }
             .wrap { max-width: none; width: 100%; padding: 0; }
-            .page-sheet { border: none; padding: 0; background: #fff; page-break-after: always; break-after: page; box-shadow: none; }
-            .page-sheet:last-child { page-break-after: auto; break-after: auto; }
-            
-            .report-table th { background: #fdd7cc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .grid-table th { background: #d9e1f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .badge-cell.출장 { background: var(--biz-tint) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .badge-cell.근태 { background: var(--vac-tint) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .news { border: none; border-radius: 0; }
+            .news-pad { padding: 16mm 16mm 12mm; }
+            .news-topbar, .news-title, .news-date, .sec-h, .cur-card,
+            .dept-tag.cur, .dept-tag.prev, .badge-cell.출장, .badge-cell.근태,
+            .grid-table th, .att-sheet .news-topbar {
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+            .att-sheet { display: none; border: none; border-radius: 0; margin-top: 0; }
+            body.with-att .att-sheet { display: block; page-break-before: always; }
+            .att-pad { padding: 16mm; }
         }
     </style>
 </head>
@@ -148,98 +211,112 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             업무포털
         </a>
-        <span class="crumb">집행부 업무포털 <span class="sep">/</span> 주간계획 및 현황 관리</span>
+        <span class="crumb">주간업무 작성</span>
     </div>
 
     <div class="wrap">
-        
-        <div class="panel">
-            <div class="panel-title">👤 성명(직책) 선택</div>
-            <div class="member-grid" id="memberBtnZone"></div>
 
-            <div id="inputFormBlock" class="disabled-content">
-                <div class="form-grid">
-                    
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:13px; font-weight:700;" id="lblWorkTitle">✍️ 업무계획 기재</label>
-                        <textarea id="txWork" placeholder="주요 업무 추진 계획 내용을 입력하세요."></textarea>
+        <!-- 입력 에디터 -->
+        <div class="editor">
+            <div>
+                <div class="ed-label" style="margin-bottom:7px;">담당(부서) 선택</div>
+                <div class="member-grid" id="memberBtnZone"></div>
+            </div>
+
+            <div id="formBlock" class="disabled-content">
+                <div class="fields">
+                    <div class="field">
+                        <label class="ed-label" id="lblThis">이번 주 활동</label>
+                        <textarea id="txThisWeek" placeholder="제목을 첫 줄에, 세부항목은 ○ 또는 - 로 시작"></textarea>
                     </div>
-
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:13px; font-weight:700;">📅 출장 · 근태 요일 다중 선택</label>
-                        <div class="cal-selector-box">
-                            <div class="radio-inline">
-                                <label><input type="radio" name="scType" value="출장" checked> 🏃 출장</label>
-                                <label><input type="radio" name="scType" value="근태"> 📄 근태</label>
-                            </div>
-                            
-                            <div class="days-row">
-                                <div class="day-node" data-w="월" onclick="toggleDayNode('월')"><div class="n-w">월</div><div class="n-d" id="cd-월"></div></div>
-                                <div class="day-node" data-w="화" onclick="toggleDayNode('화')"><div class="n-w">화</div><div class="n-d" id="cd-화"></div></div>
-                                <div class="day-node" data-w="수" onclick="toggleDayNode('수')"><div class="n-w">수</div><div class="n-d" id="cd-수"></div></div>
-                                <div class="day-node" data-w="목" onclick="toggleDayNode('목')"><div class="n-w">목</div><div class="n-d" id="cd-목"></div></div>
-                                <div class="day-node" data-w="금" onclick="toggleDayNode('금')"><div class="n-w">금</div><div class="n-d" id="cd-금"></div></div>
-                                <div class="day-node" data-w="토" onclick="toggleDayNode('토')"><div class="n-w">토</div><div class="n-d" id="cd-토"></div></div>
-                                <div class="day-node" data-w="일" onclick="toggleDayNode('일')"><div class="n-w">일</div><div class="n-d" id="cd-일"></div></div>
-                            </div>
-
-                            <input type="text" id="txScDetail" style="width:100%; margin-top:10px; padding:9px; font-size:13px; border:1px solid var(--line); border-radius:6px;" placeholder="상세 사유 기재 (예: 본사 국회대응 출장 / 연차휴가)">
-                        </div>
+                    <div class="field">
+                        <label class="ed-label" id="lblLast">지난 주 활동</label>
+                        <textarea id="txLastWeek" placeholder="제목을 첫 줄에, 세부항목은 ○ 또는 - 로 시작"></textarea>
                     </div>
-
                 </div>
+                <div class="hint">예) &nbsp;노사합동 봉사활동 시행 &nbsp;⏎&nbsp; ○ 3차 : 6.15(월) ~ 16(화) &nbsp;⏎&nbsp; ○ 4차 : 6.17(수) ~ 18(목)</div>
+
+                <details class="att">
+                    <summary>출장 · 근태 입력 (선택 · 부속 현황표용)</summary>
+                    <div class="att-inner">
+                        <div class="seg">
+                            <input type="radio" name="scType" id="sc-trip" value="출장" checked>
+                            <label for="sc-trip">출장</label>
+                            <input type="radio" name="scType" id="sc-leave" value="근태">
+                            <label for="sc-leave">근태</label>
+                        </div>
+                        <div class="days-row">
+                            <div class="day-node" data-w="월" onclick="toggleDayNode('월')"><div class="n-w">월</div><div class="n-d" id="cd-월"></div></div>
+                            <div class="day-node" data-w="화" onclick="toggleDayNode('화')"><div class="n-w">화</div><div class="n-d" id="cd-화"></div></div>
+                            <div class="day-node" data-w="수" onclick="toggleDayNode('수')"><div class="n-w">수</div><div class="n-d" id="cd-수"></div></div>
+                            <div class="day-node" data-w="목" onclick="toggleDayNode('목')"><div class="n-w">목</div><div class="n-d" id="cd-목"></div></div>
+                            <div class="day-node" data-w="금" onclick="toggleDayNode('금')"><div class="n-w">금</div><div class="n-d" id="cd-금"></div></div>
+                            <div class="day-node" data-w="토" onclick="toggleDayNode('토')"><div class="n-w">토</div><div class="n-d" id="cd-토"></div></div>
+                            <div class="day-node" data-w="일" onclick="toggleDayNode('일')"><div class="n-w">일</div><div class="n-d" id="cd-일"></div></div>
+                        </div>
+                        <input type="text" id="txScDetail" class="detail-input" placeholder="상세 사유 (예: 본사 국회대응 출장 / 연차휴가)">
+                    </div>
+                </details>
 
                 <div class="btn-row">
-                    <button class="btn-clear" onclick="clearDataForMember()">🔥 정보 전체 초기화(삭제)</button>
-                    <button class="btn-submit" onclick="saveDataToServer()">통합 내용 저장</button>
+                    <button class="btn-clear" onclick="clearDataForMember()">이번 주 정보 초기화</button>
+                    <button class="btn-submit" onclick="saveDataToServer()">저장</button>
                 </div>
             </div>
         </div>
 
-        <div style="text-align: right; margin-bottom: 20px;">
+        <!-- 툴바 -->
+        <div class="toolbar">
+            <button class="btn-ghost" id="prevBtn" onclick="togglePreview()">인쇄 미리보기</button>
+            <label class="chk"><input type="checkbox" id="attChk" onchange="toggleAtt()"> 출장·근태 현황표 함께 인쇄</label>
+            <span class="spacer"></span>
             <button class="btn-print" onclick="window.print()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                지정 양식 보고서 인쇄 (A4 세로 마감)
+                인쇄 (A4 세로)
             </button>
         </div>
 
-        <div class="doc-page-belt">
-            
-            <div class="page-sheet">
-                <div class="sheet-title" id="printTitle1">주간업무 계획 보고</div>
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 14%;">처/실</th>
-                            <th style="width: 14%;">국/과</th>
-                            <th style="width: 60%;">주 요 내 용</th>
-                            <th style="width: 12%;">비 고</th>
-                        </tr>
-                    </thead>
-                    <tbody id="domWorkBody"></tbody>
-                </table>
+        <!-- 붙임 뉴스레터 -->
+        <div class="news" id="news">
+            <div class="news-topbar"></div>
+            <div class="news-pad">
+                <div class="news-title">전국전력노동조합 주간업무</div>
+                <div class="news-date" id="newsDate"></div>
+
+                <div class="sec-h">이번 주 활동</div>
+                <div class="cur-card" id="curBody"></div>
+
+                <div class="sec-h prev">지난 주 활동</div>
+                <div class="prev-body" id="prevBody"></div>
+
+                <div class="news-footer">발행 | 전국전력노동조합 복지국</div>
             </div>
 
-            <div class="page-sheet">
-                <div class="sheet-title" id="printTitle2">집행부 주간 출장 · 근태 현황</div>
+            <!-- 전기 테마 데코 -->
+            <svg class="news-deco" viewBox="0 0 320 230" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M40 230 C40 150 120 150 160 200 C200 250 320 210 320 230 Z" fill="#dbe7f7"/>
+                <path d="M200 60 L150 150 L195 150 L175 230 L290 120 L230 120 L270 60 Z" fill="#fbeec0"/>
+                <path d="M255 95 L228 145 L252 145 L240 190 L300 128 L268 128 L292 95 Z" fill="#f5d97f" opacity="0.85"/>
+            </svg>
+            <!-- 실제 마스코트가 있으면 같은 폴더에 mascot.png 로 두면 자동 표시됩니다 -->
+            <img class="news-mascot" id="mascot" alt="" src="mascot.png" onerror="this.style.display='none'">
+        </div>
+
+        <!-- 부속: 출장·근태 현황표 -->
+        <div class="att-sheet" id="attSheet">
+            <div class="news-topbar"></div>
+            <div class="att-pad">
+                <div class="att-title">집행부 주간 출장 · 근태 현황</div>
+                <div class="att-date" id="attDate"></div>
                 <table class="grid-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 12%;">성명</th>
-                            <th style="width: 14%;">직책</th>
-                            <th id="th-월">월</th>
-                            <th id="th-화">화</th>
-                            <th id="th-수">수</th>
-                            <th id="th-목">목</th>
-                            <th id="th-금">금</th>
-                            <th id="th-토">토</th>
-                            <th id="th-일">일</th>
-                        </tr>
-                    </thead>
+                    <thead><tr>
+                        <th style="width:11%;">성명</th><th style="width:13%;">직책</th>
+                        <th data-w="월" id="th-월">월</th><th data-w="화" id="th-화">화</th><th data-w="수" id="th-수">수</th>
+                        <th data-w="목" id="th-목">목</th><th data-w="금" id="th-금">금</th><th data-w="토" id="th-토">토</th><th data-w="일" id="th-일">일</th>
+                    </tr></thead>
                     <tbody id="domGridBody"></tbody>
                 </table>
             </div>
-
         </div>
 
     </div>
@@ -254,184 +331,177 @@
             messagingSenderId: "301755569133",
             appId: "1:301755569133:web:9bd85133d084c041368de4"
         };
-
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const dbRef = database.ref('perfect_clean_report_2026');
 
-        // 요청하신 2글자 단축 구조 10인 명단
         const MEMBERS = ["총무", "조직", "기획", "정책", "복지", "산안", "교문", "홍部", "김次", "이課"];
         const WEEKS = ["월", "화", "수", "목", "금", "토", "일"];
+        const WKND = { "토": true, "일": true };
 
         let selectedUser = "";
         let serverCache = {};
         let activeDays = [];
-        let dateStrings = {};
 
-        // 날짜 주간 자동 트래킹 엔진
-        function calculateWeeklyDates() {
-            const current = new Date();
-            const currentDay = current.getDay();
-            const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-            
-            const monday = new Date(current);
-            monday.setDate(current.getDate() + distanceToMonday);
+        function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        function pad(n){ return String(n).padStart(2,'0'); }
 
-            WEEKS.forEach((w, idx) => {
-                const target = new Date(monday);
-                target.setDate(monday.getDate() + idx);
-                const m = target.getMonth() + 1;
-                const d = target.getDate();
-                dateStrings[w] = `${m}/${d}`;
-                
-                document.getElementById(`cd-${w}`).innerText = `${m}/${d}`;
-                document.getElementById(`th-${w}`).innerText = `${m}/${d}(${w})`;
+        // 주간 날짜 — 토/일은 다가오는 주(월~금)로 인식
+        function calcDates() {
+            const now = new Date();
+            const dow = now.getDay();
+            let toMon;
+            if (dow === 0) toMon = 1;        // 일요일 → 내일(월)
+            else if (dow === 6) toMon = 2;   // 토요일 → 다음 월
+            else toMon = 1 - dow;            // 월~금 → 이번 주 월
+
+            const mon = new Date(now); mon.setDate(now.getDate() + toMon);
+            const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+            const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+
+            document.getElementById('newsDate').innerText =
+                `${mon.getFullYear()}. ${pad(mon.getMonth()+1)}. ${pad(mon.getDate())} ~ ${pad(fri.getMonth()+1)}. ${pad(fri.getDate())}`;
+            document.getElementById('attDate').innerText =
+                `(${mon.getFullYear()}. ${mon.getMonth()+1}. ${mon.getDate()} ~ ${sun.getMonth()+1}. ${sun.getDate()})`;
+
+            WEEKS.forEach((w, i) => {
+                const t = new Date(mon); t.setDate(mon.getDate() + i);
+                const lbl = `${t.getMonth()+1}/${t.getDate()}`;
+                document.getElementById(`cd-${w}`).innerText = lbl;
+                document.getElementById(`th-${w}`).innerText = `${lbl}(${w})`;
             });
-
-            const sunday = new Date(monday);
-            sunday.setDate(monday.getDate() + 6);
-            const periodStr = `(${monday.getFullYear()}. ${monday.getMonth()+1}. ${monday.getDate()} ~ ${sunday.getMonth()+1}. ${sunday.getDate()})`;
-            
-            document.getElementById('printTitle1').innerText = `주간업무 추진계획 ${periodStr}`;
-            document.getElementById('printTitle2').innerText = `집행부 주간 출장 · 근태 현황 ${periodStr}`;
         }
 
         function initApp() {
-            calculateWeeklyDates();
-            const zone = document.getElementById('memberBtnZone');
-            zone.innerHTML = MEMBERS.map(m => `
-                <button class="member-btn" id="b-mem-${m}" onclick="clickMemberBtn('${m}')">${m}</button>
-            `).join('');
+            calcDates();
+            document.getElementById('memberBtnZone').innerHTML = MEMBERS.map(m =>
+                `<button class="member-btn" id="b-mem-${m}" onclick="clickMemberBtn('${m}')">${m}</button>`
+            ).join('');
         }
 
         function clickMemberBtn(m) {
             document.querySelectorAll('.member-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`b-mem-${m}`).classList.add('active');
-
             selectedUser = m;
-            document.getElementById('inputFormBlock').classList.remove('disabled-content');
-            document.getElementById('lblWorkTitle').innerText = `✍️ [${m}] 주요 업무계획 입력`;
+            document.getElementById('formBlock').classList.remove('disabled-content');
+            document.getElementById('lblThis').innerText = `[${m}] 이번 주 활동`;
+            document.getElementById('lblLast').innerText = `[${m}] 지난 주 활동`;
 
-            const data = serverCache[m] || {};
-            document.getElementById('txWork').value = data.work || '';
+            const d = serverCache[m] || {};
+            document.getElementById('txThisWeek').value = d.thisWeek ?? d.work ?? '';
+            document.getElementById('txLastWeek').value = d.lastWeek ?? '';
             document.getElementById('txScDetail').value = '';
-            activeDays = [];
-            refreshDayNodesUI();
+            activeDays = []; refreshDayNodesUI();
         }
 
         function toggleDayNode(day) {
-            const idx = activeDays.indexOf(day);
-            if(idx > -1) activeDays.splice(idx, 1);
-            else activeDays.push(day);
+            const i = activeDays.indexOf(day);
+            if (i > -1) activeDays.splice(i, 1); else activeDays.push(day);
             refreshDayNodesUI();
         }
-
         function refreshDayNodesUI() {
-            document.querySelectorAll('.day-node').forEach(node => {
-                const w = node.getAttribute('data-w');
-                node.className = activeDays.includes(w) ? 'day-node active' : 'day-node';
+            document.querySelectorAll('.day-node').forEach(n => {
+                n.classList.toggle('active', activeDays.includes(n.getAttribute('data-w')));
             });
         }
 
         function saveDataToServer() {
-            if(!selectedUser) return;
-            const work = document.getElementById('txWork').value.trim();
+            if (!selectedUser) return;
+            dbRef.child(selectedUser).child('thisWeek').set(document.getElementById('txThisWeek').value.trim());
+            dbRef.child(selectedUser).child('lastWeek').set(document.getElementById('txLastWeek').value.trim());
+
             const scType = document.querySelector('input[name="scType"]:checked').value;
             const scDetail = document.getElementById('txScDetail').value.trim();
-
-            dbRef.child(selectedUser).child('work').set(work);
-
-            if(activeDays.length > 0 && scDetail) {
+            if (activeDays.length > 0 && scDetail) {
                 const daysObj = serverCache[selectedUser]?.days || {};
-                activeDays.forEach(w => {
-                    daysObj[w] = { type: scType, text: scDetail };
-                });
+                activeDays.forEach(w => { daysObj[w] = { type: scType, text: scDetail }; });
                 dbRef.child(selectedUser).child('days').set(daysObj);
             }
-
-            alert(`${selectedUser} 정보가 실시간 반영되었습니다.`);
-            activeDays = [];
-            document.getElementById('txScDetail').value = '';
-            refreshDayNodesUI();
+            alert(`${selectedUser} 저장되었습니다.`);
+            activeDays = []; document.getElementById('txScDetail').value = ''; refreshDayNodesUI();
         }
 
         function clearDataForMember() {
-            if(!selectedUser) return;
-            if(confirm(`[${selectedUser}]의 이번 주 모든 데이터(업무계획+출장근태)를 삭제하시겠습니까?`)) {
+            if (!selectedUser) return;
+            if (confirm(`[${selectedUser}]의 이번 주·지난 주 활동 및 출장근태를 모두 삭제할까요?`)) {
                 dbRef.child(selectedUser).remove().then(() => {
-                    alert("정상 삭제 처리되었습니다.");
-                    document.getElementById('txWork').value = '';
+                    alert("삭제되었습니다.");
+                    document.getElementById('txThisWeek').value = '';
+                    document.getElementById('txLastWeek').value = '';
                     document.getElementById('txScDetail').value = '';
-                    activeDays = [];
-                    refreshDayNodesUI();
+                    activeDays = []; refreshDayNodesUI();
                 });
             }
         }
 
         function removeDayLive(user, day) {
-            dbRef.child(user).child('days').child(day).remove();
+            if (confirm(`[${user}] ${day}요일 출장·근태 항목을 삭제할까요?`))
+                dbRef.child(user).child('days').child(day).remove();
         }
 
-        function drawReportSheets() {
-            // 1. 주요업무 요약본 드로잉 (사무처 / 기획처 대분류 바인딩)
-            const workBody = document.getElementById('domWorkBody');
-            workBody.innerHTML = '';
-            let officeRendered = false;
-            let planningRendered = false;
+        function togglePreview() {
+            const on = document.body.classList.toggle('preview-mode');
+            const b = document.getElementById('prevBtn');
+            b.classList.toggle('on', on);
+            b.innerText = on ? '미리보기 끄기' : '인쇄 미리보기';
+        }
+        function toggleAtt() {
+            document.body.classList.toggle('with-att', document.getElementById('attChk').checked);
+        }
 
-            MEMBERS.forEach(m => {
-                const data = serverCache[m] || {};
-                const workText = data.work || '';
-
-                let leftTd = '';
-                if(m === "총무" || m === "조직") {
-                    if(!officeRendered) { leftTd = `<td rowspan="2" class="center-lbl">사 무 처</td>`; officeRendered = true; }
-                } else if(m === "교문") {
-                    leftTd = `<td class="center-lbl">대외협력</td>`;
-                } else {
-                    if(!planningRendered) { leftTd = `<td rowspan="${MEMBERS.length - 3}" class="center-lbl">기 획 처</td>`; planningRendered = true; }
-                }
-
-                workBody.innerHTML += `
-                    <tr>
-                        ${leftTd}
-                        <td class="center-lbl">${m}</td>
-                        <td class="txt-cell">${workText ? workText : '<span style="color:#ccc;">- 주요 내용 미입력</span>'}</td>
-                        <td></td>
-                    </tr>
-                `;
+        // 활동 텍스트 → 제목 + ○ 세부항목
+        function renderActivity(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+            const head = [], subs = [];
+            lines.forEach(l => {
+                if (/^[○●•◦∙*\-]\s*/.test(l)) subs.push(l.replace(/^[○●•◦∙*\-]\s*/, ''));
+                else head.push(l);
             });
+            let html = `<div class="act-head">${head.map(escapeHtml).join('<br>')}</div>`;
+            if (subs.length) html += `<ul class="act-subs">${subs.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>`;
+            return html;
+        }
+        function rowHtml(m, text, kind) {
+            return `<div class="news-row"><span class="dept-tag ${kind}">${escapeHtml(m)}</span><div class="act">${renderActivity(text)}</div></div>`;
+        }
 
-            // 2. 10인 격자 현황판 드로잉 (더블클릭 개별 삭제 유지)
-            const gridBody = document.getElementById('domGridBody');
-            gridBody.innerHTML = '';
-
+        function draw() {
+            let cur = '';
             MEMBERS.forEach(m => {
-                let row = `<tr><td class="m-name">${m}</td><td style="font-weight:600; background:#fafafa;">국장급</td>`;
-                
+                const tw = (serverCache[m]?.thisWeek ?? serverCache[m]?.work ?? '').trim();
+                if (tw) cur += rowHtml(m, tw, 'cur');
+            });
+            document.getElementById('curBody').innerHTML = cur || '<div class="empty-hint">입력된 이번 주 활동이 없습니다.</div>';
+
+            let prev = '';
+            MEMBERS.forEach(m => {
+                const lw = (serverCache[m]?.lastWeek ?? '').trim();
+                if (lw) prev += rowHtml(m, lw, 'prev');
+            });
+            document.getElementById('prevBody').innerHTML = prev || '<div class="empty-hint">입력된 지난 주 활동이 없습니다.</div>';
+
+            let grid = '';
+            MEMBERS.forEach(m => {
+                let row = `<tr><td class="m-name">${m}</td><td class="m-role">국장급</td>`;
                 WEEKS.forEach(w => {
-                    const deptData = serverCache[m] || {};
-                    const sc = deptData.days?.[w];
-
-                    if(sc) {
-                        row += `<td class="badge-cell ${sc.type}" title="더블클릭 시 삭제" dblclick="removeDayLive('${m}', '${w}')">${sc.type}<br>${sc.text}</td>`;
-                    } else {
-                        row += `<td></td>`;
-                    }
+                    const sc = serverCache[m]?.days?.[w];
+                    const wk = WKND[w] ? ' wknd' : '';
+                    if (sc) row += `<td class="badge-cell ${sc.type}${wk}" title="더블클릭 삭제" ondblclick="removeDayLive('${m}','${w}')"><span class="b-tag">${sc.type}</span><span class="b-txt">${escapeHtml(sc.text)}</span></td>`;
+                    else row += `<td class="${wk.trim()}"></td>`;
                 });
-
-                row += `</tr>`;
-                gridBody.innerHTML += row;
+                grid += row + `</tr>`;
             });
+            document.getElementById('domGridBody').innerHTML = grid;
         }
 
-        dbRef.on('value', (snapshot) => {
-            serverCache = snapshot.val() || {};
-            drawReportSheets();
-            
-            if(selectedUser) {
-                const data = serverCache[selectedUser] || {};
-                document.getElementById('txWork').value = data.work || '';
+        dbRef.on('value', (snap) => {
+            serverCache = snap.val() || {};
+            draw();
+            if (selectedUser) {
+                const d = serverCache[selectedUser] || {};
+                const a = document.getElementById('txThisWeek'), b = document.getElementById('txLastWeek');
+                if (document.activeElement !== a) a.value = d.thisWeek ?? d.work ?? '';
+                if (document.activeElement !== b) b.value = d.lastWeek ?? '';
             }
         });
 
