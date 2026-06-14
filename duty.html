@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>주간업무 및 출장·근태 현황 시스템</title>
+    <title>제24대 집행부 주간 일정 관리</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
@@ -15,8 +15,12 @@
             --ink-soft: #5f6368;
             --line: #000000;
             --line-light: #cbd5e1;
-            --page: #f8fafc;
+            --page: #f1f3f4;
             --canvas: #ffffff;
+            --biz-bg: #e8f0fe;
+            --biz-text: #1967d2;
+            --vac-bg: #f1f3f4;
+            --vac-text: #5f6368;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,7 +29,7 @@
             background-color: var(--page); color: var(--ink); padding-bottom: 100px;
         }
 
-        /* ── 상단 바 ── */
+        /* ── 상단 네비게이션 ── */
         .topbar {
             background: var(--canvas); border-bottom: 1px solid var(--line-light);
             padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 14px;
@@ -36,209 +40,198 @@
             color: var(--ink-soft); font-size: 14px; font-weight: 600; padding: 7px 12px; border-radius: 8px;
         }
         .back-btn:hover { background: #e2e8f0; }
-        .topbar .crumb { font-size: 14px; font-weight: 700; }
 
-        .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+        .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
 
-        /* ── 관리자 대시보드 패널 ── */
+        /* ── 대시보드 입력 패널 ── */
         .panel {
-            background: var(--canvas); border: 1px solid var(--line-light); border-radius: 12px;
-            padding: 24px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 18px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            background: var(--canvas); border: 1px solid var(--line-light); border-radius: 16px;
+            padding: 24px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
         .panel h2 { font-size: 15px; font-weight: 800; color: var(--accent); }
 
-        /* 부서 네모 단추 그리드 */
-        .dept-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+        /* 직책 단추 그리드 (10인) */
+        .dept-grid { display: flex; flex-wrap: wrap; gap: 8px; }
         .dept-btn {
-            padding: 10px 16px; font-family: inherit; font-size: 13.5px; font-weight: 700;
-            background: #f1f5f9; border: 1px solid var(--line-light); border-radius: 6px;
+            padding: 12px 20px; font-family: inherit; font-size: 14px; font-weight: 700;
+            background: #f1f5f9; border: 1px solid var(--line-light); border-radius: 10px;
             color: #475569; cursor: pointer; transition: all 0.1s;
         }
-        .dept-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .dept-btn.active { background: var(--accent); color: white; border-color: var(--accent); transform: scale(1.05); }
 
-        .disabled-content { opacity: 0.15; pointer-events: none; }
+        .disabled-content { opacity: 0.2; pointer-events: none; }
 
-        /* 입력 메인 영역 슬림화 */
-        .form-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; }
+        /* 입력 폼 레이아웃 */
+        .form-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
         @media (max-width: 850px) { .form-layout { grid-template-columns: 1fr; } }
 
-        .form-cell { display: flex; flex-direction: column; gap: 6px; }
-        .form-cell label { font-size: 13px; font-weight: 700; color: #334155; }
+        .form-cell { display: flex; flex-direction: column; gap: 10px; }
+        .form-cell label { font-size: 14px; font-weight: 700; color: #334155; border-left: 4px solid var(--accent); padding-left: 8px; }
         
         textarea {
-            width: 100%; height: 100px; padding: 10px; font-family: inherit; font-size: 13.5px;
-            border: 1px solid var(--line-light); border-radius: 6px; resize: none; line-height: 1.5;
+            width: 100%; height: 120px; padding: 12px; font-family: inherit; font-size: 14px;
+            border: 1px solid var(--line-light); border-radius: 8px; resize: none; line-height: 1.6;
         }
-        textarea:focus { border-color: var(--accent); outline: none; }
 
-        /* 📅 7일 직관적 다중 선택 달력 판 */
-        .cal-box { background: #f8fafc; border: 1px solid var(--line-light); border-radius: 8px; padding: 12px; }
-        .cal-days-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; }
+        /* 📅 요일 다중 선택 박스 */
+        .cal-selector { background: #f8fafc; border: 1px solid var(--line-light); border-radius: 10px; padding: 16px; }
+        .days-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
         .day-node {
-            background: white; border: 1px solid var(--line-light); border-radius: 4px;
-            padding: 8px 2px; text-align: center; cursor: pointer; user-select: none;
+            background: white; border: 1px solid var(--line-light); border-radius: 6px;
+            padding: 10px 2px; text-align: center; cursor: pointer; transition: 0.15s;
         }
-        .day-node .n-w { font-size: 12px; font-weight: 700; color: #1e293b; }
-        .day-node .n-d { font-size: 10px; color: #64748b; margin-top: 1px; }
-        
-        /* 다중 선택 온오프 칼라 */
-        .day-node.active { background: #2563eb !important; border-color: #2563eb; }
+        .day-node.active { background: #2563eb !important; color: white !important; }
         .day-node.active * { color: white !important; }
+        .n-w { font-size: 13px; font-weight: 800; }
+        .n-d { font-size: 11px; margin-top: 2px; opacity: 0.8; }
 
-        .btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
-        .btn-submit { background: var(--accent); color: white; border: none; font-weight: 700; cursor: pointer; padding: 10px 20px; border-radius: 6px; font-size: 13.5px; }
-        .btn-clear { background: #dc2626; color: white; border: none; font-weight: 700; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13.5px; }
+        .btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+        .btn-submit { background: var(--accent); color: white; border: none; font-weight: 700; cursor: pointer; padding: 12px 24px; border-radius: 8px; }
+        .btn-clear { background: #dc2626; color: white; border: none; font-weight: 700; cursor: pointer; padding: 12px 16px; border-radius: 8px; }
 
-        .btn-print-trigger {
-            background: #22c55e; color: white; border: none; font-weight: 700; cursor: pointer;
-            padding: 12px 24px; border-radius: 30px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;
-            box-shadow: 0 4px 10px rgba(34,197,94,0.2);
+        /* ── 🖨️ 인쇄/문서 서식 (사진 속 캘린더 스타일) ── */
+        .doc-sheet { background: var(--canvas); border: 1px solid var(--line); padding: 40px 45px; margin-bottom: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .doc-title { text-align: center; font-size: 26px; font-weight: 900; text-decoration: underline; margin-bottom: 24px; }
+        
+        /* 1) 상단 요약 표 */
+        .summary-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 30px; }
+        .summary-table th, .summary-table td { border: 1px solid #000; padding: 10px; font-size: 14px; color: #000; vertical-align: top; }
+        .summary-table th { background: #fdd7cc; font-weight: 800; text-align: center; }
+        .summary-table td.center { text-align: center; vertical-align: middle; font-weight: 700; background: #fafafa; }
+        .summary-table td.text { white-space: pre-wrap; line-height: 1.6; }
+
+        /* 2) 하단 캘린더 스타일 일정표 */
+        .calendar-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            border-top: 2px solid #000; border-left: 1px solid #000;
+        }
+        .cal-head {
+            background: #d9e1f2; border-right: 1px solid #000; border-bottom: 1px solid #000;
+            padding: 8px; text-align: center; font-size: 13px; font-weight: 800;
+        }
+        .cal-cell {
+            background: #fff; border-right: 1px solid #000; border-bottom: 1px solid #000;
+            min-height: 180px; padding: 6px; display: flex; flex-direction: column; gap: 4px;
+        }
+        .cal-date { font-size: 14px; font-weight: 900; margin-bottom: 6px; }
+        
+        /* 일정 블록 스타일 (사진 느낌) */
+        .event-block {
+            font-size: 11px; font-weight: 700; padding: 4px 6px; border-radius: 4px; line-height: 1.3;
+            border-left: 4px solid #000;
+        }
+        .event-block.출장 { background: var(--biz-bg); color: var(--biz-text); border-color: var(--biz-text); }
+        .event-block.근태 { background: var(--vac-bg); color: var(--vac-text); border-color: var(--vac-text); }
+        .ev-name { font-size: 12px; display: block; margin-bottom: 1px; }
+
+        .btn-print-action {
+            position: fixed; bottom: 30px; right: 30px; background: #22c55e; color: white;
+            padding: 16px 32px; border-radius: 50px; font-weight: 800; border: none; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(34,197,94,0.3); z-index: 1000;
         }
 
-        /* ── 🖨️ 인쇄/출력용 정형 문서 스타일 (실물 완벽 일치 서식) ── */
-        .doc-page-wrap { display: flex; flex-direction: column; gap: 40px; }
-        .doc-sheet { background: var(--canvas); border: 1px solid var(--line); padding: 40px 45px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-
-        .doc-header-title { text-align: center; font-size: 24px; font-weight: 800; text-decoration: underline; margin-bottom: 24px; color: #000; }
-        
-        /* 1) 상단 주요업무 요약 표 */
-        .report-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 10px; }
-        .report-table th, .report-table td { border: 1px solid var(--line); padding: 8px 10px; font-size: 13.5px; vertical-align: top; color: #000; }
-        .report-table th { background: #fdd7cc; font-weight: 700; text-align: center; vertical-align: middle; }
-        .report-table td.center-lbl { text-align: center; vertical-align: middle; font-weight: 700; }
-        .report-table td.txt-cell { white-space: pre-wrap; line-height: 1.6; font-weight: 500; }
-
-        /* 2) 하단 출장/근태 종합 현황판 격자 표 (월~일 7일 스펙) */
-        .grid-table { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: center; }
-        .grid-table th, .grid-table td { border: 1px solid var(--line); padding: 6px 2px; font-size: 12.5px; height: 40px; vertical-align: middle; color: #000; }
-        .grid-table th { background: #d9e1f2; font-weight: 700; }
-        .grid-table td.m-name { font-weight: 700; background: #fff; }
-        .grid-table td.m-duty { font-weight: 600; background: #fff; }
-        
-        /* 현황판 셀 내부 텍스트 노출 스타일 */
-        .badge-cell { font-size: 11px; font-weight: 700; line-height: 1.3; }
-        .badge-cell.출장 { background: #efe9f8 !important; } /* 심플 보라 회색톤 */
-        .badge-cell.근태 { background: #e2e8f0 !important; }
-
-        /* ── 🖨️ 진짜 인쇄 제어 서식 ── */
         @media print {
-            @page { size: A4 portrait; margin: 12mm 12mm; }
-            body { background: #fff; padding: 0; color: #000 !important; }
-            .topbar, .panel, .btn-print-trigger { display: none !important; }
-            .wrap { max-width: none; width: 100%; padding: 0; }
-            .doc-sheet { border: none; padding: 0; background: #fff; page-break-after: always; break-after: page; box-shadow: none; }
-            .doc-sheet:last-child { page-break-after: auto; break-after: auto; }
-            
-            .report-table th { background: #fdd7cc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .grid-table th { background: #d9e1f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .badge-cell.출장 { background: #efe9f8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .badge-cell.근태 { background: #e2e8f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { size: A4 portrait; margin: 10mm; }
+            body { background: #fff; padding: 0; }
+            .topbar, .panel, .btn-print-action { display: none !important; }
+            .doc-sheet { border: none; padding: 0; box-shadow: none; page-break-after: always; }
+            .summary-table th { background: #fdd7cc !important; -webkit-print-color-adjust: exact; }
+            .cal-head { background: #d9e1f2 !important; -webkit-print-color-adjust: exact; }
+            .event-block.출장 { background: #e8f0fe !important; -webkit-print-color-adjust: exact; }
+            .event-block.근태 { background: #f1f3f4 !important; -webkit-print-color-adjust: exact; }
         }
     </style>
 </head>
 <body>
 
     <div class="topbar">
-        <a class="back-btn" href="index.html">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            업무포털
-        </a>
-        <span class="crumb">집행부 업무포털 <span class="sep">/</span> 주간 현황 종합 관리</span>
+        <a class="back-btn" href="index.html">⬅ 업무포털 메인</a>
+        <span class="crumb">제24대 집행부 주간 일정 및 업무 통합관리</span>
     </div>
 
     <div class="wrap">
         
         <div class="panel">
-            <h2>🏢 실·국 선택 단추</h2>
-            <div class="dept-grid" id="deptBtnZone"></div>
+            <h2>👤 본인 성명(직책) 선택</h2>
+            <div class="dept-grid" id="memberBtnZone"></div>
 
             <div id="inputFormBlock" class="disabled-content">
                 <div class="form-layout">
-                    
                     <div class="form-cell">
-                        <label id="lblWorkTitle">✍️ 주요 업무계획 입력</label>
-                        <textarea id="txWork" placeholder="이번 주 및 다음 주 주요 업무 내용을 기술하세요."></textarea>
+                        <label id="lblWork">✍️ 주간 주요 업무계획 입력</label>
+                        <textarea id="txWork" placeholder="이번 주 핵심 업무 및 다음 주 계획을 적어주세요."></textarea>
                     </div>
 
                     <div class="form-cell">
-                        <label>📅 출장 · 근태 요일 다중 선택 (클릭 시 온/오프)</label>
-                        <div class="cal-box">
-                            <div style="display: flex; gap: 14px; margin-bottom: 8px; font-size: 13.5px; font-weight: 700;">
+                        <label>📅 출장 · 근태 일정 등록 (요일 선택)</label>
+                        <div class="cal-selector">
+                            <div style="display: flex; gap: 14px; margin-bottom: 10px; font-weight: 800;">
                                 <label><input type="radio" name="scType" value="출장" checked> 🏃 출장</label>
                                 <label><input type="radio" name="scType" value="근태"> 📄 근태 (휴가/연차)</label>
                             </div>
-                            
-                            <div class="cal-days-row" id="calDaysRow">
-                                <div class="day-node" data-w="월" onclick="toggleDayNode('월')"><div class="n-w">월</div><div class="n-d" id="cd-월"></div></div>
-                                <div class="day-node" data-w="화" onclick="toggleDayNode('화')"><div class="n-w">화</div><div class="n-d" id="cd-화"></div></div>
-                                <div class="day-node" data-w="수" onclick="toggleDayNode('수')"><div class="n-w">수</div><div class="n-d" id="cd-수"></div></div>
-                                <div class="day-node" data-w="목" onclick="toggleDayNode('목')"><div class="n-w">목</div><div class="n-d" id="cd-목"></div></div>
-                                <div class="day-node" data-w="금" onclick="toggleDayNode('금')"><div class="n-w">금</div><div class="n-d" id="cd-금"></div></div>
-                                <div class="day-node" data-w="토" onclick="toggleDayNode('토')"><div class="n-w">토</div><div class="n-d" id="cd-토"></div></div>
-                                <div class="day-node" data-w="일" onclick="toggleDayNode('일')"><div class="n-w">일</div><div class="n-d" id="cd-일"></div></div>
+                            <div class="days-row" id="calDaysRow">
+                                <div class="day-node" data-w="월" onclick="toggleDay('월')"><div class="n-w">월</div><div class="n-d" id="d-월"></div></div>
+                                <div class="day-node" data-w="화" onclick="toggleDay('화')"><div class="n-w">화</div><div class="n-d" id="d-화"></div></div>
+                                <div class="day-node" data-w="수" onclick="toggleDay('수')"><div class="n-w">수</div><div class="n-d" id="d-수"></div></div>
+                                <div class="day-node" data-w="목" onclick="toggleDay('목')"><div class="n-w">목</div><div class="n-d" id="d-목"></div></div>
+                                <div class="day-node" data-w="금" onclick="toggleDay('금')"><div class="n-w">금</div><div class="n-d" id="d-금"></div></div>
+                                <div class="day-node" data-w="토" onclick="toggleDay('토')"><div class="n-w">토</div><div class="n-d" id="d-토"></div></div>
+                                <div class="day-node" data-w="일" onclick="toggleDay('일')"><div class="n-w">일</div><div class="n-d" id="d-일"></div></div>
                             </div>
-
-                            <input type="text" id="txScDetail" style="width:100%; margin-top:10px; padding:8px; font-size:13px; border:1px solid var(--line-light); border-radius:4px;" placeholder="출장지 또는 사유 입력 (예: 본사 대외협력 / 연차휴가)">
+                            <input type="text" id="txDetail" style="width:100%; margin-top:12px; padding:10px; border:1px solid #cbd5e1; border-radius:6px;" placeholder="상세 내용 (예: 본사 대외협력 출장 / 연차휴가)">
                         </div>
                     </div>
-
                 </div>
 
                 <div class="btn-row">
-                    <button class="btn-clear" onclick="clearAllDataForDept()">🔥 내용 전체 초기화(삭제)</button>
-                    <button class="btn-submit" onclick="saveDataToServer()">통합 내용 저장</button>
+                    <button class="btn-clear" onclick="deleteMyData()">🔥 내용 전체 삭제</button>
+                    <button class="btn-submit" onclick="saveData()">내용 실시간 저장</button>
                 </div>
             </div>
         </div>
 
-        <div style="text-align: right; margin-bottom: 20px;">
-            <button class="btn-print-trigger" onclick="window.print()">
-                🖨️ 서식 보고서 최종 인쇄 (A4 규격 마감)
-            </button>
+        <button class="btn-print-action" onclick="window.print()">🖨️ 보고서 인쇄 (A4 마감)</button>
+
+        <div class="doc-sheet">
+            <div class="doc-title" id="title1">주간업무 추진계획</div>
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th style="width: 14%;">처/실</th>
+                        <th style="width: 14%;">국/과</th>
+                        <th style="width: 60%;">주 요 내 용</th>
+                        <th style="width: 12%;">비고</th>
+                    </tr>
+                </thead>
+                <tbody id="renderSummary"></tbody>
+            </table>
         </div>
 
-        <div class="doc-page-wrap">
-            
-            <div class="doc-sheet">
-                <div class="doc-header-title" id="printTitle1">주간업무 계획 보고</div>
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 15%;">실·국별</th>
-                            <th style="width: 73%;">주 요 내 용</th>
-                            <th style="width: 12%;">비 고</th>
-                        </tr>
-                    </thead>
-                    <tbody id="domWorkBody"></tbody>
-                </table>
+        <div class="doc-sheet">
+            <div class="doc-title" id="title2">집행부 주간 출장 · 근태 현황</div>
+            <div class="calendar-grid" id="renderCalendar">
+                <div class="cal-head" id="h-월">월</div>
+                <div class="cal-head" id="h-화">화</div>
+                <div class="cal-head" id="h-수">수</div>
+                <div class="cal-head" id="h-목">목</div>
+                <div class="cal-head" id="h-금">금</div>
+                <div class="cal-head" id="h-토">토</div>
+                <div class="cal-head" id="h-일">일</div>
+                <div class="cal-cell" id="c-월"></div>
+                <div class="cal-cell" id="c-화"></div>
+                <div class="cal-cell" id="c-수"></div>
+                <div class="cal-cell" id="c-목"></div>
+                <div class="cal-cell" id="c-금"></div>
+                <div class="cal-cell" id="c-토"></div>
+                <div class="cal-cell" id="c-일"></div>
             </div>
-
-            <div class="doc-sheet">
-                <div class="doc-header-title" id="printTitle2">노조본부 주간 출장·근태 현황</div>
-                <table class="grid-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 10%;">성명</th>
-                            <th style="width: 12%;">직책</th>
-                            <th id="th-월">월</th>
-                            <th id="th-화">화</th>
-                            <th id="th-수">수</th>
-                            <th id="th-목">목</th>
-                            <th id="th-금">금</th>
-                            <th id="th-토">토</th>
-                            <th id="th-일">일</th>
-                        </tr>
-                    </thead>
-                    <tbody id="domGridBody"></tbody>
-                </table>
-            </div>
-
         </div>
 
     </div>
 
     <script>
+        // Firebase 설정 (호상님 기존 프로젝트)
         const firebaseConfig = {
             apiKey: "AIzaSyDUFwsNEBzTZxr8EJuY2BZkYTEBadQoMk8",
             authDomain: "knewu-64318.firebaseapp.com",
@@ -248,224 +241,145 @@
             messagingSenderId: "301755569133",
             appId: "1:301755569133:web:9bd85133d084c041368de4"
         };
-
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        const dbRef = database.ref('perfect_clean_report_2026');
+        const dbRef = database.ref('week_calendar_report_2026');
 
-        const DEPTS = ["총무국", "조직쟁의실", "기획국", "정책국", "복지국", "산업안전국", "교육문화국"];
+        // 요청하신 10인 명단
+        const MEMBERS = ["총무", "조직", "기획", "정책", "복지", "산안", "교문", "홍部", "김次", "이課"];
         const WEEKS = ["월", "화", "수", "목", "금", "토", "일"];
 
-        const MEMBERS = [
-            { name: "조창연", duty: "위원장", dept: "위원장" },
-            { name: "이창용", duty: "수석부위원장", dept: "수석부위원장" },
-            { name: "최순희", duty: "사무처장", dept: "사무처장" },
-            { name: "김영식", duty: "기획처장", dept: "기획처장" },
-            { name: "강수헌", duty: "대외협력본부장", dept: "대외협력본부장" },
-            { name: "최호상", duty: "총무국장", dept: "총무국" },
-            { name: "현기수", duty: "조직실장", dept: "조직쟁의실" },
-            { name: "최새규", duty: "교육문화국장", dept: "교육문화국" },
-            { name: "김동석", duty: "기획국장", dept: "기획국" },
-            { name: "서범열", duty: "정책국장", dept: "정책국" },
-            { name: "강유리", duty: "복지국장", dept: "복지국" },
-            { name: "황희도", duty: "산업안전국장", dept: "산업안전국" },
-            { name: "홍수정", duty: "부장", dept: "총무국" },
-            { name: "김종찬", duty: "차장", dept: "총무국" },
-            { name: "이경현", duty: "과장", dept: "총무국" },
-            { name: "손혜석", duty: "과장", dept: "총무국" }
-        ];
+        let selectedUser = "";
+        let cache = {};
+        let activeDays = [];
 
-        let selectedDept = "";
-        let serverCache = {};
-        let activeDays = []; // 다중 클릭 선택 보관 어레이
-        
-        // 📅 매주 날짜를 자동으로 추적 연동하는 엔진 함수
-        let dateStrings = {};
-        function calculateWeeklyDates() {
-            const current = new Date();
-            const currentDay = current.getDay(); // 0:일, 1:월, ... 6:토
-            const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-            
-            const monday = new Date(current);
-            monday.setDate(current.getDate() + distanceToMonday);
+        // 📅 날짜 자동 계산 엔진
+        function setDates() {
+            const now = new Date();
+            const day = now.getDay();
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(now.setDate(diff));
 
-            WEEKS.forEach((w, idx) => {
-                const target = new Date(monday);
-                target.setDate(monday.getDate() + idx);
-                const m = target.getMonth() + 1;
-                const d = target.getDate();
-                dateStrings[w] = `${m}/${d}`;
-                
-                // 대시보드 달력 노출구조 바인딩
-                document.getElementById(`cd-${w}`).innerText = `${m}/${d}`;
-                // 인쇄 표 헤더 바인딩
-                document.getElementById(`th-${w}`).innerText = `${m}/${d}(${w})`;
+            WEEKS.forEach((w, i) => {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+                document.getElementById(`d-${w}`).innerText = dateStr;
+                document.getElementById(`h-${w}`).innerText = `${dateStr}(${w})`;
+                document.getElementById(`c-${w}`).innerHTML = `<div class="cal-date">${d.getDate()}</div>`;
             });
 
-            // 타이틀 기간명 동적 매핑
             const sunday = new Date(monday);
             sunday.setDate(monday.getDate() + 6);
-            const periodStr = `(${monday.getFullYear()}. ${monday.getMonth()+1}. ${monday.getDate()} ~ ${sunday.getMonth()+1}. ${sunday.getDate()})`;
-            
-            document.getElementById('printTitle1').innerText = `주간업무 계획 보고 ${periodStr}`;
-            document.getElementById('printTitle2').innerText = `노조본부 주간 출장·근태 현황 ${periodStr}`;
+            const period = `(${monday.getFullYear()}. ${monday.getMonth()+1}. ${monday.getDate()} ~ ${sunday.getMonth()+1}. ${sunday.getDate()})`;
+            document.getElementById('title1').innerText = `제24대 집행부 주간업무 추진계획 ${period}`;
+            document.getElementById('title2').innerText = `집행부 주간 출장 · 근태 현황 ${period}`;
         }
 
-        function initApp() {
-            calculateWeeklyDates();
-            const btnZone = document.getElementById('deptBtnZone');
-            btnZone.innerHTML = DEPTS.map(d => `
-                <button class="dept-btn" id="b-dept-${d}" onclick="clickDeptBtn('${d}')">${d}</button>
-            `).join('');
+        function init() {
+            setDates();
+            const zone = document.getElementById('memberBtnZone');
+            zone.innerHTML = MEMBERS.map(m => `<button class="dept-btn" id="btn-${m}" onclick="pickUser('${m}')">${m}</button>`).join('');
         }
 
-        function clickDeptBtn(dept) {
+        function pickUser(m) {
             document.querySelectorAll('.dept-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`b-dept-${dept}`).classList.add('active');
-
-            selectedDept = dept;
+            document.getElementById(`btn-${m}`).classList.add('active');
+            selectedUser = m;
             document.getElementById('inputFormBlock').classList.remove('disabled-content');
-            document.getElementById('lblWorkTitle').innerText = `✍️ [${dept}] 업무 내용 기술`;
-
-            const data = serverCache[dept] || {};
+            document.getElementById('lblWork').innerText = `✍️ [${m}] 업무 계획 기술`;
+            
+            const data = cache[m] || {};
             document.getElementById('txWork').value = data.work || '';
-            document.getElementById('txScDetail').value = '';
+            document.getElementById('txDetail').value = '';
             activeDays = [];
-            refreshDayNodesUI();
+            renderDayUI();
         }
 
-        // 📅 숙박 예약 끄고 단순 온오프 토글로 교체 구현
-        function toggleDayNode(day) {
-            const idx = activeDays.indexOf(day);
-            if(idx > -1) {
-                activeDays.splice(idx, 1);
-            } else {
-                activeDays.push(day);
-            }
-            refreshDayNodesUI();
+        function toggleDay(w) {
+            const i = activeDays.indexOf(w);
+            if(i > -1) activeDays.splice(i, 1);
+            else activeDays.push(w);
+            renderDayUI();
         }
 
-        function refreshDayNodesUI() {
-            document.querySelectorAll('.day-node').forEach(node => {
-                const w = node.getAttribute('data-w');
-                if(activeDays.includes(w)) {
-                    node.classList.add('active');
-                } else {
-                    node.className = 'day-node';
-                }
+        function renderDayUI() {
+            document.querySelectorAll('.day-node').forEach(n => {
+                n.className = activeDays.includes(n.dataset.w) ? 'day-node active' : 'day-node';
             });
         }
 
-        function saveDataToServer() {
-            if(!selectedDept) return;
+        function saveData() {
+            if(!selectedUser) return;
             const work = document.getElementById('txWork').value.trim();
-            const scType = document.querySelector('input[name="scType"]:checked').value;
-            const scDetail = document.getElementById('txScDetail').value.trim();
+            const type = document.querySelector('input[name="scType"]:checked').value;
+            const detail = document.getElementById('txDetail').value.trim();
 
-            // 1. 업무 계획 저장
-            dbRef.child(selectedDept).child('work').set(work);
+            dbRef.child(selectedUser).child('work').set(work);
 
-            // 2. 다중 선택된 요일에 정보 빌드업 파싱
-            if(activeDays.length > 0 && scDetail) {
-                const daysObj = serverCache[selectedDept]?.days || {};
-                activeDays.forEach(w => {
-                    daysObj[w] = { type: scType, text: scDetail };
-                });
-                dbRef.child(selectedDept).child('days').set(daysObj);
+            if(activeDays.length > 0 && detail) {
+                const days = cache[selectedUser]?.days || {};
+                activeDays.forEach(w => days[w] = { type, text: detail });
+                dbRef.child(selectedUser).child('days').set(days);
             }
-
-            alert(`${selectedDept}의 통합 현황 서식이 실시간 저장되었습니다.`);
+            alert("저장되었습니다.");
             activeDays = [];
-            document.getElementById('txScDetail').value = '';
-            refreshDayNodesUI();
+            document.getElementById('txDetail').value = '';
+            renderDayUI();
         }
 
-        function clearAllDataForDept() {
-            if(!selectedDept) return;
-            if(confirm(`[${selectedDept}]의 이번 주 모든 데이터(업무계획+출장근태)를 삭제 초기화하시겠습니까?`)) {
-                dbRef.child(selectedDept).remove().then(() => {
-                    alert("성공적으로 완전 삭제되었습니다.");
-                    document.getElementById('txWork').value = '';
-                    document.getElementById('txScDetail').value = '';
-                    activeDays = [];
-                    refreshDayNodesUI();
+        function deleteMyData() {
+            if(!selectedUser) return;
+            if(confirm("정말 삭제하시겠습니까?")) {
+                dbRef.child(selectedUser).remove().then(() => {
+                    alert("삭제되었습니다.");
+                    pickUser(selectedUser);
                 });
             }
         }
 
-        // 화면 표 요소를 더블클릭이나 직접 터치하여 즉시 부분 지우기 연동 핸들러
-        function removeSpecificDayLive(dept, day) {
-            dbRef.child(dept).child('days').child(day).remove();
-        }
-
-        function drawPrintDocument() {
-            // 1. 주요내용 서식 그리기 (사무처 / 기획처 소분류 완벽 동기화)
-            const workBody = document.getElementById('domWorkBody');
-            workBody.innerHTML = '';
-            let officeRendered = false;
-            let planningRendered = false;
-
-            DEPTS.forEach(dept => {
-                const data = serverCache[dept] || {};
-                const workText = data.work || '';
-
-                let leftTd = '';
-                if(dept === "총무국" || dept === "조직쟁의실") {
-                    if(!officeRendered) { leftTd = `<td rowspan="2" class="center-lbl" style="background:#fafafa;">사 무 처</td>`; officeRendered = true; }
-                } else if(dept === "교육문화국") {
-                    leftTd = `<td class="center-lbl" style="background:#fafafa;">대외협력본부</td>`;
-                } else {
-                    if(!planningRendered) { leftTd = `<td rowspan="4" class="center-lbl" style="background:#fafafa;">기 획 처</td>`; planningRendered = true; }
-                }
-
-                let dName = dept;
-                if(dept === "조직쟁의실") dName = "조직실";
-                if(dept === "교육문화국") dName = "교문국";
-
-                workBody.innerHTML += `
-                    <tr>
-                        ${leftTd}
-                        <td class="center-lbl">${dName}</td>
-                        <td class="txt-cell">${workText ? workText : '<span style="color:#ccc;">- 주요 계획 없음</span>'}</td>
-                        <td></td>
-                    </tr>
-                `;
-            });
-
-            // 2. 16인 출장/근태 전수 격자판 그리기 (월~일 7일 스펙)
-            const gridBody = document.getElementById('domGridBody');
-            gridBody.innerHTML = '';
+        function renderDoc() {
+            // 1. 요약표
+            const summary = document.getElementById('renderSummary');
+            summary.innerHTML = '';
+            let office = false; let planning = false;
 
             MEMBERS.forEach(m => {
-                let row = `<tr><td class="m-name">${m.name}</td><td class="m-duty">${m.duty}</td>`;
-                
-                WEEKS.forEach(w => {
-                    const deptData = serverCache[m.dept] || {};
-                    const sc = deptData.days?.[w];
+                const data = cache[m] || {};
+                let group = '';
+                if(m === "총무" || m === "조직") {
+                    if(!office) { group = `<td rowspan="2" class="center">사 무 처</td>`; office = true; }
+                } else if(m === "교문") {
+                    group = `<td class="center">대외협력</td>`;
+                } else {
+                    if(!planning) { group = `<td rowspan="${MEMBERS.length - 3}" class="center">기 획 처</td>`; planning = true; }
+                }
 
+                summary.innerHTML += `<tr>${group}<td class="center">${m}</td><td class="text">${data.work || ''}</td><td></td></tr>`;
+            });
+
+            // 2. 캘린더 일정
+            WEEKS.forEach(w => {
+                const cell = document.getElementById(`c-${w}`);
+                const dateNum = cell.querySelector('.cal-date').innerText;
+                cell.innerHTML = `<div class="cal-date">${dateNum}</div>`;
+
+                MEMBERS.forEach(m => {
+                    const sc = cache[m]?.days?.[w];
                     if(sc) {
-                        row += `<td class="badge-cell ${sc.type}" title="더블클릭 시 삭제" ondblclick="removeSpecificDayLive('${m.dept}', '${w}')">${sc.type}<br>${sc.text}</td>`;
-                    } else {
-                        row += `<td></td>`;
+                        cell.innerHTML += `<div class="event-block ${sc.type}"><span class="ev-name">${m}</span>${sc.text}</div>`;
                     }
                 });
-
-                row += `</tr>`;
-                gridBody.innerHTML += row;
             });
         }
 
-        dbRef.on('value', (snapshot) => {
-            serverCache = snapshot.val() || {};
-            drawPrintDocument();
-            
-            if(selectedDept) {
-                const data = serverCache[selectedDept] || {};
-                document.getElementById('txWork').value = data.work || '';
-            }
+        dbRef.on('value', snap => {
+            cache = snapshot.val() || {};
+            renderDoc();
+            if(selectedUser) document.getElementById('txWork').value = cache[selectedUser]?.work || '';
         });
 
-        initApp();
+        init();
     </script>
 </body>
 </html>
