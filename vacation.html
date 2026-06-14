@@ -178,38 +178,6 @@
             min-width: 240px;
         }
 
-        /* ── 범례 ── */
-        .legend {
-            background: var(--canvas);
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            padding: 13px 18px;
-            margin-bottom: 24px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 16px;
-            align-items: center;
-        }
-        .legend .legend-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--ink-soft);
-            margin-right: 4px;
-            letter-spacing: 0.3px;
-        }
-        .legend .chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12.5px;
-            color: var(--ink);
-        }
-        .legend .dot {
-            width: 11px; height: 11px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
         /* ── 달력 ── */
         .calendar-container { display: flex; flex-direction: column; gap: 34px; }
         .month-section {
@@ -270,15 +238,19 @@
         .day-header:nth-child(1) { color: var(--sun); }
         .day-header:nth-child(7) { color: var(--sat); }
 
+        /* 칸 높이 고정 → 내용이 많아도 달력 모양이 일정하게 유지 */
         .day-cell {
             background: var(--canvas);
-            min-height: 116px;
+            height: 120px;
             padding: 7px 8px;
             border-right: 1px solid var(--line-soft);
             border-bottom: 1px solid var(--line-soft);
             cursor: pointer;
             position: relative;
             transition: background .12s;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         /* 주말 열은 아주 옅은 음영으로 한 주가 한눈에 */
         .day-cell[data-wday="0"] { background: #fdf9f9; }
@@ -296,6 +268,7 @@
             justify-content: space-between;
             align-items: flex-start;
             gap: 4px;
+            flex-shrink: 0;
         }
         .day-number .num {
             width: 24px; height: 24px;
@@ -323,8 +296,17 @@
         .day-cell.selected-start { background: #d2e3fc !important; box-shadow: inset 0 0 0 2px var(--accent); }
         .day-cell.selected-in-between { background: #e8f0fe !important; }
 
-        /* 휴가 뱃지 (사람별 색상) */
-        .vacation-list { display: flex; flex-direction: column; gap: 3px; }
+        /* 휴가 목록: 남는 높이를 채우고, 넘치면 칸 안에서만 스크롤 */
+        .vacation-list {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .vacation-list::-webkit-scrollbar { width: 4px; }
+        .vacation-list::-webkit-scrollbar-thumb { background: #cdd2d8; border-radius: 4px; }
         .vacation-badge {
             display: flex;
             justify-content: space-between;
@@ -339,6 +321,7 @@
             color: var(--c, #5f6368);
             background: var(--c-tint, #f1f3f4);
             line-height: 1.4;
+            flex-shrink: 0;
         }
         .vacation-badge .vname {
             overflow: hidden;
@@ -362,7 +345,7 @@
         @media (max-width: 640px) {
             .wrap { padding: 16px 12px 0; }
             header { flex-direction: column; align-items: flex-start; gap: 12px; }
-            .day-cell { min-height: 78px; padding: 4px 4px; }
+            .day-cell { height: 100px; padding: 4px 4px; }
             .day-header { font-size: 11px; padding: 6px 0; }
             .day-number { font-size: 11px; }
             .vacation-badge { font-size: 9.5px; padding: 1px 4px; }
@@ -379,11 +362,6 @@
             .del-btn { display: none !important; }
             .wrap { padding: 0; max-width: none; }
             .calendar-container { gap: 0; }
-            .legend {
-                border: none; padding: 0 0 6px; margin-bottom: 8px;
-                border-bottom: 1px solid var(--line);
-                border-radius: 0;
-            }
             .month-section {
                 border: none; padding: 0; border-radius: 0;
                 page-break-after: always; break-after: page;
@@ -405,10 +383,10 @@
                 font-size: 8pt;
                 letter-spacing: 1.5px;
             }
-            /* 고정 높이를 풀어 인원이 많아도 잘리지 않게 함.
-               최소 높이만 주고, 휴가 인원수만큼 칸이 늘어나도록. */
+            /* 인쇄는 종이라 스크롤 불가 → 고정 높이를 풀어 인원이 많아도 다 보이게 함 */
             .calendar-grid { grid-auto-rows: minmax(2.0cm, auto); }
             .day-cell {
+                display: block;
                 min-height: 2.0cm; height: auto;
                 padding: 3px 4px;
                 border-color: #d6d9dd;
@@ -425,6 +403,8 @@
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 gap: 2px;
+                overflow: visible;
+                max-height: none;
             }
             .vacation-badge {
                 display: block;
@@ -450,7 +430,6 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            .month-section:not(:first-child) .legend { display: none; }
         }
     </style>
 </head>
@@ -507,8 +486,6 @@
             <span id="guideText">이름 선택 후 시작일을 클릭하고, 이어서 종료일을 클릭하면 기간 휴가가 등록됩니다.</span>
         </div>
     </div>
-
-    <div class="legend" id="legend"></div>
 
     <div class="calendar-container" id="calendarContainer"></div>
 
@@ -585,14 +562,6 @@
 
         const _t = new Date();
         const todayStr = `${_t.getFullYear()}-${String(_t.getMonth()+1).padStart(2,'0')}-${String(_t.getDate()).padStart(2,'0')}`;
-
-        function renderLegend() {
-            const el = document.getElementById('legend');
-            el.innerHTML = '<span class="legend-title">집행부 색상</span>' +
-                MEMBERS.map(m =>
-                    `<span class="chip"><span class="dot" style="background:${colorFor(m)}"></span>${m}</span>`
-                ).join('');
-        }
 
         function renderCalendars() {
             container.innerHTML = '';
@@ -774,7 +743,6 @@
         }
 
         // 초기 실행
-        renderLegend();
         renderCalendars();
         initFirebaseRealtime();
     </script>
