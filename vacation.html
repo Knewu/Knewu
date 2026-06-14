@@ -279,22 +279,9 @@
         .day-cell[data-wday="6"] .num { color: var(--sat); }
         .day-cell.today .num { background: var(--accent); color: #fff; }
 
-        .holiday-name {
-            display: block;
-            font-size: 9px;
-            font-weight: 700;
-            color: var(--holiday);
-            background: #fdecea;
-            padding: 1px 5px;
-            border-radius: 4px;
-            letter-spacing: -0.4px;
-            line-height: 1.35;
-            margin-bottom: 3px;
-            text-align: center;
-            white-space: normal;
-            word-break: keep-all;
-            flex-shrink: 0;
-        }
+        .holiday-name { display: block; font-size: 9px; font-weight: 700; color: var(--holiday); background: #fdecea; padding: 1px 5px; border-radius: 4px; letter-spacing: -0.4px; line-height: 1.35; margin-bottom: 3px; text-align: center; white-space: normal; word-break: keep-all; flex-shrink: 0; }
+        /* 추석 3일처럼 넓은 평일 칸에서도 주말 칸과 동일한 크기로 */
+        .holiday-name.sm { font-size: 7.5px; letter-spacing: -0.6px; padding: 1px 3px; }
         .day-cell.holiday .num { color: var(--holiday); }
 
         /* 선택 상태 (기간 선택) */
@@ -556,6 +543,9 @@
         };
         function shortName(name) { return SHORT_NAME[name] || name; }
 
+        /* 추석 연휴 3일: 넓은 평일 칸에서도 주말 칸과 동일한 작은 크기 유지 */
+        const smallHolidays = new Set(["2026-09-24", "2026-09-25", "2026-09-26"]);
+
         const monthsToRender = [
             { year: 2026, month: 7 },
             { year: 2026, month: 8 },
@@ -617,7 +607,8 @@
                     let holidayHTML = '';
                     if (holidays2026[dateStr]) {
                         cell.classList.add('holiday');
-                        holidayHTML = `<div class="holiday-name">${holidays2026[dateStr]}</div>`;
+                        const smCls = smallHolidays.has(dateStr) ? ' sm' : '';
+                        holidayHTML = `<div class="holiday-name${smCls}">${holidays2026[dateStr]}</div>`;
                     }
 
                     cell.innerHTML = `
