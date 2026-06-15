@@ -41,86 +41,68 @@
       top: 0;
       z-index: 100;
     }
-    .logo-icon {
-      width: 30px; height: 30px;
-      border-radius: 7px;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
+    .logo-icon { width: 30px; height: 30px; border-radius: 7px; overflow: hidden; flex-shrink: 0; }
     .logo-icon img { width: 100%; height: 100%; object-fit: contain; }
-    .logo-text {
-      font-size: 14.5px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
+    .logo-text { font-size: 14.5px; font-weight: 700; letter-spacing: -0.3px; }
     .logo-text span { color: var(--blue); }
 
-    /* ── 컴팩트 히어로 ── */
+    /* ── 슬림 히어로 (타이틀 바) ── */
     .hero {
       background: linear-gradient(135deg, #1557b0 0%, #1a73e8 60%, #4285f4 100%);
       color: #fff;
-      padding: 22px 20px 24px;
+      padding: 15px 20px;
       text-align: center;
     }
-    .hero-logo {
-      width: 50px; height: 50px;
-      margin: 0 auto 10px;
-      background: #fff;
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 3px 12px rgba(0,0,0,.16);
-      overflow: hidden;
-    }
-    .hero-logo img { width: 84%; height: 84%; object-fit: contain; }
-    .hero h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; }
+    .hero h1 { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; }
 
     /* ── 메인 ── */
     main {
-      max-width: 720px;
+      max-width: 760px;
       width: 100%;
       margin: 0 auto;
-      padding: 22px 16px 60px;
+      padding: 24px 18px 60px;
       flex: 1;
     }
     .section-label {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: 1px;
       color: var(--ink2);
       text-transform: uppercase;
-      margin: 4px 4px 14px;
+      margin: 2px 2px 16px;
     }
 
-    /* ── 앱 아이콘 그리드 ── */
+    /* ── 서비스 타일 (크고 또렷하게) ── */
     .app-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
     }
     .tile {
-      width: 104px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 26px 16px 22px;
       text-decoration: none;
       color: inherit;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 9px;
-      padding: 12px 6px 11px;
-      border-radius: 16px;
-      transition: background .15s, transform .15s, box-shadow .15s;
+      gap: 14px;
+      transition: box-shadow .2s, transform .2s, border-color .2s;
     }
     .tile:hover {
-      background: var(--white);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0,0,0,.08);
+      box-shadow: 0 8px 22px rgba(0,0,0,.09);
+      transform: translateY(-3px);
+      border-color: #4285f4;
     }
     .tile-icon {
       position: relative;
-      width: 54px; height: 54px;
-      border-radius: 16px;
+      width: 68px; height: 68px;
+      border-radius: 19px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 27px;
-      box-shadow: 0 2px 6px rgba(0,0,0,.07);
+      font-size: 35px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
     }
     .tile-icon.c1 { background: #e8f0fe; }
     .tile-icon.c2 { background: #e3f2fd; }
@@ -128,15 +110,14 @@
     .tile-icon.c4 { background: #e6f4ea; }
     .tile-icon .dot {
       position: absolute; top: -3px; right: -3px;
-      width: 13px; height: 13px; border-radius: 50%;
-      background: #34a853; border: 2.5px solid var(--bg);
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #34a853; border: 3px solid var(--white);
     }
-    .tile:hover .tile-icon .dot { border-color: var(--white); }
     .tile-label {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 15.5px;
+      font-weight: 700;
       text-align: center;
-      line-height: 1.35;
+      line-height: 1.4;
       letter-spacing: -0.3px;
       color: var(--ink);
     }
@@ -160,7 +141,6 @@
 </header>
 
 <div class="hero">
-  <div class="hero-logo"><img src="https://knewu.netlify.app/icon-192.png" alt="로고"></div>
   <h1>제24대 집행부 업무포털</h1>
 </div>
 
@@ -170,15 +150,15 @@
 
     <a href="vacation.html" class="tile">
       <div class="tile-icon c1">🏖️<span class="dot"></span></div>
-      <div class="tile-label">여름휴가<br>일정</div>
+      <div class="tile-label">여름휴가 일정</div>
     </a>
 
     <a href="duty.html" class="tile">
       <div class="tile-icon c2">📋<span class="dot"></span></div>
-      <div class="tile-label">주간업무<br>·근태</div>
+      <div class="tile-label">주간업무 · 근태</div>
     </a>
 
-    <!-- 서비스 추가 시 아래 형식으로 복사해서 붙이면 됩니다.
+    <!-- 서비스 추가 시 아래 형식을 복사해서 붙이면 됩니다.
     <a href="새주소.html" class="tile">
       <div class="tile-icon c3">🗂️<span class="dot"></span></div>
       <div class="tile-label">새 서비스</div>
