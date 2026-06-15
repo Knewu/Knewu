@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메뉴 고르기 · 전력노조 집행부</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+    <style>
+        :root {
+            --blue: #1a73e8; --blue-dk: #1557b0;
+            --ink: #202124; --ink2: #5f6368; --faint: #9aa6b2;
+            --line: #dadce0; --line2: #e8eaed;
+            --bg: #f1f3f4; --white: #fff;
+            --radius: 12px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Pretendard','Malgun Gothic',sans-serif; background: var(--bg); color: var(--ink); padding-bottom: 70px; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
+
+        .topbar { background: var(--white); border-bottom: 1px solid var(--line); padding: 0 18px; height: 54px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+        .back-btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--ink2); font-size: 13.5px; font-weight: 600; padding: 7px 11px; border-radius: 8px; }
+        .back-btn:hover { background: var(--bg); color: var(--blue); }
+        .crumb { font-size: 14px; font-weight: 800; }
+
+        .wrap { max-width: 720px; margin: 0 auto; padding: 22px 16px; }
+
+        .page-head { margin-bottom: 18px; }
+        .page-head .rname { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+        .page-head .rloc { font-size: 13px; color: var(--ink2); margin-top: 3px; }
+
+        .panel { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+        .panel-h { font-size: 14px; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
+        .panel-h .ico { font-size: 16px; }
+
+        label.fl { display: block; font-size: 12px; font-weight: 700; color: var(--ink2); margin-bottom: 5px; }
+        input[type=text], select {
+            width: 100%; padding: 10px 12px; font-family: inherit; font-size: 14px;
+            border: 1px solid var(--line); border-radius: 9px; background: var(--white); color: var(--ink);
+        }
+        input:focus, select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px #e8f0fe; }
+        .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        @media (max-width: 560px){ .row2 { grid-template-columns: 1fr; } }
+
+        .btn { padding: 10px 16px; font-family: inherit; font-size: 13.5px; font-weight: 700; border-radius: 8px; cursor: pointer; border: none; }
+        .btn-pri { background: var(--blue); color: #fff; }
+        .btn-pri:hover { background: var(--blue-dk); }
+        .btn-line { background: var(--white); color: var(--blue); border: 1px solid var(--line); }
+        .btn-line:hover { background: #f5f9ff; }
+        .btn-reset { background: #fff; color: #c5221f; border: 1px solid #f0c8c3; font-size: 12.5px; padding: 8px 14px; }
+        .btn-reset:hover { background: #fdf1ef; }
+
+        /* 메뉴 항목 추가/관리 */
+        .add-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .add-row input { flex: 1; }
+        .item-list { display: flex; flex-direction: column; gap: 7px; }
+        .item-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; background: #f8fafc; border: 1px solid var(--line2); border-radius: 9px; font-size: 14px; font-weight: 600; }
+        .item-x { background: #fdecea; color: #c5221f; border: none; width: 24px; height: 24px; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+        .item-x:hover { background: #f7c9c3; }
+        .empty { color: var(--faint); font-size: 13px; padding: 6px 2px; }
+
+        /* 메뉴 고르기 & 현황 */
+        .choose-list { display: flex; flex-direction: column; gap: 10px; }
+        .choose-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px; transition: border-color .15s, background .15s; }
+        .choose-row.mine { border-color: var(--blue); background: #f4f9ff; }
+        .ci-info { min-width: 0; }
+        .ci-name { font-size: 15px; font-weight: 700; }
+        .ci-tally { font-size: 12px; color: var(--ink2); margin-top: 3px; line-height: 1.45; }
+        .ci-tally .cnt { color: var(--blue); font-weight: 700; }
+        .pick-btn { flex-shrink: 0; padding: 8px 14px; font-size: 13px; font-weight: 700; border-radius: 999px; border: 1px solid var(--line); background: var(--white); color: var(--ink2); cursor: pointer; white-space: nowrap; }
+        .pick-btn.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+        .total-line { margin-top: 14px; font-size: 13px; font-weight: 700; color: var(--ink); text-align: right; }
+        .foot-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <a class="back-btn" href="index.html">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            업무포털
+        </a>
+        <span class="crumb">메뉴 고르기</span>
+    </div>
+
+    <div class="wrap">
+
+        <div class="page-head">
+            <div class="rname" id="rName">식당 미정</div>
+            <div class="rloc" id="rLoc" style="display:none;"></div>
+        </div>
+
+        <!-- 1. 식당 정보 -->
+        <div class="panel">
+            <div class="panel-h"><span class="ico">🍽️</span>식당 정보</div>
+            <div class="row2">
+                <div>
+                    <label class="fl">식당 이름</label>
+                    <input type="text" id="inName" placeholder="예: 본사앞 김치찌개">
+                </div>
+                <div>
+                    <label class="fl">위치 (선택)</label>
+                    <input type="text" id="inLoc" placeholder="예: 1층 / 도보 5분">
+                </div>
+            </div>
+            <button class="btn btn-pri" onclick="saveRestaurant()">식당 저장</button>
+        </div>
+
+        <!-- 2. 메뉴 항목 -->
+        <div class="panel">
+            <div class="panel-h"><span class="ico">📝</span>메뉴 항목</div>
+            <div class="add-row">
+                <input type="text" id="inItem" placeholder="메뉴 이름 입력 (예: 김치찌개)" onkeydown="if(event.key==='Enter')addItem()">
+                <button class="btn btn-pri" onclick="addItem()">추가</button>
+            </div>
+            <div class="item-list" id="itemManage"></div>
+        </div>
+
+        <!-- 3. 메뉴 고르기 & 현황 -->
+        <div class="panel">
+            <div class="panel-h"><span class="ico">✅</span>메뉴 고르기 &amp; 현황</div>
+            <label class="fl">내 직책 선택</label>
+            <select id="memberSelect" onchange="renderChoose()" style="margin-bottom:14px;"></select>
+            <div class="choose-list" id="chooseList"></div>
+            <div class="total-line" id="totalLine"></div>
+            <div class="foot-actions">
+                <button class="btn btn-reset" onclick="resetAll()">전체 초기화 (다음 끼)</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUFwsNEBzTZxr8EJuY2BZkYTEBadQoMk8",
+            authDomain: "knewu-64318.firebaseapp.com",
+            databaseURL: "https://knewu-64318-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "knewu-64318",
+            storageBucket: "knewu-64318.firebasestorage.app",
+            messagingSenderId: "301755569133",
+            appId: "1:301755569133:web:9bd85133d084c041368de4"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const ref = db.ref('meal_order');
+
+        const MEMBERS = [
+            "위원장","수석부위원장","사무처장","기획처장","대외협력본부장","총무국장",
+            "조직쟁의실장","기획국장","정책국장","복지국장","산업안전국장","교육문화국장",
+            "손혜석과장","홍수정부장","이종찬차장","이경현과장"
+        ];
+
+        let state = {};
+
+        // 직책 드롭다운 채우기
+        (function initMembers(){
+            const sel = document.getElementById('memberSelect');
+            sel.innerHTML = '<option value="">내 직책 선택</option>' +
+                MEMBERS.map(m => `<option value="${m}">${m}</option>`).join('');
+        })();
+
+        function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+        // ── 저장/조작 ──
+        function saveRestaurant(){
+            ref.child('restaurant').set({
+                name: document.getElementById('inName').value.trim(),
+                location: document.getElementById('inLoc').value.trim()
+            });
+        }
+        function addItem(){
+            const inp = document.getElementById('inItem');
+            const name = inp.value.trim();
+            if(!name) return;
+            ref.child('items').push({ name });
+            inp.value = '';
+            inp.focus();
+        }
+        function deleteItem(id){
+            if(!confirm('이 메뉴 항목을 삭제할까요?')) return;
+            const updates = {};
+            updates[`/items/${id}`] = null;
+            const choices = state.choices || {};
+            Object.keys(choices).forEach(m => { if(choices[m] === id) updates[`/choices/${m}`] = null; });
+            ref.update(updates);
+        }
+        function selectItem(id){
+            const member = document.getElementById('memberSelect').value;
+            if(!member){ alert('내 직책을 먼저 선택해 주세요.'); return; }
+            const cur = (state.choices || {})[member];
+            if(cur === id) ref.child('choices').child(member).remove();
+            else ref.child('choices').child(member).set(id);
+        }
+        function resetAll(){
+            if(!confirm('식당·메뉴·선택을 모두 지우고 새로 시작할까요?')) return;
+            ref.remove();
+            document.getElementById('memberSelect').value = '';
+        }
+
+        // ── 렌더 ──
+        function renderAll(){
+            const r = state.restaurant || {};
+            document.getElementById('rName').innerText = r.name || '식당 미정';
+            const locEl = document.getElementById('rLoc');
+            locEl.innerText = r.location || '';
+            locEl.style.display = r.location ? 'block' : 'none';
+
+            const nIn = document.getElementById('inName'), lIn = document.getElementById('inLoc');
+            if(document.activeElement !== nIn) nIn.value = r.name || '';
+            if(document.activeElement !== lIn) lIn.value = r.location || '';
+
+            renderItemManage();
+            renderChoose();
+        }
+
+        function renderItemManage(){
+            const items = state.items || {};
+            const ids = Object.keys(items);
+            const box = document.getElementById('itemManage');
+            if(ids.length === 0){ box.innerHTML = '<div class="empty">아직 등록된 메뉴가 없습니다. 위에서 추가하세요.</div>'; return; }
+            box.innerHTML = ids.map(id =>
+                `<div class="item-row"><span>${esc(items[id].name)}</span>` +
+                `<button class="item-x" onclick="deleteItem('${id}')">✕</button></div>`
+            ).join('');
+        }
+
+        function renderChoose(){
+            const items = state.items || {};
+            const choices = state.choices || {};
+            const ids = Object.keys(items);
+            const member = document.getElementById('memberSelect').value;
+
+            // 항목별 선택자 모으기
+            const byItem = {};
+            Object.keys(choices).forEach(m => { const it = choices[m]; (byItem[it] = byItem[it] || []).push(m); });
+
+            const list = document.getElementById('chooseList');
+            if(ids.length === 0){ list.innerHTML = '<div class="empty">메뉴 항목을 먼저 추가해 주세요.</div>'; document.getElementById('totalLine').innerText=''; return; }
+
+            list.innerHTML = ids.map(id => {
+                const names = byItem[id] || [];
+                const mine = member && choices[member] === id;
+                const tally = names.length
+                    ? `<span class="cnt">${names.length}명</span> · ${names.map(esc).join(', ')}`
+                    : '아직 없음';
+                return `<div class="choose-row ${mine ? 'mine' : ''}">
+                    <div class="ci-info">
+                        <div class="ci-name">${esc(items[id].name)}</div>
+                        <div class="ci-tally">${tally}</div>
+                    </div>
+                    <button class="pick-btn ${mine ? 'on' : ''}" onclick="selectItem('${id}')">${mine ? '✓ 선택됨' : '선택'}</button>
+                </div>`;
+            }).join('');
+
+            const totalChosen = Object.keys(choices).length;
+            document.getElementById('totalLine').innerText = totalChosen ? `총 ${totalChosen}명 선택` : '';
+        }
+
+        ref.on('value', snap => { state = snap.val() || {}; renderAll(); });
+    </script>
+</body>
+</html>
