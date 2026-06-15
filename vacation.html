@@ -74,11 +74,13 @@
 
         /* ── 헤더 ── */
         header {
+            position: relative;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
             margin-bottom: 22px;
         }
+        .title-group { padding-right: 56px; }
         .title-group h1 {
             margin: 0;
             font-size: 22px;
@@ -93,21 +95,25 @@
             letter-spacing: -0.2px;
         }
         .btn-print {
+            position: absolute;
+            top: 0;
+            right: 0;
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            background: var(--canvas);
-            color: var(--accent);
-            border: 1px solid var(--line);
-            padding: 9px 18px;
-            border-radius: 999px;
-            font-size: 14px;
-            font-weight: 600;
+            gap: 4px;
+            background: transparent;
+            color: var(--ink-soft);
+            border: none;
+            padding: 4px 6px;
+            border-radius: 8px;
+            font-size: 11.5px;
+            font-weight: 500;
             cursor: pointer;
-            transition: background .15s, box-shadow .15s;
+            transition: background .15s, color .15s;
             white-space: nowrap;
         }
-        .btn-print:hover { background: #f8fbff; box-shadow: 0 1px 3px rgba(60,64,67,.12); }
+        .btn-print svg { width: 13px; height: 13px; }
+        .btn-print:hover { background: var(--canvas); color: var(--accent); }
 
         /* ── 등록 패널 ── */
         .register-panel {
@@ -159,11 +165,11 @@
             outline-offset: 1px;
         }
         .btn-cancel {
-            padding: 9px 14px;
-            font-size: 13px;
+            padding: 5px 10px;
+            font-size: 11.5px;
             font-family: inherit;
             border: 1px solid var(--line);
-            border-radius: 8px;
+            border-radius: 7px;
             background: var(--canvas);
             color: var(--ink-soft);
             cursor: pointer;
@@ -220,7 +226,7 @@
 
         .calendar-grid {
             display: grid;
-            grid-template-columns: 0.62fr 1fr 1fr 1fr 1fr 1fr 0.62fr;
+            grid-template-columns: repeat(7, 1fr);
             border-top: 1px solid var(--line);
             border-left: 1px solid var(--line);
         }
@@ -279,35 +285,32 @@
         .day-cell[data-wday="6"] .num { color: var(--sat); }
         .day-cell.today .num { background: var(--accent); color: #fff; }
 
-        .holiday-name { display: block; font-size: 9px; font-weight: 700; color: var(--holiday); background: #fdecea; padding: 1px 5px; border-radius: 4px; letter-spacing: -0.4px; line-height: 1.35; margin-bottom: 3px; text-align: center; white-space: normal; word-break: keep-all; flex-shrink: 0; }
-        /* 추석 3일처럼 넓은 평일 칸에서도 주말 칸과 동일한 크기로 */
-        .holiday-name.sm { font-size: 7.5px; letter-spacing: -0.6px; padding: 1px 6px; width: fit-content; align-self: center; }
+        .holiday-name { display: block; width: fit-content; max-width: 100%; margin: 0 auto 3px; font-size: 9px; font-weight: 700; color: var(--holiday); background: #fdecea; padding: 1px 6px; border-radius: 4px; letter-spacing: -0.4px; line-height: 1.35; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
         .day-cell.holiday .num { color: var(--holiday); }
 
         /* 선택 상태 (기간 선택) */
         .day-cell.selected-start { background: #d2e3fc !important; box-shadow: inset 0 0 0 2px var(--accent); }
         .day-cell.selected-in-between { background: #e8f0fe !important; }
 
-        /* 휴가 목록: 2열 그리드(둘씩 두줄) — 최대 4명이 2×2로 깔끔하게 */
+        /* 휴가 목록: 세로로 한 줄씩 쌓기(최대 4명) — 칸 균등이라 3글자도 안 줄이고 들어감 */
         .vacation-list {
             flex: 1;
             min-height: 0;
             overflow-y: auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            align-content: flex-start;
+            display: flex;
+            flex-direction: column;
             gap: 3px;
         }
         .vacation-list::-webkit-scrollbar { width: 4px; }
         .vacation-list::-webkit-scrollbar-thumb { background: #cdd2d8; border-radius: 4px; }
-        /* 사람별 색상 칩 (인쇄와 동일한 약칭, 클릭 시 삭제) */
+        /* 사람별 색상 칩 (인쇄와 동일한 약칭, 클릭 시 삭제) — 칸 너비에 꽉 차게 한 줄 */
         .vacation-badge {
             background: var(--c, #5f6368);
             color: #fff;
-            font-size: 10px;
+            font-size: 10.5px;
             font-weight: 700;
-            letter-spacing: -0.4px;
-            padding: 2px 3px;
+            letter-spacing: -0.3px;
+            padding: 2px 4px;
             border-radius: 5px;
             line-height: 1.3;
             text-align: center;
@@ -315,12 +318,10 @@
             overflow: hidden;
             text-overflow: ellipsis;
             cursor: pointer;
-            min-width: 0;
+            flex-shrink: 0;
             transition: opacity .12s;
         }
         .vacation-badge:hover { opacity: .82; }
-        /* 3글자 직책(대협長 등)만 살짝 작게·자간 좁게 → 안 잘리게 */
-        .vacation-badge.sm { font-size: 8.5px; letter-spacing: -0.9px; padding: 2px 1px; }
         .vacation-badge .vname {
             display: block;
             overflow: hidden;
@@ -335,13 +336,11 @@
         /* ── 반응형 ── */
         @media (max-width: 640px) {
             .wrap { padding: 16px 12px 0; }
-            header { flex-direction: column; align-items: flex-start; gap: 12px; }
-            .day-cell { height: 104px; padding: 4px 3px; }
+            .day-cell { height: 112px; padding: 4px 3px; }
             .day-header { font-size: 11px; padding: 6px 0; }
             .day-number { font-size: 11px; }
             .vacation-list { gap: 2px; }
-            .vacation-badge { font-size: 9px; padding: 1px 2px; letter-spacing: -0.6px; }
-            .vacation-badge.sm { font-size: 7.5px; letter-spacing: -1px; padding: 1px 1px; }
+            .vacation-badge { font-size: 9.5px; padding: 1px 3px; letter-spacing: -0.5px; }
             .month-section { padding: 14px; }
             select { min-width: 100%; }
             #guideText { min-width: 100%; }
@@ -447,7 +446,7 @@
         </div>
         <button class="btn-print" onclick="window.print()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-            현황 인쇄
+            인쇄
         </button>
     </header>
 
@@ -458,7 +457,7 @@
         </div>
         <div class="controls">
             <select id="userName">
-                <option value="">선택하세요</option>
+                <option value="">직책 선택</option>
                 <option value="위원장">위원장</option>
                 <option value="수석부위원장">수석부위원장</option>
                 <option value="사무처장">사무처장</option>
@@ -477,7 +476,7 @@
                 <option value="이경현과장">이경현과장</option>
             </select>
             <button class="btn-cancel" onclick="clearSelectionState()">선택 취소</button>
-            <span id="guideText">이름 선택 후 시작일을 클릭하고, 이어서 종료일을 클릭하면 기간 휴가가 등록됩니다.</span>
+            <span id="guideText">시작일 클릭 → 종료일 클릭</span>
         </div>
     </div>
 
@@ -543,9 +542,6 @@
         };
         function shortName(name) { return SHORT_NAME[name] || name; }
 
-        /* 추석 연휴 3일: 넓은 평일 칸에서도 주말 칸과 동일한 작은 크기 유지 */
-        const smallHolidays = new Set(["2026-09-24", "2026-09-25", "2026-09-26"]);
-
         const monthsToRender = [
             { year: 2026, month: 7 },
             { year: 2026, month: 8 },
@@ -607,8 +603,7 @@
                     let holidayHTML = '';
                     if (holidays2026[dateStr]) {
                         cell.classList.add('holiday');
-                        const smCls = smallHolidays.has(dateStr) ? ' sm' : '';
-                        holidayHTML = `<div class="holiday-name${smCls}">${holidays2026[dateStr]}</div>`;
+                        holidayHTML = `<div class="holiday-name">${holidays2026[dateStr]}</div>`;
                     }
 
                     cell.innerHTML = `
@@ -646,7 +641,7 @@
             if (!selectedStartDate) {
                 selectedStartDate = dateStr;
                 document.getElementById(dateStr).classList.add('selected-start');
-                document.getElementById('guideText').innerText = `시작일 ${dateStr} 선택됨 — 종료일을 클릭하면 확정됩니다.`;
+                document.getElementById('guideText').innerText = `시작일 ${dateStr} → 종료일 클릭`;
             } else {
                 let start = new Date(selectedStartDate);
                 let end = new Date(dateStr);
@@ -700,7 +695,7 @@
             document.querySelectorAll('.day-cell').forEach(el => {
                 el.classList.remove('selected-start', 'selected-in-between');
             });
-            document.getElementById('guideText').innerText = "이름 선택 후 시작일을 클릭하고, 이어서 종료일을 클릭하면 기간 휴가가 등록됩니다.";
+            document.getElementById('guideText').innerText = "시작일 클릭 → 종료일 클릭";
         }
 
         // 4. 휴가 취소(삭제)
@@ -724,9 +719,8 @@
                         const users = data[dateStr];
                         Object.keys(users).forEach(name => {
                             const c = colorFor(name);
-                            const sn = shortName(name);
                             const badge = document.createElement('div');
-                            badge.className = 'vacation-badge' + (sn.length >= 3 ? ' sm' : '');
+                            badge.className = 'vacation-badge';
                             badge.style.setProperty('--c', c);
                             badge.title = `${name} · 클릭 시 삭제`;
                             badge.onclick = (e) => { e.stopPropagation(); deleteVacation(dateStr, name); };
