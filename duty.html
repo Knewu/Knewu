@@ -90,6 +90,13 @@
         .btn-print-sm { display:inline-flex; align-items:center; gap:6px; background:var(--paper); color:var(--ink-soft); border:1px solid var(--line); padding:8px 13px; border-radius:9px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; box-shadow:var(--shadow); transition:border-color .15s,color .15s; }
         .btn-print-sm:hover { border-color:var(--accent); color:var(--accent); }
         .btn-print-sm svg { width:15px; height:15px; }
+        .btn-print-xs { display:inline-flex; align-items:center; gap:5px; background:var(--paper); color:var(--ink-soft); border:1px solid var(--line); padding:6px 11px; border-radius:8px; font-size:12px; font-weight:700; font-family:inherit; cursor:pointer; box-shadow:var(--shadow); transition:border-color .15s,color .15s; white-space:nowrap; }
+        .btn-print-xs:hover { border-color:var(--accent); color:var(--accent); }
+        .btn-print-xs svg { width:13px; height:13px; }
+        .sub-block + .sub-block { margin-top:26px; }
+        .sub-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:11px; }
+        .sub-bar .sub-h { margin:0; }
+        .hint-mini { font-size:11.5px; font-weight:600; color:var(--ink-faint); margin-left:7px; }
         .btn-reload { background:var(--paper); color:var(--ink-soft); border:1px solid var(--line); padding:8px 12px; border-radius:9px; font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer; }
         .btn-reload:hover { border-color:var(--accent); color:var(--accent); }
 
@@ -104,7 +111,7 @@
 
         /* ── 근태표 ── */
         .grid-table { width:100%; border-collapse:collapse; table-layout:fixed; text-align:center; }
-        .grid-table th, .grid-table td { border:1px solid #d4d8de; padding:4px 3px; font-size:12.5px; height:44px; vertical-align:middle; color:#1f2329; }
+        .grid-table th, .grid-table td { border:1px solid #d4d8de; padding:4px 3px; font-size:12.5px; height:48px; vertical-align:middle; color:#1f2329; }
         .grid-table th { background:#eef2f7; font-weight:700; font-size:11.5px; }
         .grid-table th[data-w="토"]{color:#1a73e8;} .grid-table th[data-w="일"]{color:#d93025;}
         .grid-table th .th-w { display:block; font-size:12px; font-weight:700; line-height:1.2; }
@@ -114,8 +121,8 @@
         .badge-cell { font-size:11px; font-weight:700; line-height:1.3; }
         .badge-cell.출장 { background:var(--trip-bg); color:var(--trip-ink); }
         .badge-cell.근태 { background:var(--leave-bg); color:var(--leave-ink); }
-        .badge-cell .b-tag { font-size:9px; opacity:.85; } .badge-cell .b-txt { display:block; font-weight:600; }
-        .att-fit { height:36px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1.15; }
+        .badge-cell .b-tag { font-size:10px; opacity:.85; } .badge-cell .b-txt { display:block; font-weight:600; }
+        .att-fit { height:38px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1.2; }
 
         /* ── 최종본(뉴스레터) ── */
         .final-section { margin-bottom: 18px; }
@@ -149,23 +156,28 @@
             .news-pad { padding: 22px 18px 20px; }
             .news-title { font-size: 23px; }
             .sum-table th, .sum-table td { padding: 7px 8px; font-size: 13px; }
-            .grid-table th, .grid-table td { font-size: 11px; height: 40px; padding: 3px 2px; }
-            .att-fit { height: 32px; }
+            .grid-table th, .grid-table td { font-size: 11px; height: 44px; padding: 3px 2px; }
+            .att-fit { height: 36px; }
         }
 
         /* ═════ 인쇄 ═════ */
         @media print {
             @page { size: A4 portrait; margin: 0; }
             body { background:#fff; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-            .topbar, header, .editor, .sec-bar, .no-print { display:none !important; }
+            .topbar, header, .editor, .sec-bar, .no-print, .btn-print-xs, .btn-reload { display:none !important; }
             .wrap { max-width:none; width:100%; padding:0; margin:0; }
             section.block, .final-section { display:none !important; box-shadow:none; border:none; border-radius:0; margin:0; padding:0; }
+            .sub-block { margin:0 !important; }
 
-            /* 위에서 인쇄: 부서별 표 + 근태 */
-            body.print-summary .summary-section { display:block !important; padding:14mm; }
-            body.print-summary .summary-section .sub-h:first-of-type { margin-top:0; }
+            /* 주간업무(부서별 활동) 인쇄 */
+            body.print-work section.block { display:block !important; padding:13mm; }
+            body.print-work #attArea { display:none !important; }
 
-            /* 아래에서 인쇄: 최종본 뉴스레터 */
+            /* 출장근태 인쇄 */
+            body.print-att section.block { display:block !important; padding:13mm; }
+            body.print-att #workArea { display:none !important; }
+
+            /* 최종본 뉴스레터 인쇄 */
             body.print-final .final-section { display:block !important; }
             body.print-final .news.screen-news { display:none !important; }
             body.print-final #finalPrint { display:block !important; border:none; border-radius:0; box-shadow:none; }
@@ -243,49 +255,56 @@
             </div>
         </div>
 
-        <!-- 부서별 입력 현황 (요약 표 + 근태) — 위에서 인쇄 -->
-        <section class="block card summary-section">
-            <div class="sec-bar">
-                <h2>부서별 입력 현황</h2>
-                <div class="sec-actions">
-                    <button class="btn-print-sm" onclick="printSummary()">
+        <!-- 부서별 활동(주간업무) + 출장근태 : 각각 따로 인쇄 -->
+        <section class="block card">
+
+            <div class="sub-block" id="workArea">
+                <div class="sub-bar">
+                    <div class="sub-h">부서별 활동</div>
+                    <button class="btn-print-xs" onclick="printWork()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                        인쇄
+                        주간업무 인쇄
                     </button>
                 </div>
+                <table class="sum-table">
+                    <thead><tr><th style="width:64px;">부서</th><th>이번 주 활동</th><th>지난 주 활동</th></tr></thead>
+                    <tbody id="summaryBody"></tbody>
+                </table>
             </div>
 
-            <div class="sub-h">부서별 활동</div>
-            <table class="sum-table">
-                <thead><tr><th style="width:64px;">부서</th><th>이번 주 활동</th><th>지난 주 활동</th></tr></thead>
-                <tbody id="summaryBody"></tbody>
-            </table>
-
-            <div class="sub-h">출장 · 근태 <span id="attDate" style="font-weight:600;color:var(--ink-faint);font-size:12px;"></span></div>
-            <table class="grid-table">
-                <thead><tr>
-                    <th style="width:54px;">부서</th>
-                    <th data-w="월"><span class="th-w">월</span><span class="th-d" id="thd-월"></span></th>
-                    <th data-w="화"><span class="th-w">화</span><span class="th-d" id="thd-화"></span></th>
-                    <th data-w="수"><span class="th-w">수</span><span class="th-d" id="thd-수"></span></th>
-                    <th data-w="목"><span class="th-w">목</span><span class="th-d" id="thd-목"></span></th>
-                    <th data-w="금"><span class="th-w">금</span><span class="th-d" id="thd-금"></span></th>
-                    <th data-w="토"><span class="th-w">토</span><span class="th-d" id="thd-토"></span></th>
-                    <th data-w="일"><span class="th-w">일</span><span class="th-d" id="thd-일"></span></th>
-                </tr></thead>
-                <tbody id="attBody"></tbody>
-            </table>
+            <div class="sub-block" id="attArea">
+                <div class="sub-bar">
+                    <div class="sub-h">출장 · 근태 <span id="attDate" style="font-weight:600;color:var(--ink-faint);font-size:12px;"></span></div>
+                    <button class="btn-print-xs" onclick="printAtt()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        출장근태 인쇄
+                    </button>
+                </div>
+                <table class="grid-table">
+                    <thead><tr>
+                        <th style="width:54px;">부서</th>
+                        <th data-w="월"><span class="th-w">월</span><span class="th-d" id="thd-월"></span></th>
+                        <th data-w="화"><span class="th-w">화</span><span class="th-d" id="thd-화"></span></th>
+                        <th data-w="수"><span class="th-w">수</span><span class="th-d" id="thd-수"></span></th>
+                        <th data-w="목"><span class="th-w">목</span><span class="th-d" id="thd-목"></span></th>
+                        <th data-w="금"><span class="th-w">금</span><span class="th-d" id="thd-금"></span></th>
+                        <th data-w="토"><span class="th-w">토</span><span class="th-d" id="thd-토"></span></th>
+                        <th data-w="일"><span class="th-w">일</span><span class="th-d" id="thd-일"></span></th>
+                    </tr></thead>
+                    <tbody id="attBody"></tbody>
+                </table>
+            </div>
         </section>
 
         <!-- 최종본 수정하기 (편집 가능 뉴스레터) — 아래에서 인쇄 -->
         <section class="final-section">
             <div class="sec-bar">
-                <span class="badge">최종본 수정하기</span>
+                <h2>최종본 수정하기 <span class="hint-mini">아래 칸을 눌러 직접 고치세요</span></h2>
                 <div class="sec-actions">
-                    <button class="btn-reload" onclick="reloadFinalFromDrafts()">입력 내용 다시 불러오기</button>
-                    <button class="btn-print-sm" onclick="printFinal()">
+                    <button class="btn-reload" onclick="reloadFinalFromDrafts()">다시 불러오기</button>
+                    <button class="btn-print-xs" onclick="printFinal()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                        인쇄
+                        최종본 인쇄
                     </button>
                 </div>
             </div>
@@ -412,15 +431,23 @@
 
         function saveDataToServer() {
             if (!selectedUser) return;
-            dbRef.child(selectedUser).child('thisWeek').set(document.getElementById('txThisWeek').value.trim());
-            dbRef.child(selectedUser).child('lastWeek').set(document.getElementById('txLastWeek').value.trim());
+            const isDept = ACT_MEMBERS.includes(selectedUser);
+            // 값을 먼저 캡처 (실시간 갱신이 끼어들어도 안전)
+            const upd = {};
+            if (isDept) {
+                upd.thisWeek = document.getElementById('txThisWeek').value.trim();
+                upd.lastWeek = document.getElementById('txLastWeek').value.trim();
+            }
             const scType = document.querySelector('input[name="scType"]:checked').value;
             const scDetail = document.getElementById('txScDetail').value.trim();
             if (activeDays.length > 0 && scDetail) {
-                const daysObj = serverCache[selectedUser]?.days || {};
+                const daysObj = Object.assign({}, serverCache[selectedUser]?.days || {});
                 activeDays.forEach(w => { daysObj[w] = { type: scType, text: scDetail }; });
-                dbRef.child(selectedUser).child('days').set(daysObj);
+                upd.days = daysObj;
             }
+            if (Object.keys(upd).length === 0) { alert('입력된 내용이 없습니다.'); return; }
+            // 이번주·지난주·근태를 한 번에 저장 (분할 저장 시 발생하던 누락 방지)
+            dbRef.child(selectedUser).update(upd);
             alert(`${selectedUser} 저장되었습니다.`);
             activeDays = []; document.getElementById('txScDetail').value = ''; refreshDayNodesUI();
         }
@@ -487,7 +514,7 @@
             document.querySelectorAll('.att-fit').forEach(box => {
                 const txt = box.querySelector('.b-txt');
                 if (!txt) return;
-                let size = 11;
+                let size = 13;
                 txt.style.fontSize = size + 'px';
                 let guard = 0;
                 while ((box.scrollHeight > box.clientHeight + 0.5 || box.scrollWidth > box.clientWidth + 0.5) && size > 6.5 && guard < 24) {
@@ -566,11 +593,17 @@
             document.getElementById('finPrevPrint').innerHTML = prev || '<div class="empty-hint">입력된 지난 주 활동이 없습니다.</div>';
         }
 
-        function printSummary() { document.body.classList.add('print-summary'); window.print(); }
+        function printWork() { document.body.classList.add('print-work'); window.print(); }
+        function printAtt() { requestAnimationFrame(fitAttCells); document.body.classList.add('print-att'); window.print(); }
         function printFinal() { buildFinalPrint(); document.body.classList.add('print-final'); window.print(); }
-        window.onafterprint = () => document.body.classList.remove('print-summary', 'print-final');
+        window.onafterprint = () => document.body.classList.remove('print-work', 'print-att', 'print-final');
 
-        function maybeRenderFinal() { if (serverLoaded && !finalRendered) renderFinalEditor(); }
+        function maybeRenderFinal() {
+            if (!serverLoaded) return;
+            const ae = document.activeElement;
+            if (ae && ae.classList && ae.classList.contains('fin-ta')) return; // 편집 중이면 보류
+            renderFinalEditor(true);
+        }
 
         dbRef.on('value', (snap) => {
             serverCache = snap.val() || {};
