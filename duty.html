@@ -99,6 +99,7 @@
         /* ── 섹션 공통 ── */
         section.block { margin-bottom: 18px; padding: 20px; }
         .sec-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+        .sec-title { display:flex; flex-direction:column; gap:4px; }
         .sec-bar h2 { font-size:16px; font-weight:800; letter-spacing:-.3px; }
         .sec-bar .badge { font-size:13px; font-weight:800; color:var(--accent); background:var(--accent-tint); padding:6px 13px; border-radius:999px; }
         .sec-actions { display:flex; align-items:center; gap:8px; }
@@ -111,7 +112,7 @@
         .sub-block + .sub-block { margin-top:26px; }
         .sub-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:11px; }
         .sub-bar .sub-h { margin:0; }
-        .hint-mini { font-size:11.5px; font-weight:600; color:var(--ink-faint); margin-left:7px; }
+        .hint-mini { font-size:11.5px; font-weight:600; color:var(--ink-faint); }
         .btn-reload { background:var(--paper); color:var(--ink-soft); border:1px solid var(--line); padding:8px 12px; border-radius:9px; font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer; }
         .btn-reload:hover { border-color:var(--accent); color:var(--accent); }
 
@@ -364,7 +365,10 @@
         <!-- 최종본 수정하기 (편집 가능 뉴스레터) — 아래에서 인쇄 -->
         <section class="final-section">
             <div class="sec-bar">
-                <h2>최종본 수정하기 <span class="hint-mini">넣을 항목만 체크하고 문구를 다듬으세요</span></h2>
+                <div class="sec-title">
+                    <h2>최종본 수정하기</h2>
+                    <div class="hint-mini">넣을 항목 체크 및 편집 가능</div>
+                </div>
                 <div class="sec-actions">
                     <button class="fin-btn" onclick="reloadFinalFromDrafts()">다시<br>불러오기</button>
                     <button class="fin-btn" onclick="printFinal()">최종본<br>인쇄</button>
