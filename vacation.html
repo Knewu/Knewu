@@ -12,16 +12,18 @@
         :root {
             --accent: #1a73e8;
             --accent-dk: #1557b0;
-            --ink: #3c4043;
-            --ink-soft: #5f6368;
-            --line: #dadce0;
-            --line-soft: #e8eaed;
+            --accent-tint: #eef4ff;
+            --ink: #1f2329;
+            --ink-soft: #646b76;
+            --line: #e7e9ed;
+            --line-soft: #eef0f3;
             --canvas: #ffffff;
-            --page: #f1f3f4;
+            --page: #f4f6f8;
             --sun: #d93025;
             --sat: #1a73e8;
             --holiday: #d93025;
-            --radius: 12px;
+            --radius: 14px;
+            --shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.04);
         }
 
         * { box-sizing: border-box; }
@@ -47,7 +49,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+            box-shadow: 0 1px 2px rgba(16,24,40,.03);
         }
         .back-btn {
             display: inline-flex;
@@ -96,24 +98,25 @@
         }
         .btn-print {
             position: absolute;
-            top: 0;
+            top: 2px;
             right: 0;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            background: transparent;
+            gap: 6px;
+            background: var(--canvas);
             color: var(--ink-soft);
-            border: none;
-            padding: 4px 6px;
-            border-radius: 8px;
-            font-size: 11.5px;
-            font-weight: 500;
+            border: 1px solid var(--line);
+            padding: 8px 14px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background .15s, color .15s;
+            transition: background .15s, color .15s, border-color .15s;
             white-space: nowrap;
+            box-shadow: var(--shadow);
         }
-        .btn-print svg { width: 13px; height: 13px; }
-        .btn-print:hover { background: var(--canvas); color: var(--accent); }
+        .btn-print svg { width: 15px; height: 15px; }
+        .btn-print:hover { border-color: var(--accent); color: var(--accent); }
 
         /* ── 등록 패널 ── */
         .register-panel {
@@ -122,6 +125,7 @@
             border-radius: var(--radius);
             padding: 20px 22px;
             margin-bottom: 18px;
+            box-shadow: var(--shadow);
         }
         .register-panel .panel-head {
             display: flex;
@@ -130,12 +134,13 @@
             margin-bottom: 16px;
         }
         .register-panel .panel-head .step-icon {
-            width: 32px; height: 32px;
-            background: #fff3e0;
-            border-radius: 8px;
+            width: 34px; height: 34px;
+            background: var(--accent-tint);
+            color: var(--accent);
+            border-radius: 9px;
             display: inline-flex; align-items: center; justify-content: center;
-            font-size: 17px;
         }
+        .register-panel .panel-head .step-icon svg { width: 19px; height: 19px; }
         .register-panel .panel-head h2 {
             margin: 0;
             font-size: 18px;
@@ -150,17 +155,22 @@
         }
         .controls label { font-size: 16px; font-weight: 600; color: var(--ink); }
         select {
-            padding: 11px 16px;
+            padding: 12px 16px;
             font-size: 17px;
             font-family: inherit;
+            font-weight: 500;
             border: 1px solid var(--line);
-            border-radius: 8px;
+            border-radius: 10px;
             background: var(--canvas);
             color: var(--ink);
             cursor: pointer;
             min-width: 200px;
+            box-shadow: 0 1px 2px rgba(16,24,40,.03);
+            transition: border-color .15s, box-shadow .15s;
         }
-        select:focus, .btn-cancel:focus, .btn-print:focus, .back-btn:focus {
+        select:hover { border-color: #cdd2da; }
+        select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,.15); }
+        .btn-cancel:focus, .btn-print:focus, .back-btn:focus {
             outline: 2px solid var(--accent);
             outline-offset: 1px;
         }
@@ -184,14 +194,15 @@
         .myv-row .myv-name b { font-weight: 700; }
         .myv-x { background: #fdecea; color: #c5221f; border: none; width: 28px; height: 28px; border-radius: 7px; cursor: pointer; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 1; }
         .myv-x:hover { background: #f7c9c3; }
+        .hint { display: inline-flex; align-items: center; gap: 7px; flex: 1; min-width: 240px; }
+        .hint > svg { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; }
         #guideText {
-            font-size: 15.5px;
-            color: var(--accent);
+            font-size: 15px;
+            color: var(--ink-soft);
             font-weight: 500;
             letter-spacing: -0.2px;
-            flex: 1;
-            min-width: 240px;
         }
+        #guideText.active { color: var(--accent); font-weight: 600; }
 
         /* ── 달력 ── */
         .calendar-container { display: flex; flex-direction: column; gap: 34px; }
@@ -200,14 +211,15 @@
             padding: 22px;
             border: 1px solid var(--line);
             border-radius: var(--radius);
+            box-shadow: var(--shadow);
         }
         .month-title {
             display: flex;
             align-items: baseline;
             justify-content: space-between;
             margin: 0 0 18px;
-            padding-bottom: 11px;
-            border-bottom: 2px solid var(--accent);
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--line);
         }
         .month-title .mt-left { display: flex; align-items: baseline; gap: 3px; }
         .month-title .mt-month {
@@ -247,7 +259,7 @@
             letter-spacing: 1px;
             color: var(--ink-soft);
             border-right: 1px solid var(--line);
-            border-bottom: 2px solid #c8ccd1;
+            border-bottom: 1px solid #dfe2e7;
             background: #fff;
         }
         .day-header:nth-child(1) { color: var(--sun); }
@@ -351,8 +363,8 @@
             .vacation-list { gap: 2px; }
             .vacation-badge { font-size: 9.5px; padding: 1px 3px; letter-spacing: -0.5px; }
             .month-section { padding: 14px; }
-            select { min-width: 100%; }
-            #guideText { min-width: 100%; }
+            select { min-width: 100%; flex: 1; }
+            .hint { min-width: 100%; }
         }
 
         /* ── 인쇄 (구글 캘린더 인쇄본 스타일 · A4 가로) ── */
@@ -450,7 +462,7 @@
 
     <header>
         <div class="title-group">
-            <h1>여름휴가 일정 등록 🏖️</h1>
+            <h1>여름휴가 일정</h1>
             <div class="sub">2026년 7월 – 9월 · 집행부 16명</div>
         </div>
         <button class="btn-print" onclick="window.print()">
@@ -461,7 +473,7 @@
 
     <div class="register-panel">
         <div class="panel-head">
-            <span class="step-icon">🏖️</span>
+            <span class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2.5"></rect><line x1="3" y1="9.5" x2="21" y2="9.5"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="16" y1="2" x2="16" y2="6"></line></svg></span>
             <h2>휴가 등록</h2>
         </div>
         <div class="controls">
@@ -484,7 +496,7 @@
                 <option value="이종찬차장">이종찬차장</option>
                 <option value="이경현과장">이경현과장</option>
             </select>
-            <span id="guideText">ㅇ 사용법 : 달력에서 시작일 – 종료일 클릭</span>
+            <span class="hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11.5" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"></circle></svg><span id="guideText">달력에서 시작일과 종료일을 차례로 누르세요</span></span>
         </div>
         <div id="myVacations" class="myv" style="display:none;"></div>
     </div>
@@ -650,7 +662,9 @@
             if (!selectedStartDate) {
                 selectedStartDate = dateStr;
                 document.getElementById(dateStr).classList.add('selected-start');
-                document.getElementById('guideText').innerText = `시작일 ${dateStr} → 종료일 클릭`;
+                const g = document.getElementById('guideText');
+                g.innerText = `시작일 ${dateStr} → 종료일을 누르세요`;
+                g.classList.add('active');
             } else {
                 let start = new Date(selectedStartDate);
                 let end = new Date(dateStr);
@@ -704,7 +718,9 @@
             document.querySelectorAll('.day-cell').forEach(el => {
                 el.classList.remove('selected-start', 'selected-in-between');
             });
-            document.getElementById('guideText').innerText = "ㅇ 사용법 : 달력에서 시작일 – 종료일 클릭";
+            const g = document.getElementById('guideText');
+            g.innerText = "달력에서 시작일과 종료일을 차례로 누르세요";
+            g.classList.remove('active');
         }
 
         // 직책 변경 시: 진행 중 선택 초기화 + 본인 등록 휴가 목록 갱신
