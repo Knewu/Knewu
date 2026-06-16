@@ -80,6 +80,21 @@
         .btn-submit:hover { background:var(--accent-dk); }
         .btn-clear { background:#fff; color:#c5221f; border:1px solid #f0c8c3; font-size:13px; padding:10px 15px; }
         .btn-clear:hover { background:#fdf1ef; }
+        .clear-row { display:flex; gap:8px; margin-bottom:10px; }
+        .clear-row .btn-clear { flex:1; padding:9px 6px; font-size:12.5px; }
+        /* 선택 부서의 등록된 출장·근태 (하루씩 삭제) */
+        .myatt-wrap { margin-top:12px; }
+        .myatt-h { font-size:11.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px; }
+        .myatt-h span { font-weight:600; color:var(--ink-faint); }
+        .myatt-list { display:flex; flex-direction:column; gap:6px; }
+        .myatt-item { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:6px 8px 6px 10px; }
+        .myatt-day { font-size:12px; font-weight:800; color:#1f2329; min-width:48px; }
+        .myatt-pill { font-size:9px; font-weight:800; color:#fff; padding:1px 7px; border-radius:999px; letter-spacing:.04em; flex:none; }
+        .myatt-pill.출장 { background:var(--trip-pill); } .myatt-pill.근태 { background:var(--leave-pill); }
+        .myatt-txt { flex:1; font-size:12.5px; color:#33404f; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .myatt-x { flex:none; width:26px; height:26px; border:none; background:#f1f3f6; border-radius:7px; color:#8a94a6; font-size:15px; font-weight:700; cursor:pointer; line-height:1; }
+        .myatt-x:active { background:#e2e6ec; }
+        .myatt-empty { font-size:12px; color:var(--ink-faint); padding:2px 0; }
 
         /* ── 섹션 공통 ── */
         section.block { margin-bottom: 18px; padding: 20px; }
@@ -275,11 +290,18 @@
                         </div>
                         <input type="text" id="txScDetail" class="detail-input" placeholder="상세내용">
                     </div>
+                    <div class="myatt-wrap" id="myAttWrap" style="display:none;">
+                        <div class="myatt-h">등록된 출장·근태 <span>— ✕ 눌러 하루씩 삭제</span></div>
+                        <div class="myatt-list" id="myAttList"></div>
+                    </div>
                 </div>
 
+                <div class="clear-row">
+                    <button class="btn btn-clear" id="btnClearWork" onclick="clearWorkForMember()">주간업무 지우기</button>
+                    <button class="btn btn-clear" onclick="clearAttForMember()">출장·근태 지우기</button>
+                </div>
                 <div class="btn-row">
-                    <button class="btn btn-clear" onclick="clearDataForMember()">이번 주 정보 초기화</button>
-                    <button class="btn btn-submit" onclick="saveDataToServer()">저장</button>
+                    <button class="btn btn-submit" style="width:100%;" onclick="saveDataToServer()">저장</button>
                 </div>
             </div>
         </div>
@@ -400,6 +422,7 @@
         const MEMBERS = ["총무","조직","기획","정책","복지","산안","교문","홍部","김次","이課"];
         const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (홍部·김次·이課은 출장근태만)
         const WEEKS = ["월","화","수","목","금","토","일"];
+        let dayLabels = {}; // 요일→날짜 라벨 (예: 월→6/22)
         const WKND = { "토":true, "일":true };
 
         let selectedUser = "";
@@ -439,6 +462,7 @@
             WEEKS.forEach((w, i) => {
                 const t = new Date(mon); t.setDate(mon.getDate() + i);
                 const lbl = `${t.getMonth()+1}/${t.getDate()}`;
+                dayLabels[w] = lbl;
                 document.getElementById(`cd-${w}`).innerText = lbl;
                 document.getElementById(`thd-${w}`).innerText = lbl;
             });
@@ -465,6 +489,27 @@
             document.getElementById('txLastWeek').value = d.lastWeek ?? '';
             document.getElementById('txScDetail').value = '';
             activeDays = []; refreshDayNodesUI();
+            document.getElementById('btnClearWork').style.display = isDept ? '' : 'none';
+            renderMyAtt();
+        }
+
+        // 선택 부서의 등록된 출장·근태를 하루씩 삭제할 수 있는 목록
+        function renderMyAtt() {
+            const wrap = document.getElementById('myAttWrap');
+            const list = document.getElementById('myAttList');
+            if (!selectedUser) { wrap.style.display = 'none'; return; }
+            const days = (serverCache[selectedUser] || {}).days || {};
+            const rows = WEEKS.filter(w => days[w]).map(w => {
+                const sc = days[w];
+                return `<div class="myatt-item">` +
+                    `<span class="myatt-day">${w} ${dayLabels[w] || ''}</span>` +
+                    `<span class="myatt-pill ${sc.type}">${sc.type}</span>` +
+                    `<span class="myatt-txt">${escapeHtml(sc.text || '')}</span>` +
+                    `<button class="myatt-x" onclick="removeDayLive('${selectedUser}','${w}')" title="삭제">✕</button>` +
+                    `</div>`;
+            });
+            wrap.style.display = '';
+            list.innerHTML = rows.length ? rows.join('') : '<div class="myatt-empty">등록된 출장·근태가 없습니다.</div>';
         }
 
         function toggleDayNode(day) {
@@ -501,13 +546,20 @@
             activeDays = []; document.getElementById('txScDetail').value = ''; refreshDayNodesUI();
         }
 
-        function clearDataForMember() {
+        function clearWorkForMember() {
             if (!selectedUser) return;
-            if (confirm(`[${selectedUser}]의 이번 주·지난 주 활동 및 출장근태를 모두 삭제할까요?`)) {
-                dbRef.child(selectedUser).remove().then(() => {
-                    alert("삭제되었습니다.");
+            if (!ACT_MEMBERS.includes(selectedUser)) { alert('이 부서는 주간업무 항목이 없습니다.'); return; }
+            if (confirm(`[${selectedUser}]의 이번 주·지난 주 활동을 지울까요? (출장·근태는 유지)`)) {
+                dbRef.child(selectedUser).update({ thisWeek: '', lastWeek: '', work: null }).then(() => {
                     document.getElementById('txThisWeek').value = '';
                     document.getElementById('txLastWeek').value = '';
+                });
+            }
+        }
+        function clearAttForMember() {
+            if (!selectedUser) return;
+            if (confirm(`[${selectedUser}]의 출장·근태를 전부 지울까요? (주간업무는 유지)`)) {
+                dbRef.child(selectedUser).child('days').remove().then(() => {
                     document.getElementById('txScDetail').value = '';
                     activeDays = []; refreshDayNodesUI();
                 });
@@ -692,6 +744,7 @@
                 const a = document.getElementById('txThisWeek'), b = document.getElementById('txLastWeek');
                 if (document.activeElement !== a) a.value = d.thisWeek ?? d.work ?? '';
                 if (document.activeElement !== b) b.value = d.lastWeek ?? '';
+                renderMyAtt();
             }
         });
 
