@@ -19,8 +19,8 @@
             --nv: #1557b0; --bar: #1a73e8;
             --cur-bd: #8fb4f3; --cur-bg: #eef4ff; --cur-ink: #1557b0;
             --prev-bd: #d8b65a; --prev-bg: #fbf4e2; --prev-ink: #8a6a12;
-            --trip-ink:#1d4271; --trip-bg:#e9f0f8;
-            --leave-ink:#8a560a; --leave-bg:#fbf3e3;
+            --trip-ink:#15406f; --trip-bg:#e8f1fd; --trip-pill:#1a73e8;
+            --leave-ink:#8a4a06; --leave-bg:#fff2e0; --leave-pill:#e07b00;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Pretendard','Malgun Gothic',-apple-system,sans-serif; background: var(--page); color: var(--ink); padding-bottom: 70px; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
@@ -133,8 +133,11 @@
         .badge-cell { font-size:11px; font-weight:700; line-height:1.3; }
         .badge-cell.출장 { background:var(--trip-bg); color:var(--trip-ink); }
         .badge-cell.근태 { background:var(--leave-bg); color:var(--leave-ink); }
-        .badge-cell .b-tag { font-size:10px; opacity:.85; } .badge-cell .b-txt { display:block; font-weight:600; }
-        .att-fit { height:38px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1.2; }
+        .badge-cell .b-tag { display:inline-block; font-size:8.5px; font-weight:800; color:#fff; padding:1px 6px; border-radius:999px; letter-spacing:.04em; line-height:1.4; }
+        .badge-cell.출장 .b-tag { background:var(--trip-pill); }
+        .badge-cell.근태 .b-tag { background:var(--leave-pill); }
+        .badge-cell .b-txt { display:block; font-weight:700; font-size:10.5px; }
+        .att-fit { height:38px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; line-height:1.2; }
 
         /* ── 최종본(뉴스레터) ── */
         .final-section { margin-bottom: 18px; }
@@ -206,6 +209,7 @@
 
             .news-topbar, .dept-tag.cur, .dept-tag.prev,
             .badge-cell.출장, .badge-cell.근태,
+            .badge-cell .b-tag, .badge-cell.출장 .b-tag, .badge-cell.근태 .b-tag,
             .grid-table thead th, .sum-table thead th,
             .sum-table td.dept, .grid-table td.dept,
             .sum-table tbody tr:nth-child(even) td, .grid-table td.wknd,
