@@ -101,23 +101,35 @@
         .btn-reload:hover { border-color:var(--accent); color:var(--accent); }
 
         /* ── 부서별 간략표 ── */
-        .sum-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-        .sum-table th, .sum-table td { border:1px solid var(--line); padding:9px 11px; font-size:13.5px; vertical-align:top; text-align:left; }
-        .sum-table th { background:#f6f8fb; font-weight:700; color:var(--ink-soft); font-size:12.5px; text-align:center; }
-        .sum-table td.dept { text-align:center; font-weight:800; color:var(--accent); background:#fbfcfe; width:64px; }
-        .sum-table td .celltext { white-space:pre-wrap; line-height:1.5; color:#33404f; }
+        .sum-table { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; border:1px solid #dde3ec; border-radius:11px; overflow:hidden; }
+        .sum-table thead th { background:#26344f; color:#fff; font-weight:700; font-size:12.5px; text-align:center; padding:13px 14px; letter-spacing:.03em; }
+        .sum-table tbody td { padding:13px 15px; font-size:13.5px; vertical-align:top; text-align:left; border-top:1px solid var(--line-soft); }
+        .sum-table tbody tr:nth-child(even) td { background:#fafbfd; }
+        .sum-table tbody td.dept { text-align:center; font-weight:800; color:#26344f; background:#eaeef6; width:64px; letter-spacing:.05em; border-top-color:#dde3ec; }
+        .sum-table tbody tr:nth-child(even) td.dept { background:#e4e9f3; }
+        .sum-table td .celltext { white-space:pre-wrap; line-height:1.6; color:#33404f; }
         .sum-table td .none { color:var(--ink-faint); }
         .sub-h { font-size:13.5px; font-weight:800; color:var(--ink); margin:20px 0 10px; }
 
         /* ── 근태표 ── */
-        .grid-table { width:100%; border-collapse:collapse; table-layout:fixed; text-align:center; }
-        .grid-table th, .grid-table td { border:1px solid #d4d8de; padding:4px 3px; font-size:12.5px; height:48px; vertical-align:middle; color:#1f2329; }
-        .grid-table th { background:#eef2f7; font-weight:700; font-size:11.5px; }
-        .grid-table th[data-w="토"]{color:#1a73e8;} .grid-table th[data-w="일"]{color:#d93025;}
-        .grid-table th .th-w { display:block; font-size:12px; font-weight:700; line-height:1.2; }
-        .grid-table th .th-d { display:block; font-size:9.5px; font-weight:600; color:var(--ink-faint); line-height:1.2; margin-top:2px; }
-        .grid-table td.dept { font-weight:800; background:#fbfcfe; color:var(--accent); font-size:13.5px; }
-        .grid-table td.wknd { background:#f8fafc; }
+        .grid-table { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; text-align:center; border:1px solid #dde3ec; border-radius:11px; overflow:hidden; }
+        .grid-table thead th { background:#26344f; color:#fff; font-weight:700; font-size:11.5px; padding:8px 3px; }
+        .grid-table tbody td { border-top:1px solid #e2e6ee; padding:4px 3px; font-size:12.5px; height:48px; vertical-align:middle; color:#1f2329; }
+        .grid-table th[data-w="토"] .th-w{color:#9fc3ff;} .grid-table th[data-w="일"] .th-w{color:#ffb0aa;}
+        .grid-table th .th-w { display:block; font-size:12.5px; font-weight:800; line-height:1.2; }
+        .grid-table th .th-d { display:block; font-size:9.5px; font-weight:600; color:#aeb9d0; line-height:1.2; margin-top:2px; }
+        .grid-table td.dept { font-weight:800; background:#eaeef6; color:#26344f; font-size:13.5px; letter-spacing:.03em; }
+        .grid-table td.wknd { background:#f5f7fb; }
+
+        /* 인쇄 전용 레터헤드 / 푸터 */
+        .print-head, .print-foot { display:none; }
+        .print-head .ph-org { font-size:13px; font-weight:800; color:#5a6b8c; letter-spacing:.1em; display:flex; align-items:center; gap:8px; }
+        .print-head .ph-tick { width:4px; height:15px; background:#1a73e8; border-radius:2px; display:inline-block; }
+        .print-head .ph-title { font-size:27px; font-weight:900; color:#1f2d4d; letter-spacing:-.02em; margin-top:9px; }
+        .print-head .ph-date { font-size:12.5px; color:#8a94a6; margin-top:7px; letter-spacing:.02em; }
+        .print-head .ph-rule { height:3px; background:#1f2d4d; margin-top:15px; position:relative; }
+        .print-head .ph-rule::before { content:""; position:absolute; left:0; top:0; width:92px; height:3px; background:#1a73e8; }
+        .print-foot { margin-top:24px; padding-top:13px; border-top:1px solid var(--line); display:flex; justify-content:space-between; font-size:11.5px; font-weight:600; color:#94a0b3; letter-spacing:.02em; }
         .badge-cell { font-size:11px; font-weight:700; line-height:1.3; }
         .badge-cell.출장 { background:var(--trip-bg); color:var(--trip-ink); }
         .badge-cell.근태 { background:var(--leave-bg); color:var(--leave-ink); }
@@ -171,10 +183,12 @@
         @media print {
             @page { size: A4 portrait; margin: 0; }
             body { background:#fff; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-            .topbar, header, .editor, .sec-bar, .no-print, .btn-print-xs, .btn-reload { display:none !important; }
+            .topbar, header, .editor, .sec-bar, .no-print, .btn-print-xs, .btn-reload, .sub-bar { display:none !important; }
             .wrap { max-width:none; width:100%; padding:0; margin:0; }
             section.block, .final-section { display:none !important; box-shadow:none; border:none; border-radius:0; margin:0; padding:0; }
             .sub-block { margin:0 !important; }
+            .print-head, .print-foot { display:block !important; }
+            .print-foot { display:flex !important; }
 
             /* 주간업무(부서별 활동) 인쇄 */
             body.print-work section.block { display:block !important; padding:13mm; }
@@ -191,7 +205,11 @@
             body.print-final #finalPrint .news-pad { padding:16mm 16mm 12mm; }
 
             .news-topbar, .dept-tag.cur, .dept-tag.prev,
-            .badge-cell.출장, .badge-cell.근태, .grid-table th, .sum-table th, .sum-table td.dept, .grid-table td.dept {
+            .badge-cell.출장, .badge-cell.근태,
+            .grid-table thead th, .sum-table thead th,
+            .sum-table td.dept, .grid-table td.dept,
+            .sum-table tbody tr:nth-child(even) td, .grid-table td.wknd,
+            .print-head .ph-tick, .print-head .ph-rule, .print-head .ph-rule::before {
                 -webkit-print-color-adjust:exact; print-color-adjust:exact;
             }
         }
@@ -266,6 +284,12 @@
         <section class="block card">
 
             <div class="sub-block" id="workArea">
+                <div class="print-head">
+                    <div class="ph-org"><span class="ph-tick"></span>전국전력노동조합</div>
+                    <div class="ph-title">주간업무 보고</div>
+                    <div class="ph-date" id="phWorkDate"></div>
+                    <div class="ph-rule"></div>
+                </div>
                 <div class="sub-bar">
                     <div class="sub-h">부서별 활동</div>
                     <button class="btn-print-xs" onclick="printWork()">
@@ -277,9 +301,16 @@
                     <thead><tr><th style="width:64px;">부서</th><th>이번 주 활동</th><th>지난 주 활동</th></tr></thead>
                     <tbody id="summaryBody"></tbody>
                 </table>
+                <div class="print-foot"><span>발행 | 전국전력노동조합 복지국</span><span id="phWorkFoot"></span></div>
             </div>
 
             <div class="sub-block" id="attArea">
+                <div class="print-head">
+                    <div class="ph-org"><span class="ph-tick"></span>전국전력노동조합</div>
+                    <div class="ph-title">출장 · 근태 현황</div>
+                    <div class="ph-date" id="phAttDate"></div>
+                    <div class="ph-rule"></div>
+                </div>
                 <div class="sub-bar">
                     <div class="sub-h">출장 · 근태 <span id="attDate" style="font-weight:600;color:var(--ink-faint);font-size:12px;"></span></div>
                     <button class="btn-print-xs" onclick="printAtt()">
@@ -300,6 +331,7 @@
                     </tr></thead>
                     <tbody id="attBody"></tbody>
                 </table>
+                <div class="print-foot"><span>발행 | 전국전력노동조합 복지국</span><span id="phAttFoot"></span></div>
             </div>
         </section>
 
@@ -391,6 +423,14 @@
             document.getElementById('headSub').innerText = `작성 주간 ${range}`;
             document.getElementById('attDate').innerText =
                 `(${mon.getMonth()+1}.${mon.getDate()} ~ ${sun.getMonth()+1}.${sun.getDate()})`;
+
+            // 인쇄용 레터헤드 / 푸터
+            const attRange = `${mon.getFullYear()}. ${pad(mon.getMonth()+1)}. ${pad(mon.getDate())} ~ ${pad(sun.getMonth()+1)}. ${pad(sun.getDate())}`;
+            const today = `${now.getFullYear()}. ${pad(now.getMonth()+1)}. ${pad(now.getDate())}`;
+            document.getElementById('phWorkDate').innerText = `작성 주간 · ${range}`;
+            document.getElementById('phAttDate').innerText = `대상 기간 · ${attRange}`;
+            document.getElementById('phWorkFoot').innerText = today;
+            document.getElementById('phAttFoot').innerText = today;
 
             WEEKS.forEach((w, i) => {
                 const t = new Date(mon); t.setDate(mon.getDate() + i);
