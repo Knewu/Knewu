@@ -1,18 +1,18 @@
 {
   "name": "전국전력노동조합 집행부 업무포털",
-  "short_name": "전력노조",
+  "short_name": "전력노조 업무포털",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f1f3f4",
-  "theme_color": "#1a73e8",
+  "background_color": "#0054a6",
+  "theme_color": "#0054a6",
   "icons": [
     {
-      "src": "https://knewu.netlify.app/icon-192.png",
+      "src": "https://pub-8419615a133446dfbe9e0ef7cfa8e1b1.r2.dev/kpwu-portal.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://knewu.netlify.app/icon-192.png",
+      "src": "https://pub-8419615a133446dfbe9e0ef7cfa8e1b1.r2.dev/kpwu-portal.png",
       "sizes": "512x512",
       "type": "image/png"
     }
