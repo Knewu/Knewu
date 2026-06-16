@@ -3,238 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전국전력노동조합 주간업무</title>
+    <title>주간업무 작성 · 전력노조 집행부</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-
     <style>
         :root {
-            --accent: #2a3a82;
-            --accent-soft: #4666c4;
-            --ink: #1c2530;
-            --ink-soft: #5b6776;
-            --ink-faint: #9aa6b2;
-            --line: #dde3ea;
-            --page: #eef1f5;
-            --paper: #ffffff;
-            --radius: 12px;
-
-            /* 붙임 디자인 색 */
-            --nv: #2a3a82;          /* 제목 네이비 */
-            --bar: #4666c4;         /* 상단 블루바 */
-            --blue-bd: #6f8fd8;     /* 이번주 태그 테두리 */
-            --blue-bg: #eef2fc;     /* 이번주 태그 배경 */
-            --gold-bd: #c7a73c;     /* 지난주 태그 테두리 */
-            --gold-bg: #fbf6e4;     /* 지난주 태그 배경 */
-            --card: #f4f6fc;        /* 이번주 카드 배경 */
+            --accent: #1a73e8; --accent-dk: #1557b0; --accent-tint: #eef4ff;
+            --ink: #1f2329; --ink-soft: #646b76; --ink-faint: #9aa3ad;
+            --line: #e7e9ed; --line-soft: #eef0f3;
+            --page: #f4f6f8; --paper: #ffffff;
+            --radius: 14px;
+            --shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.04);
+            /* 뉴스레터 색 */
+            --nv: #1557b0; --bar: #1a73e8;
+            --cur-bd: #8fb4f3; --cur-bg: #eef4ff; --cur-ink: #1557b0;
+            --prev-bd: #d8b65a; --prev-bg: #fbf4e2; --prev-ink: #8a6a12;
             --trip-ink:#1d4271; --trip-bg:#e9f0f8;
             --leave-ink:#8a560a; --leave-bg:#fbf3e3;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Pretendard', 'Malgun Gothic', -apple-system, sans-serif;
-            background: var(--page); color: var(--ink); padding-bottom: 80px;
-            -webkit-font-smoothing: antialiased; letter-spacing: -.01em;
-        }
+        body { font-family: 'Pretendard','Malgun Gothic',-apple-system,sans-serif; background: var(--page); color: var(--ink); padding-bottom: 70px; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
 
-        /* ───────── 앱 크롬 (화면 전용) ───────── */
-        .topbar {
-            background: var(--paper); border-bottom: 1px solid var(--line);
-            padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 12px;
-            position: sticky; top: 0; z-index: 100;
-        }
-        .back-btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none;
-            color: var(--ink-soft); font-size:13.5px; font-weight:600; padding:7px 11px; border-radius:8px; }
-        .back-btn:hover { background: var(--page); color: var(--accent); }
-        .crumb { font-size:14px; font-weight:800; color: var(--ink); }
+        /* ── 앱 크롬 ── */
+        .topbar { background: var(--paper); border-bottom: 1px solid var(--line); padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 2px rgba(16,24,40,.03); }
+        .back-btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none; color: var(--ink-soft); font-size:15px; font-weight:600; padding:7px 12px; border-radius:8px; transition:background .15s; }
+        .back-btn:hover { background: var(--line-soft); color: var(--accent); }
+        .crumb { font-size:15px; font-weight:800; color: var(--ink); letter-spacing:-.3px; }
 
         .wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px; }
 
-        /* ───────── 입력 에디터 (심플) ───────── */
-        .editor {
-            background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
-            padding: 20px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 16px;
-        }
-        .ed-label { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+        header { margin-bottom: 20px; }
+        header h1 { font-size: 25px; font-weight: 800; letter-spacing: -.5px; color: #1a1d21; }
+        header .sub { margin-top: 4px; font-size: 15px; color: var(--ink-soft); letter-spacing: -.2px; }
+
+        .card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+        /* ── 입력 폼 ── */
+        .editor { padding: 20px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 16px; }
+        .ed-label { font-size: 13px; font-weight: 700; color: var(--ink-soft); }
         .member-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-        .member-btn {
-            padding: 8px 14px; font-family: inherit; font-size: 13.5px; font-weight: 700;
-            background: #f5f7fa; border: 1px solid var(--line); border-radius: 999px;
-            color: #46586b; cursor: pointer; transition: all .12s;
-        }
-        .member-btn:hover { border-color: var(--accent-soft); color: var(--accent-soft); }
+        .member-btn { padding: 9px 15px; font-family: inherit; font-size: 14px; font-weight: 700; background: #f3f5f8; border: 1px solid var(--line); border-radius: 999px; color: #46586b; cursor: pointer; transition: all .12s; }
+        .member-btn:hover { border-color: var(--accent); color: var(--accent); }
         .member-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
         .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         @media (max-width: 760px) { .fields { grid-template-columns: 1fr; } }
         .field { display: flex; flex-direction: column; gap: 6px; }
-        textarea {
-            width: 100%; height: 104px; padding: 11px; font-family: inherit; font-size: 13.5px;
-            border: 1px solid var(--line); border-radius: 9px; resize: vertical; line-height: 1.55;
-            color: var(--ink); background: #fcfdfe;
-        }
-        textarea:focus { outline: none; border-color: var(--accent-soft); box-shadow: 0 0 0 3px #eef2fc; }
+        textarea { width: 100%; height: 104px; padding: 11px; font-family: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; resize: vertical; line-height: 1.55; color: var(--ink); background: #fcfdfe; }
+        textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,.12); }
         textarea::placeholder { color: var(--ink-faint); }
-        .hint { font-size: 11.5px; color: var(--ink-faint); line-height: 1.5; }
-
         .disabled-content { opacity: .25; pointer-events: none; }
 
-        /* 출장근태 (항상 펼침, 필수) */
-        .att-block { border-top: 1px solid var(--line); padding-top: 15px; }
-        .att-head { font-size: 13px; font-weight: 800; color: var(--ink); margin-bottom: 11px; display: flex; align-items: center; gap: 8px; }
-        .req-tag { font-size: 10.5px; font-weight: 800; color: #c0392b; background: #fdecea; border: 1px solid #f3c6c0; padding: 1px 8px; border-radius: 999px; }
+        /* 출장근태 입력 */
+        .att-block { border-top: 1px solid var(--line-soft); padding-top: 15px; }
+        .att-head { font-size: 14px; font-weight: 800; color: var(--ink); margin-bottom: 11px; }
         .att-inner { display: flex; flex-direction: column; gap: 10px; }
-        .seg { display:inline-flex; background:#e9edf3; border-radius:7px; padding:3px; align-self:flex-start; }
+        .seg { display:inline-flex; background:#eef0f3; border-radius:8px; padding:3px; align-self:flex-start; }
         .seg input { position:absolute; opacity:0; pointer-events:none; }
-        .seg label { padding:6px 14px; font-size:12.5px; font-weight:700; color:var(--ink-soft); border-radius:5px; cursor:pointer; }
-        .seg input:checked + label { background:#fff; color:var(--accent); box-shadow:0 1px 2px rgba(0,0,0,.12); }
+        .seg label { padding:7px 16px; font-size:13px; font-weight:700; color:var(--ink-soft); border-radius:6px; cursor:pointer; }
+        .seg input:checked + label { background:#fff; color:var(--accent); box-shadow:0 1px 2px rgba(0,0,0,.1); }
         .days-row { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
-        .day-node { background:#fff; border:1px solid var(--line); border-radius:7px; padding:8px 2px; text-align:center; cursor:pointer; user-select:none; }
-        .day-node .n-w { font-size:12.5px; font-weight:800; color:#1e293b; }
+        .day-node { background:#fff; border:1px solid var(--line); border-radius:8px; padding:8px 2px; text-align:center; cursor:pointer; user-select:none; }
+        .day-node .n-w { font-size:13px; font-weight:800; color:#1e293b; }
         .day-node .n-d { font-size:10px; color:var(--ink-faint); margin-top:1px; }
-        .day-node[data-w="토"] .n-w { color:#2563a8; }
-        .day-node[data-w="일"] .n-w { color:#c0392b; }
+        .day-node[data-w="토"] .n-w { color:#1a73e8; }
+        .day-node[data-w="일"] .n-w { color:#d93025; }
         .day-node.active { background:var(--accent)!important; border-color:var(--accent); }
         .day-node.active * { color:#fff!important; }
-        .detail-input { width:100%; padding:9px 11px; font-size:12.5px; font-family:inherit; border:1px solid var(--line); border-radius:7px; }
-        .detail-input:focus { outline:none; border-color:var(--accent-soft); }
+        .detail-input { width:100%; padding:10px 12px; font-size:14px; font-family:inherit; border:1px solid var(--line); border-radius:9px; color:var(--ink); }
+        .detail-input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(26,115,232,.12); }
 
         .btn-row { display:flex; justify-content:space-between; align-items:center; gap:10px; }
-        .btn-submit { background:var(--accent); color:#fff; border:none; font-weight:700; font-size:13.5px; font-family:inherit; cursor:pointer; padding:10px 20px; border-radius:8px; }
-        .btn-submit:hover { background:var(--accent-soft); }
-        .btn-clear { background:#fff; color:#c0392b; border:1px solid #e7c4be; font-weight:700; font-size:13px; font-family:inherit; cursor:pointer; padding:9px 14px; border-radius:8px; }
+        .btn { font-family:inherit; cursor:pointer; border-radius:9px; font-weight:700; }
+        .btn-submit { background:var(--accent); color:#fff; border:none; font-size:14px; padding:11px 22px; }
+        .btn-submit:hover { background:var(--accent-dk); }
+        .btn-clear { background:#fff; color:#c5221f; border:1px solid #f0c8c3; font-size:13px; padding:10px 15px; }
+        .btn-clear:hover { background:#fdf1ef; }
 
-        /* 툴바 */
-        .toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:22px; }
-        .toolbar .spacer { flex:1; }
-        .chk { display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; }
-        .chk input { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
-        .btn-ghost { background:#fff; color:var(--accent); border:1px solid var(--line); padding:9px 16px; border-radius:999px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; }
-        .btn-ghost:hover { background:#f5f7fc; }
-        .btn-ghost.on { background:var(--accent); color:#fff; border-color:var(--accent); }
-        .btn-print { display:inline-flex; align-items:center; gap:7px; background:var(--accent); color:#fff; border:none; padding:10px 20px; border-radius:999px; font-size:13.5px; font-weight:700; font-family:inherit; cursor:pointer; box-shadow:0 3px 12px rgba(42,58,130,.25); }
-        .btn-print:hover { background:var(--accent-soft); }
+        /* ── 섹션 공통 ── */
+        section.block { margin-bottom: 18px; padding: 20px; }
+        .sec-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+        .sec-bar h2 { font-size:16px; font-weight:800; letter-spacing:-.3px; }
+        .sec-bar .badge { font-size:13px; font-weight:800; color:var(--accent); background:var(--accent-tint); padding:6px 13px; border-radius:999px; }
+        .sec-actions { display:flex; align-items:center; gap:8px; }
+        .btn-print-sm { display:inline-flex; align-items:center; gap:6px; background:var(--paper); color:var(--ink-soft); border:1px solid var(--line); padding:8px 13px; border-radius:9px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; box-shadow:var(--shadow); transition:border-color .15s,color .15s; }
+        .btn-print-sm:hover { border-color:var(--accent); color:var(--accent); }
+        .btn-print-sm svg { width:15px; height:15px; }
+        .btn-reload { background:var(--paper); color:var(--ink-soft); border:1px solid var(--line); padding:8px 12px; border-radius:9px; font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer; }
+        .btn-reload:hover { border-color:var(--accent); color:var(--accent); }
 
-        /* ═════════ 붙임 뉴스레터 (인쇄/미리보기 풀디자인) ═════════ */
-        .news { position: relative; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-        .news-topbar { height: 9px; background: var(--bar); }
-        .news-pad { padding: 34px 40px 30px; position: relative; z-index: 2; }
-        .news-title { font-size: 33px; font-weight: 900; color: var(--nv); letter-spacing: -.02em; line-height: 1.1; }
-        .news-date { font-size: 15px; font-weight: 600; color: var(--ink-faint); margin-top: 8px; letter-spacing: .04em; }
+        /* ── 부서별 간략표 ── */
+        .sum-table { width:100%; border-collapse:collapse; table-layout:fixed; }
+        .sum-table th, .sum-table td { border:1px solid var(--line); padding:9px 11px; font-size:13.5px; vertical-align:top; text-align:left; }
+        .sum-table th { background:#f6f8fb; font-weight:700; color:var(--ink-soft); font-size:12.5px; text-align:center; }
+        .sum-table td.dept { text-align:center; font-weight:800; color:var(--accent); background:#fbfcfe; width:64px; }
+        .sum-table td .celltext { white-space:pre-wrap; line-height:1.5; color:#33404f; }
+        .sum-table td .none { color:var(--ink-faint); }
+        .sub-h { font-size:13.5px; font-weight:800; color:var(--ink); margin:20px 0 10px; }
 
-        .sec-h { font-size: 18px; font-weight: 800; color: var(--nv); margin: 30px 0 14px; }
-        .sec-h.prev { margin-top: 34px; }
-
-        .cur-card { background: var(--card); border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 16px; }
-        .prev-body { display: flex; flex-direction: column; gap: 16px; padding: 0 4px; }
-
-        .news-row { display: flex; gap: 14px; align-items: flex-start; }
-        .dept-tag {
-            flex-shrink: 0; min-width: 50px; text-align: center; padding: 3px 6px; font-size: 13px; font-weight: 700;
-            letter-spacing: .18em; border-radius: 4px; line-height: 1.5; margin-top: 1px;
-        }
-        .dept-tag.cur { color: var(--nv); border: 1.5px solid var(--blue-bd); background: var(--blue-bg); }
-        .dept-tag.prev { color: #6b5a14; border: 1.5px solid var(--gold-bd); background: var(--gold-bg); }
-        .act { flex: 1; min-width: 0; }
-        .act-head { font-size: 15.5px; font-weight: 600; color: #232a35; line-height: 1.5; }
-        .act-subs { list-style: none; margin: 5px 0 0; padding-left: 14px; display: flex; flex-direction: column; gap: 3px; }
-        .act-subs li { position: relative; font-size: 14.5px; color: #3a4250; line-height: 1.5; padding-left: 16px; }
-        .act-subs li::before { content: "○"; position: absolute; left: 0; color: #6a7484; font-size: 11px; top: 3px; }
-        .empty-hint { color: var(--ink-faint); font-size: 14px; }
-
-        .news-footer { margin-top: 30px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); position: relative; z-index: 2; }
-
-        /* 전기 테마 데코 (우하단) */
-        .news-deco { position: absolute; right: 0; bottom: 0; width: 320px; height: 230px; z-index: 1; pointer-events: none; }
-        .news-mascot { position: absolute; right: 34px; bottom: 26px; width: 150px; z-index: 2; pointer-events: none; }
-
-        /* ── 화면(미리보기 아님): 심플하게 ── */
-        @media screen {
-            body:not(.preview-mode) .news-topbar { display: none; }
-            body:not(.preview-mode) .news-deco,
-            body:not(.preview-mode) .news-mascot { display: none; }
-            body:not(.preview-mode) .news-pad { padding: 26px 26px 24px; }
-            body:not(.preview-mode) .news-title { font-size: 24px; }
-            body:not(.preview-mode) .cur-card { background: transparent; border-radius: 0; padding: 0; }
-            body:not(.preview-mode) .sec-h { border-left: 4px solid var(--accent-soft); padding-left: 9px; }
-        }
-
-        /* 부속: 출장·근태 현황표 */
-        .att-sheet { display: none; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 26px; }
-        .att-sheet .news-topbar { background: #5f6f93; }
-        .att-pad { padding: 30px 36px; }
-        .att-title { font-size: 21px; font-weight: 800; color: var(--nv); text-align: center; margin-bottom: 4px; }
-        .att-date { font-size: 13px; color: var(--ink-faint); text-align: center; margin-bottom: 18px; }
+        /* ── 근태표 ── */
         .grid-table { width:100%; border-collapse:collapse; table-layout:fixed; text-align:center; }
-        .grid-table th, .grid-table td { border:1px solid #1c2530; padding:5px 3px; font-size:12.5px; height:42px; vertical-align:middle; color:#000; }
-        .grid-table th { background:#dce4ee; font-weight:700; }
-        .grid-table th[data-w="토"]{color:#2563a8;} .grid-table th[data-w="일"]{color:#c0392b;}
-        .grid-table td.m-name { font-weight:700; background:#fff; }
-        .grid-table td.m-role { font-weight:500; background:#fafbfc; color:#333; font-size:12px; }
-        .grid-table td.wknd { background:#f9fafc; }
-        .badge-cell { font-size:11px; font-weight:700; line-height:1.3; outline:none; }
-        .badge-cell.출장 { background:var(--trip-bg)!important; color:var(--trip-ink)!important; }
-        .badge-cell.근태 { background:var(--leave-bg)!important; color:var(--leave-ink)!important; }
+        .grid-table th, .grid-table td { border:1px solid #d4d8de; padding:5px 3px; font-size:12.5px; height:40px; vertical-align:middle; color:#1f2329; }
+        .grid-table th { background:#eef2f7; font-weight:700; font-size:11.5px; }
+        .grid-table th[data-w="토"]{color:#1a73e8;} .grid-table th[data-w="일"]{color:#d93025;}
+        .grid-table td.dept { font-weight:800; background:#fbfcfe; color:var(--accent); }
+        .grid-table td.wknd { background:#f8fafc; }
+        .badge-cell { font-size:11px; font-weight:700; line-height:1.3; }
+        .badge-cell.출장 { background:var(--trip-bg); color:var(--trip-ink); }
+        .badge-cell.근태 { background:var(--leave-bg); color:var(--leave-ink); }
         .badge-cell .b-tag { font-size:9px; opacity:.85; } .badge-cell .b-txt { display:block; font-weight:600; }
-        @media screen { body.preview-mode.with-att .att-sheet { display: block; } }
 
-        /* ═════════ 최종본 컨트롤 ═════════ */
-        .btn-final { background:#0e7490; color:#fff; border:none; padding:9px 16px; border-radius:999px; font-size:13px; font-weight:800; font-family:inherit; cursor:pointer; }
-        .btn-final:hover { background:#0b5e75; }
-        .view-seg { display:inline-flex; background:#e6ebf1; border-radius:999px; padding:3px; }
-        .view-seg .vt { border:none; background:transparent; padding:6px 15px; font-size:12.5px; font-weight:700; color:var(--ink-soft); border-radius:999px; cursor:pointer; font-family:inherit; }
-        .view-seg .vt.active { background:#fff; color:var(--accent); box-shadow:0 1px 2px rgba(0,0,0,.12); }
-        .final-stat { font-size:12px; color:var(--ink-faint); font-weight:600; }
+        /* ── 최종본(뉴스레터) ── */
+        .final-section { margin-bottom: 18px; }
+        .news { position: relative; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+        .news-topbar { height: 8px; background: var(--bar); }
+        .news-pad { padding: 28px 30px 26px; }
+        .news-title { font-size: 27px; font-weight: 900; color: var(--nv); letter-spacing: -.02em; line-height: 1.12; }
+        .news-date { font-size: 14px; font-weight: 600; color: var(--ink-faint); margin-top: 7px; letter-spacing: .03em; }
+        .sec-h { font-size: 17px; font-weight: 800; color: var(--nv); margin: 26px 0 13px; border-left: 4px solid var(--accent); padding-left: 10px; }
+        .news-rows { display:flex; flex-direction:column; gap:13px; }
+        .news-row, .fin-row { display: flex; gap: 13px; align-items: flex-start; }
+        .dept-tag { flex-shrink: 0; min-width: 50px; text-align: center; padding: 4px 6px; font-size: 13px; font-weight: 800; letter-spacing: .12em; border-radius: 5px; line-height: 1.5; margin-top: 2px; }
+        .dept-tag.cur { color: var(--cur-ink); border: 1.5px solid var(--cur-bd); background: var(--cur-bg); }
+        .dept-tag.prev { color: var(--prev-ink); border: 1.5px solid var(--prev-bd); background: var(--prev-bg); }
+        .act { flex: 1; min-width: 0; }
+        .act-head { font-size: 15px; font-weight: 600; color: #232a35; line-height: 1.5; }
+        .act-subs { list-style: none; margin: 5px 0 0; padding-left: 12px; display: flex; flex-direction: column; gap: 3px; }
+        .act-subs li { position: relative; font-size: 14px; color: #3a4250; line-height: 1.5; padding-left: 15px; }
+        .act-subs li::before { content: "○"; position: absolute; left: 0; color: #6a7484; font-size: 10px; top: 4px; }
+        .empty-hint { color: var(--ink-faint); font-size: 14px; }
+        .news-footer { margin-top: 28px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
 
-        .view-badge { display:none; }
-        @media screen { body:not(.preview-mode) .view-badge { display:inline-block; margin-bottom:9px; font-size:12px; font-weight:800; padding:4px 12px; border-radius:999px; } }
-        .view-badge.draft { background:#fdf0db; color:#9a6a13; }
-        .view-badge.final { background:#e0f4ee; color:#0b6e5e; }
+        /* 최종본 편집용 textarea (뉴스레터 안) */
+        .fin-ta { flex:1; min-width:0; border:1px solid transparent; border-radius:8px; padding:6px 9px; font-family:inherit; font-size:14.5px; line-height:1.55; color:#232a35; background:#f7f9fc; resize:none; overflow:hidden; }
+        .fin-ta:focus { outline:none; border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px rgba(26,115,232,.12); }
+        .fin-note { font-size:12px; color:var(--ink-faint); margin-top:12px; line-height:1.5; }
 
-        /* 최종본 모달 */
-        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(20,28,40,.55); z-index:500; padding:18px; }
-        .modal-overlay.open { display:flex; align-items:flex-start; justify-content:center; }
-        .modal { background:var(--paper); border-radius:14px; width:100%; max-width:760px; max-height:88vh; margin-top:3vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.32); }
-        .modal-head { padding:17px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
-        .modal-head h3 { font-size:16px; font-weight:800; color:var(--ink); }
-        .modal-head .x { background:none; border:none; font-size:24px; color:var(--ink-faint); cursor:pointer; line-height:1; padding:0 4px; }
-        .modal-sub { padding:13px 22px 0; font-size:12.5px; color:var(--ink-soft); line-height:1.55; }
-        .modal-body { padding:14px 22px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
-        .fin-block { border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
-        .fin-block h4 { font-size:13.5px; font-weight:800; color:var(--accent); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
-        .tag-mini { font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px; }
-        .tag-mini.y { background:#e0f4ee; color:#0b6e5e; }
-        .tag-mini.n { background:#f1f3f5; color:#9aa6b2; }
-        .fin-pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-        @media (max-width:640px){ .fin-pair { grid-template-columns:1fr; } }
-        .fin-pair label { font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px; }
-        .fin-pair textarea { height:80px; font-size:13px; }
-        .modal-foot { padding:14px 22px; border-top:1px solid var(--line); display:flex; gap:9px; align-items:center; flex-wrap:wrap; }
-        .modal-foot .mspacer { flex:1; }
-        .btn-load { background:#fff; color:var(--accent); border:1px solid var(--line); padding:9px 14px; border-radius:8px; font-size:12.5px; font-weight:700; font-family:inherit; cursor:pointer; }
-        .btn-del { background:#fff; color:#c0392b; border:1px solid #e7c4be; padding:9px 14px; border-radius:8px; font-size:12.5px; font-weight:700; font-family:inherit; cursor:pointer; }
-        .btn-confirm { background:#0e7490; color:#fff; border:none; padding:10px 22px; border-radius:8px; font-size:13.5px; font-weight:800; font-family:inherit; cursor:pointer; }
-        .btn-confirm:hover { background:#0b5e75; }
+        @media (max-width: 760px) {
+            .wrap { padding: 18px 12px; }
+            .editor, section.block { padding: 16px; }
+            .news-pad { padding: 22px 18px 20px; }
+            .news-title { font-size: 23px; }
+            .sum-table th, .sum-table td { padding: 7px 8px; font-size: 13px; }
+            .grid-table th, .grid-table td { font-size: 11px; height: 36px; padding: 3px 2px; }
+        }
 
-        /* ═════════ 인쇄 ═════════ */
+        /* ═════ 인쇄 ═════ */
         @media print {
             @page { size: A4 portrait; margin: 0; }
-            body { background: #fff; padding: 0; }
-            .topbar, .editor, .toolbar { display: none !important; }
-            .wrap { max-width: none; width: 100%; padding: 0; }
-            .news { border: none; border-radius: 0; }
-            .news-pad { padding: 16mm 16mm 12mm; }
-            .news-topbar, .news-title, .news-date, .sec-h, .cur-card,
-            .dept-tag.cur, .dept-tag.prev, .badge-cell.출장, .badge-cell.근태,
-            .grid-table th, .att-sheet .news-topbar {
-                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            body { background:#fff; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+            .topbar, header, .editor, .sec-bar, .no-print { display:none !important; }
+            .wrap { max-width:none; width:100%; padding:0; margin:0; }
+            section.block, .final-section { display:none !important; box-shadow:none; border:none; border-radius:0; margin:0; padding:0; }
+
+            /* 위에서 인쇄: 부서별 표 + 근태 */
+            body.print-summary .summary-section { display:block !important; padding:14mm; }
+            body.print-summary .summary-section .sub-h:first-of-type { margin-top:0; }
+
+            /* 아래에서 인쇄: 최종본 뉴스레터 */
+            body.print-final .final-section { display:block !important; }
+            body.print-final .news.screen-news { display:none !important; }
+            body.print-final #finalPrint { display:block !important; border:none; border-radius:0; box-shadow:none; }
+            body.print-final #finalPrint .news-pad { padding:16mm 16mm 12mm; }
+
+            .news-topbar, .dept-tag.cur, .dept-tag.prev,
+            .badge-cell.출장, .badge-cell.근태, .grid-table th, .sum-table th, .sum-table td.dept, .grid-table td.dept {
+                -webkit-print-color-adjust:exact; print-color-adjust:exact;
             }
-            .att-sheet { display: none; border: none; border-radius: 0; margin-top: 0; }
-            body.with-att .att-sheet { display: block; page-break-before: always; }
-            .att-pad { padding: 16mm; }
-            .modal-overlay, .view-badge { display: none !important; }
         }
     </style>
 </head>
@@ -250,10 +186,15 @@
 
     <div class="wrap">
 
-        <!-- 입력 에디터 -->
-        <div class="editor">
+        <header>
+            <h1>주간업무 작성</h1>
+            <div class="sub" id="headSub">집행부 주간업무 취합</div>
+        </header>
+
+        <!-- 입력 폼 -->
+        <div class="editor card">
             <div>
-                <div class="ed-label" style="margin-bottom:7px;">담당(부서) 선택</div>
+                <div class="ed-label" style="margin-bottom:8px;">담당(부서) 선택</div>
                 <div class="member-grid" id="memberBtnZone"></div>
             </div>
 
@@ -261,17 +202,16 @@
                 <div class="fields">
                     <div class="field">
                         <label class="ed-label" id="lblThis">이번 주 활동</label>
-                        <textarea id="txThisWeek" placeholder="제목을 첫 줄에, 세부항목은 ○ 또는 - 로 시작"></textarea>
+                        <textarea id="txThisWeek" placeholder="상세내용"></textarea>
                     </div>
                     <div class="field">
                         <label class="ed-label" id="lblLast">지난 주 활동</label>
-                        <textarea id="txLastWeek" placeholder="제목을 첫 줄에, 세부항목은 ○ 또는 - 로 시작"></textarea>
+                        <textarea id="txLastWeek" placeholder="상세내용"></textarea>
                     </div>
                 </div>
-                <div class="hint">첫 줄에 제목, 다음 줄부터 ○ 로 세부항목 (예: ○ 3차 : 6.15(월)~16(화))</div>
 
                 <div class="att-block">
-                    <div class="att-head">출장 · 근태 입력 <span class="req-tag">필수</span></div>
+                    <div class="att-head">출장 · 근태 입력</div>
                     <div class="att-inner">
                         <div class="seg">
                             <input type="radio" name="scType" id="sc-trip" value="출장" checked>
@@ -288,95 +228,88 @@
                             <div class="day-node" data-w="토" onclick="toggleDayNode('토')"><div class="n-w">토</div><div class="n-d" id="cd-토"></div></div>
                             <div class="day-node" data-w="일" onclick="toggleDayNode('일')"><div class="n-w">일</div><div class="n-d" id="cd-일"></div></div>
                         </div>
-                        <input type="text" id="txScDetail" class="detail-input" placeholder="상세 사유 (예: 본사 국회대응 출장 / 연차휴가)">
+                        <input type="text" id="txScDetail" class="detail-input" placeholder="상세내용">
                     </div>
                 </div>
 
                 <div class="btn-row">
-                    <button class="btn-clear" onclick="clearDataForMember()">이번 주 정보 초기화</button>
-                    <button class="btn-submit" onclick="saveDataToServer()">저장</button>
+                    <button class="btn btn-clear" onclick="clearDataForMember()">이번 주 정보 초기화</button>
+                    <button class="btn btn-submit" onclick="saveDataToServer()">저장</button>
                 </div>
             </div>
         </div>
 
-        <!-- 툴바 -->
-        <div class="toolbar">
-            <button class="btn-final" id="finalBtn" onclick="openFinalModal()">📋 최종본 만들기</button>
-            <div class="view-seg" id="viewSeg" style="display:none;">
-                <button class="vt" id="vtDraft" onclick="setViewMode('draft')">초안</button>
-                <button class="vt active" id="vtFinal" onclick="setViewMode('final')">최종본</button>
-            </div>
-            <span class="final-stat" id="finalStat"></span>
-            <span class="spacer"></span>
-            <button class="btn-ghost" id="prevBtn" onclick="togglePreview()">인쇄 미리보기</button>
-            <label class="chk"><input type="checkbox" id="attChk" onchange="toggleAtt()"> 출장·근태표 함께</label>
-            <button class="btn-print" onclick="window.print()">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                인쇄 (A4 세로)
-            </button>
-        </div>
-
-        <!-- 붙임 뉴스레터 -->
-        <div class="view-badge draft" id="viewBadge">초안 미리보기</div>
-        <div class="news" id="news">
-            <div class="news-topbar"></div>
-            <div class="news-pad">
-                <div class="news-title">전국전력노동조합 주간업무</div>
-                <div class="news-date" id="newsDate"></div>
-
-                <div class="sec-h">이번 주 활동</div>
-                <div class="cur-card" id="curBody"></div>
-
-                <div class="sec-h prev">지난 주 활동</div>
-                <div class="prev-body" id="prevBody"></div>
-
-                <div class="news-footer">발행 | 전국전력노동조합 복지국</div>
-            </div>
-
-            <!-- 전기 테마 데코 -->
-            <svg class="news-deco" viewBox="0 0 320 230" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M40 230 C40 150 120 150 160 200 C200 250 320 210 320 230 Z" fill="#dbe7f7"/>
-                <path d="M200 60 L150 150 L195 150 L175 230 L290 120 L230 120 L270 60 Z" fill="#fbeec0"/>
-                <path d="M255 95 L228 145 L252 145 L240 190 L300 128 L268 128 L292 95 Z" fill="#f5d97f" opacity="0.85"/>
-            </svg>
-            <!-- 실제 마스코트가 있으면 같은 폴더에 mascot.png 로 두면 자동 표시됩니다 -->
-            <img class="news-mascot" id="mascot" alt="" src="mascot.png" onerror="this.style.display='none'">
-        </div>
-
-        <!-- 부속: 출장·근태 현황표 -->
-        <div class="att-sheet" id="attSheet">
-            <div class="news-topbar"></div>
-            <div class="att-pad">
-                <div class="att-title">집행부 주간 출장 · 근태 현황</div>
-                <div class="att-date" id="attDate"></div>
-                <table class="grid-table">
-                    <thead><tr>
-                        <th style="width:11%;">성명</th><th style="width:13%;">직책</th>
-                        <th data-w="월" id="th-월">월</th><th data-w="화" id="th-화">화</th><th data-w="수" id="th-수">수</th>
-                        <th data-w="목" id="th-목">목</th><th data-w="금" id="th-금">금</th><th data-w="토" id="th-토">토</th><th data-w="일" id="th-일">일</th>
-                    </tr></thead>
-                    <tbody id="domGridBody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 최종본 편집 모달 -->
-        <div class="modal-overlay" id="finalModal">
-            <div class="modal">
-                <div class="modal-head">
-                    <h3>최종본 편집</h3>
-                    <button class="x" onclick="closeFinalModal()">&times;</button>
-                </div>
-                <div class="modal-sub">각 부서 제출(초안)을 확인·수정한 뒤 <b>[최종 확정]</b>을 누르면 그 내용이 인쇄용 최종본이 됩니다. 부서별 초안은 그대로 유지됩니다.</div>
-                <div class="modal-body" id="finalBody"></div>
-                <div class="modal-foot">
-                    <button class="btn-load" onclick="fillFinalFromDrafts()">초안에서 다시 불러오기</button>
-                    <button class="btn-del" id="finDelBtn" onclick="deleteFinal()" style="display:none;">최종본 삭제</button>
-                    <span class="mspacer"></span>
-                    <button class="btn-confirm" onclick="confirmFinal()">최종 확정</button>
+        <!-- 부서별 입력 현황 (요약 표 + 근태) — 위에서 인쇄 -->
+        <section class="block card summary-section">
+            <div class="sec-bar">
+                <h2>부서별 입력 현황</h2>
+                <div class="sec-actions">
+                    <button class="btn-print-sm" onclick="printSummary()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        인쇄
+                    </button>
                 </div>
             </div>
-        </div>
+
+            <div class="sub-h">부서별 활동</div>
+            <table class="sum-table">
+                <thead><tr><th style="width:64px;">부서</th><th>이번 주 활동</th><th>지난 주 활동</th></tr></thead>
+                <tbody id="summaryBody"></tbody>
+            </table>
+
+            <div class="sub-h">출장 · 근태 <span id="attDate" style="font-weight:600;color:var(--ink-faint);font-size:12px;"></span></div>
+            <table class="grid-table">
+                <thead><tr>
+                    <th style="width:54px;">부서</th>
+                    <th data-w="월" id="th-월">월</th><th data-w="화" id="th-화">화</th><th data-w="수" id="th-수">수</th>
+                    <th data-w="목" id="th-목">목</th><th data-w="금" id="th-금">금</th><th data-w="토" id="th-토">토</th><th data-w="일" id="th-일">일</th>
+                </tr></thead>
+                <tbody id="attBody"></tbody>
+            </table>
+        </section>
+
+        <!-- 최종본 수정하기 (편집 가능 뉴스레터) — 아래에서 인쇄 -->
+        <section class="final-section">
+            <div class="sec-bar">
+                <span class="badge">최종본 수정하기</span>
+                <div class="sec-actions">
+                    <button class="btn-reload" onclick="reloadFinalFromDrafts()">입력 내용 다시 불러오기</button>
+                    <button class="btn-print-sm" onclick="printFinal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        인쇄
+                    </button>
+                </div>
+            </div>
+
+            <!-- 화면: 편집 가능 -->
+            <div class="news screen-news">
+                <div class="news-topbar"></div>
+                <div class="news-pad">
+                    <div class="news-title">전국전력노동조합 주간업무</div>
+                    <div class="news-date" id="finDate"></div>
+                    <div class="sec-h">이번 주 활동</div>
+                    <div class="news-rows" id="finCur"></div>
+                    <div class="sec-h">지난 주 활동</div>
+                    <div class="news-rows" id="finPrev"></div>
+                    <div class="fin-note">※ 위 칸을 직접 고치면 자동 저장됩니다. 첫 줄은 제목, 다음 줄부터 ○ 또는 - 로 세부항목을 적으면 인쇄 시 정돈됩니다.</div>
+                    <div class="news-footer">발행 | 전국전력노동조합 복지국</div>
+                </div>
+            </div>
+
+            <!-- 인쇄: 정돈된 뉴스레터 (인쇄 시 생성) -->
+            <div class="news" id="finalPrint" style="display:none;">
+                <div class="news-topbar"></div>
+                <div class="news-pad">
+                    <div class="news-title">전국전력노동조합 주간업무</div>
+                    <div class="news-date" id="finDatePrint"></div>
+                    <div class="sec-h">이번 주 활동</div>
+                    <div class="news-rows" id="finCurPrint"></div>
+                    <div class="sec-h">지난 주 활동</div>
+                    <div class="news-rows" id="finPrevPrint"></div>
+                    <div class="news-footer">발행 | 전국전력노동조합 복지국</div>
+                </div>
+            </div>
+        </section>
 
     </div>
 
@@ -393,41 +326,40 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const dbRef = database.ref('perfect_clean_report_2026');
+        const finalRef = database.ref('perfect_clean_report_2026_final_v2');
 
-        const MEMBERS = ["총무", "조직", "기획", "정책", "복지", "산안", "교문", "홍部", "김次", "이課"];
-        const WEEKS = ["월", "화", "수", "목", "금", "토", "일"];
-        const WKND = { "토": true, "일": true };
+        const MEMBERS = ["총무","조직","기획","정책","복지","산안","교문","홍部","김次","이課"];
+        const WEEKS = ["월","화","수","목","금","토","일"];
+        const WKND = { "토":true, "일":true };
 
         let selectedUser = "";
         let serverCache = {};
-        let activeDays = [];
-
-        // 최종본 (초안과 분리 저장)
-        const finalRef = database.ref('perfect_clean_report_2026_final');
         let finalCache = null;
-        let viewMode = 'draft';
-        let viewUserSet = false;
+        let activeDays = [];
+        let serverLoaded = false;
+        let finalRendered = false;
 
         function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
         function pad(n){ return String(n).padStart(2,'0'); }
 
-        // 주간 날짜 — 토/일은 다가오는 주(월~금)로 인식
+        // 주간 날짜 — 토/일은 다가오는 주(월~금)
         function calcDates() {
             const now = new Date();
             const dow = now.getDay();
             let toMon;
-            if (dow === 0) toMon = 1;        // 일요일 → 내일(월)
-            else if (dow === 6) toMon = 2;   // 토요일 → 다음 월
-            else toMon = 1 - dow;            // 월~금 → 이번 주 월
-
+            if (dow === 0) toMon = 1;
+            else if (dow === 6) toMon = 2;
+            else toMon = 1 - dow;
             const mon = new Date(now); mon.setDate(now.getDate() + toMon);
             const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
             const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
 
-            document.getElementById('newsDate').innerText =
-                `${mon.getFullYear()}. ${pad(mon.getMonth()+1)}. ${pad(mon.getDate())} ~ ${pad(fri.getMonth()+1)}. ${pad(fri.getDate())}`;
+            const range = `${mon.getFullYear()}. ${pad(mon.getMonth()+1)}. ${pad(mon.getDate())} ~ ${pad(fri.getMonth()+1)}. ${pad(fri.getDate())}`;
+            document.getElementById('finDate').innerText = range;
+            document.getElementById('finDatePrint').innerText = range;
+            document.getElementById('headSub').innerText = `이번 주 ${range}`;
             document.getElementById('attDate').innerText =
-                `(${mon.getFullYear()}. ${mon.getMonth()+1}. ${mon.getDate()} ~ ${sun.getMonth()+1}. ${sun.getDate()})`;
+                `(${mon.getMonth()+1}.${mon.getDate()} ~ ${sun.getMonth()+1}.${sun.getDate()})`;
 
             WEEKS.forEach((w, i) => {
                 const t = new Date(mon); t.setDate(mon.getDate() + i);
@@ -451,7 +383,6 @@
             document.getElementById('formBlock').classList.remove('disabled-content');
             document.getElementById('lblThis').innerText = `[${m}] 이번 주 활동`;
             document.getElementById('lblLast').innerText = `[${m}] 지난 주 활동`;
-
             const d = serverCache[m] || {};
             document.getElementById('txThisWeek').value = d.thisWeek ?? d.work ?? '';
             document.getElementById('txLastWeek').value = d.lastWeek ?? '';
@@ -474,7 +405,6 @@
             if (!selectedUser) return;
             dbRef.child(selectedUser).child('thisWeek').set(document.getElementById('txThisWeek').value.trim());
             dbRef.child(selectedUser).child('lastWeek').set(document.getElementById('txLastWeek').value.trim());
-
             const scType = document.querySelector('input[name="scType"]:checked').value;
             const scDetail = document.getElementById('txScDetail').value.trim();
             if (activeDays.length > 0 && scDetail) {
@@ -498,25 +428,14 @@
                 });
             }
         }
-
         function removeDayLive(user, day) {
             if (confirm(`[${user}] ${day}요일 출장·근태 항목을 삭제할까요?`))
                 dbRef.child(user).child('days').child(day).remove();
         }
 
-        function togglePreview() {
-            const on = document.body.classList.toggle('preview-mode');
-            const b = document.getElementById('prevBtn');
-            b.classList.toggle('on', on);
-            b.innerText = on ? '미리보기 끄기' : '인쇄 미리보기';
-        }
-        function toggleAtt() {
-            document.body.classList.toggle('with-att', document.getElementById('attChk').checked);
-        }
-
-        // 활동 텍스트 → 제목 + ○ 세부항목
+        // 활동 텍스트 → 제목 + ○ 세부항목 (인쇄용)
         function renderActivity(text) {
-            const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+            const lines = String(text).split('\n').map(l => l.trim()).filter(Boolean);
             const head = [], subs = [];
             lines.forEach(l => {
                 if (/^[○●•◦∙*\-]\s*/.test(l)) subs.push(l.replace(/^[○●•◦∙*\-]\s*/, ''));
@@ -526,139 +445,124 @@
             if (subs.length) html += `<ul class="act-subs">${subs.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>`;
             return html;
         }
-        function rowHtml(m, text, kind) {
-            return `<div class="news-row"><span class="dept-tag ${kind}">${escapeHtml(m)}</span><div class="act">${renderActivity(text)}</div></div>`;
-        }
 
-        function draw() {
-            const src = (viewMode === 'final' && finalCache) ? finalCache : serverCache;
-            let cur = '';
+        // ── 부서별 간략표 + 근태 (읽기 전용, 실시간) ──
+        function renderSummary() {
+            let rows = '';
             MEMBERS.forEach(m => {
-                const tw = (src[m]?.thisWeek ?? src[m]?.work ?? '').trim();
-                if (tw) cur += rowHtml(m, tw, 'cur');
+                const d = serverCache[m] || {};
+                const tw = (d.thisWeek ?? d.work ?? '').trim();
+                const lw = (d.lastWeek ?? '').trim();
+                const cell = (t) => t ? `<div class="celltext">${escapeHtml(t)}</div>` : `<div class="celltext none">—</div>`;
+                rows += `<tr><td class="dept">${m}</td><td>${cell(tw)}</td><td>${cell(lw)}</td></tr>`;
             });
-            document.getElementById('curBody').innerHTML = cur || '<div class="empty-hint">입력된 이번 주 활동이 없습니다.</div>';
-
-            let prev = '';
-            MEMBERS.forEach(m => {
-                const lw = (src[m]?.lastWeek ?? '').trim();
-                if (lw) prev += rowHtml(m, lw, 'prev');
-            });
-            document.getElementById('prevBody').innerHTML = prev || '<div class="empty-hint">입력된 지난 주 활동이 없습니다.</div>';
+            document.getElementById('summaryBody').innerHTML = rows;
 
             let grid = '';
             MEMBERS.forEach(m => {
-                let row = `<tr><td class="m-name">${m}</td><td class="m-role">국장급</td>`;
+                let row = `<tr><td class="dept">${m}</td>`;
                 WEEKS.forEach(w => {
-                    const sc = src[m]?.days?.[w];
+                    const sc = serverCache[m]?.days?.[w];
                     const wk = WKND[w] ? ' wknd' : '';
                     if (sc) row += `<td class="badge-cell ${sc.type}${wk}" title="더블클릭 삭제" ondblclick="removeDayLive('${m}','${w}')"><span class="b-tag">${sc.type}</span><span class="b-txt">${escapeHtml(sc.text)}</span></td>`;
                     else row += `<td class="${wk.trim()}"></td>`;
                 });
                 grid += row + `</tr>`;
             });
-            document.getElementById('domGridBody').innerHTML = grid;
+            document.getElementById('attBody').innerHTML = grid;
         }
 
-        /* ───── 최종본 ───── */
-        function setViewMode(m) { viewUserSet = true; viewMode = m; updateFinalUI(); draw(); }
-
-        function updateFinalUI() {
-            if (!finalCache) viewMode = 'draft';
-            const seg = document.getElementById('viewSeg');
-            const stat = document.getElementById('finalStat');
-            const fbtn = document.getElementById('finalBtn');
-            const badge = document.getElementById('viewBadge');
-            if (finalCache) {
-                seg.style.display = 'inline-flex';
-                document.getElementById('vtDraft').classList.toggle('active', viewMode === 'draft');
-                document.getElementById('vtFinal').classList.toggle('active', viewMode === 'final');
-                const t = new Date(finalCache.__finalizedAt);
-                stat.innerText = `최종본 확정 ${t.getMonth()+1}/${t.getDate()} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
-                fbtn.innerText = '📋 최종본 편집';
-            } else {
-                seg.style.display = 'none';
-                stat.innerText = '';
-                fbtn.innerText = '📋 최종본 만들기';
-            }
-            badge.className = 'view-badge ' + (viewMode === 'final' ? 'final' : 'draft');
-            badge.innerText = viewMode === 'final' ? '최종본' : '초안 미리보기';
+        // ── 최종본 (finalRef 우선, 없으면 초안) ──
+        function effective(m, k) {
+            if (finalCache && finalCache[m] && Object.prototype.hasOwnProperty.call(finalCache[m], k))
+                return finalCache[m][k] || '';
+            const d = serverCache[m] || {};
+            if (k === 'thisWeek') return d.thisWeek ?? d.work ?? '';
+            return d[k] ?? '';
         }
 
-        function buildFinalFields(srcObj) {
-            const src = srcObj || serverCache;
-            document.getElementById('finalBody').innerHTML = MEMBERS.map(m => {
-                const tw = escapeHtml(src[m]?.thisWeek ?? src[m]?.work ?? '');
-                const lw = escapeHtml(src[m]?.lastWeek ?? '');
-                const submitted = (serverCache[m]?.thisWeek ?? serverCache[m]?.work ?? serverCache[m]?.lastWeek);
-                const tag = submitted ? '<span class="tag-mini y">제출됨</span>' : '<span class="tag-mini n">미제출</span>';
-                return `<div class="fin-block">
-                    <h4>${m} ${tag}</h4>
-                    <div class="fin-pair">
-                        <div><label>이번 주 활동</label><textarea id="fin-tw-${m}">${tw}</textarea></div>
-                        <div><label>지난 주 활동</label><textarea id="fin-lw-${m}">${lw}</textarea></div>
-                    </div>
-                </div>`;
-            }).join('');
+        function autoGrow(el){ el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
+
+        function finRow(m, k) {
+            const cls = k === 'thisWeek' ? 'cur' : 'prev';
+            const val = escapeHtml(effective(m, k));
+            return `<div class="fin-row"><span class="dept-tag ${cls}">${m}</span>` +
+                `<textarea class="fin-ta" id="fin-${k}-${m}" oninput="onFinInput('${m}','${k}',this)">${val}</textarea></div>`;
         }
 
-        function openFinalModal() {
-            buildFinalFields(finalCache || serverCache);
-            document.getElementById('finDelBtn').style.display = finalCache ? 'inline-block' : 'none';
-            document.getElementById('finalModal').classList.add('open');
+        function renderFinalEditor(force) {
+            if (finalRendered && !force) return;
+            const build = (k) => MEMBERS.filter(m => effective(m, k).trim()).map(m => finRow(m, k)).join('');
+            const cur = build('thisWeek');
+            const prev = build('lastWeek');
+            document.getElementById('finCur').innerHTML = cur || '<div class="empty-hint">입력된 이번 주 활동이 없습니다. 위에서 부서를 골라 입력하세요.</div>';
+            document.getElementById('finPrev').innerHTML = prev || '<div class="empty-hint">입력된 지난 주 활동이 없습니다.</div>';
+            document.querySelectorAll('.fin-ta').forEach(autoGrow);
+            finalRendered = true;
         }
-        function closeFinalModal() { document.getElementById('finalModal').classList.remove('open'); }
 
-        function fillFinalFromDrafts() {
-            if (confirm('현재 부서별 제출(초안) 내용으로 모든 칸을 다시 채울까요? 편집 중이던 내용은 사라집니다.'))
-                buildFinalFields(serverCache);
+        let saveTimer = {};
+        function onFinInput(m, k, el) {
+            autoGrow(el);
+            const key = `${k}-${m}`;
+            clearTimeout(saveTimer[key]);
+            saveTimer[key] = setTimeout(() => {
+                finalRef.child(m).child(k).set(el.value);
+                if (!finalCache) finalCache = {};
+                if (!finalCache[m]) finalCache[m] = {};
+                finalCache[m][k] = el.value;
+            }, 500);
         }
 
-        function confirmFinal() {
-            const data = {};
+        function reloadFinalFromDrafts() {
+            if (!confirm('각 부서가 입력한 내용으로 최종본을 다시 채울까요?\n최종본에서 고친 내용은 사라집니다.')) return;
+            const updates = {};
             MEMBERS.forEach(m => {
-                const tw = (document.getElementById(`fin-tw-${m}`).value || '').trim();
-                const lw = (document.getElementById(`fin-lw-${m}`).value || '').trim();
-                const entry = { thisWeek: tw, lastWeek: lw };
-                const days = serverCache[m]?.days;
-                if (days) entry.days = days;
-                data[m] = entry;
+                const d = serverCache[m] || {};
+                updates[m] = { thisWeek: (d.thisWeek ?? d.work ?? ''), lastWeek: (d.lastWeek ?? '') };
             });
-            data.__finalizedAt = new Date().toISOString();
-            finalRef.set(data).then(() => {
-                viewUserSet = true; viewMode = 'final';
-                closeFinalModal();
-                alert('최종본이 확정되었습니다. 이제 인쇄하면 최종본이 출력됩니다.');
-            });
+            finalRef.set(updates);
+            finalCache = JSON.parse(JSON.stringify(updates));
+            renderFinalEditor(true);
         }
 
-        function deleteFinal() {
-            if (confirm('최종본을 삭제할까요? 초안은 그대로 남고, 다시 만들 수 있습니다.')) {
-                finalRef.remove().then(() => {
-                    viewUserSet = false; viewMode = 'draft';
-                    closeFinalModal();
-                    alert('최종본이 삭제되었습니다.');
-                });
-            }
+        // 인쇄: 최종본 textarea 내용 → 정돈된 뉴스레터
+        function buildFinalPrint() {
+            const rowFor = (m, k) => {
+                const el = document.getElementById(`fin-${k}-${m}`);
+                const txt = el ? el.value : effective(m, k);
+                if (!txt.trim()) return '';
+                const cls = k === 'thisWeek' ? 'cur' : 'prev';
+                return `<div class="news-row"><span class="dept-tag ${cls}">${m}</span><div class="act">${renderActivity(txt)}</div></div>`;
+            };
+            const cur = MEMBERS.map(m => rowFor(m, 'thisWeek')).join('');
+            const prev = MEMBERS.map(m => rowFor(m, 'lastWeek')).join('');
+            document.getElementById('finCurPrint').innerHTML = cur || '<div class="empty-hint">입력된 이번 주 활동이 없습니다.</div>';
+            document.getElementById('finPrevPrint').innerHTML = prev || '<div class="empty-hint">입력된 지난 주 활동이 없습니다.</div>';
         }
 
-        finalRef.on('value', (snap) => {
-            const v = snap.val();
-            finalCache = (v && v.__finalizedAt) ? v : null;
-            if (finalCache && !viewUserSet) viewMode = 'final';
-            updateFinalUI();
-            draw();
-        });
+        function printSummary() { document.body.classList.add('print-summary'); window.print(); }
+        function printFinal() { buildFinalPrint(); document.body.classList.add('print-final'); window.print(); }
+        window.onafterprint = () => document.body.classList.remove('print-summary', 'print-final');
+
+        function maybeRenderFinal() { if (serverLoaded && !finalRendered) renderFinalEditor(); }
 
         dbRef.on('value', (snap) => {
             serverCache = snap.val() || {};
-            draw();
+            serverLoaded = true;
+            renderSummary();
+            maybeRenderFinal();
             if (selectedUser) {
                 const d = serverCache[selectedUser] || {};
                 const a = document.getElementById('txThisWeek'), b = document.getElementById('txLastWeek');
                 if (document.activeElement !== a) a.value = d.thisWeek ?? d.work ?? '';
                 if (document.activeElement !== b) b.value = d.lastWeek ?? '';
             }
+        });
+
+        finalRef.on('value', (snap) => {
+            finalCache = snap.val() || null;
+            maybeRenderFinal();
         });
 
         initApp();
