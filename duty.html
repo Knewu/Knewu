@@ -192,6 +192,7 @@
         .img-overlay img { display:block; max-width:100%; height:auto; border-radius:6px; }
         .img-overlay .img-hint { color:#fff; font-size:12.5px; margin:12px 0 4px; text-align:center; line-height:1.6; }
         .img-overlay .img-btns { display:flex; gap:10px; margin-top:14px; }
+        .img-overlay .img-btn { font-family:inherit; font-weight:700; font-size:14px; padding:11px 20px; border-radius:10px; border:none; cursor:pointer; text-decoration:none; }
         .img-overlay .img-dl { background:var(--accent); color:#fff; }
         .img-overlay .img-close { background:rgba(255,255,255,.18); color:#fff; }
         .cap-spin { position:fixed; inset:0; background:rgba(255,255,255,.65); z-index:9998; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--ink-soft); }
@@ -302,6 +303,7 @@
             <div class="sub" id="headSub">집행부 주간업무 취합</div>
         </header>
 
+        <!-- 입력 폼 -->
         <div class="editor card">
             <div>
                 <div class="ed-label" style="margin-bottom:8px;">담당(부서) 선택</div>
@@ -356,6 +358,7 @@
             </div>
         </div>
 
+        <!-- 부서별 활동(주간업무) + 출장근태 : 각각 따로 인쇄 -->
         <section class="block card">
 
             <div class="sub-block" id="workArea">
@@ -410,6 +413,7 @@
             </div>
         </section>
 
+        <!-- 최종본 수정하기 (편집 가능 뉴스레터) — 아래에서 인쇄 -->
         <section class="final-section">
             <div class="sec-bar">
                 <div class="sec-title">
@@ -418,10 +422,12 @@
                 </div>
                 <div class="sec-actions">
                     <button class="fin-btn" onclick="reloadFinalFromDrafts()">다시<br>불러오기</button>
+                    <!-- 1. [수정] 최종본 인쇄 버튼을 이미지 저장 버튼으로 명칭 변경 -->
                     <button class="fin-btn" onclick="printFinal()">최종본<br>이미지 저장</button>
                 </div>
             </div>
 
+            <!-- 화면: 편집 가능 -->
             <div class="news screen-news">
                 <div class="news-topbar"></div>
                 <div class="news-pad">
@@ -431,21 +437,22 @@
                     <div class="news-rows" id="finCur"></div>
                     <div class="sec-h">지난 주 활동</div>
                     <div class="news-rows" id="finPrev"></div>
-                    <div class="fin-note">※ 왼쪽 체크를 끄면 그 항목은 이미지에서 빠집니다. 칸을 직접 고치면 자동 저장돼요. 첫 줄은 제목, 다음 줄부터 ○ 또는 - 로 적으면 정돈되어 저장됩니다.</div>
+                    <div class="fin-note">※ 왼쪽 체크를 끄면 그 항목은 인쇄에서 빠집니다. 칸을 직접 고치면 자동 저장돼요. 첫 줄은 제목, 다음 줄부터 ○ 또는 - 로 적으면 인쇄 시 정돈됩니다.</div>
                     <div class="news-footer">발행 | 전국전력노동조합 복지국</div>
                 </div>
             </div>
 
-            <div class="news" id="finalPrint" style="display:none; width:760px !important; background:#fff; box-shadow:none;">
+            <!-- 인쇄: 정돈된 뉴스레터 (인쇄 시 생성) -->
+            <div class="news" id="finalPrint" style="display:none;">
                 <div class="news-topbar"></div>
-                <div class="news-pad" style="padding:30px 34px;">
-                    <div class="news-title" style="font-size:27px; font-weight:900; color:#1557b0;">전국전력노동조합 주간업무</div>
+                <div class="news-pad">
+                    <div class="news-title">전국전력노동조합 주간업무</div>
                     <div class="news-date" id="finDatePrint"></div>
                     <div class="sec-h">이번 주 활동</div>
                     <div class="news-rows" id="finCurPrint"></div>
                     <div class="sec-h">지난 주 활동</div>
                     <div class="news-rows" id="finPrevPrint"></div>
-                    <div class="news-footer" style="margin-top:28px; font-size:12.5px; border-top:1px solid #e7e9ed; padding-top:13px;">발행 | 전국전력노동조합 복지국</div>
+                    <div class="news-footer">발행 | 전국전력노동조합 복지국</div>
                 </div>
             </div>
         </section>
@@ -469,9 +476,9 @@
         const excludeRef = database.ref('perfect_clean_report_2026_final_v3_exclude');
 
         const MEMBERS = ["총무","조직","기획","정책","복지","산안","교문","홍部","김次","이課"];
-        const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; 
+        const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (홍部·김次·이課은 출장근태만)
         const WEEKS = ["월","화","수","목","금","토","일"];
-        let dayLabels = {}; 
+        let dayLabels = {}; // 요일→날짜 라벨 (예: 월→6/22)
         const WKND = { "토":true, "일":true };
 
         let selectedUser = "";
@@ -484,11 +491,12 @@
         function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
         function pad(n){ return String(n).padStart(2,'0'); }
 
+        // 주간 날짜 — 토/일은 다가오는 주(월~금)
         function calcDates() {
             const now = new Date();
             const dow = now.getDay();
-            const sinceMon = (dow + 6) % 7;                                    
-            const mon = new Date(now); mon.setDate(now.getDate() - sinceMon + 7); 
+            const sinceMon = (dow + 6) % 7;                                    // 이번 주 월요일까지의 일수
+            const mon = new Date(now); mon.setDate(now.getDate() - sinceMon + 7); // 늘 '다음 주' 월요일 기준
             const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
             const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
 
@@ -499,6 +507,7 @@
             document.getElementById('attDate').innerText =
                 `(${mon.getMonth()+1}.${mon.getDate()} ~ ${sun.getMonth()+1}.${sun.getDate()})`;
 
+            // 인쇄용 레터헤드 / 푸터
             const attRange = `${mon.getFullYear()}. ${pad(mon.getMonth()+1)}. ${pad(mon.getDate())} ~ ${pad(sun.getMonth()+1)}. ${pad(sun.getDate())}`;
             const today = `${now.getFullYear()}. ${pad(now.getMonth()+1)}. ${pad(now.getDate())}`;
             document.getElementById('phWorkDate').innerText = `작성 주간 · ${range}`;
@@ -540,6 +549,7 @@
             renderMyAtt();
         }
 
+        // 선택 부서의 등록된 출장·근태를 하루씩 삭제할 수 있는 목록
         function renderMyAtt() {
             const wrap = document.getElementById('myAttWrap');
             const list = document.getElementById('myAttList');
@@ -572,6 +582,7 @@
         function saveDataToServer() {
             if (!selectedUser) return;
             const isDept = ACT_MEMBERS.includes(selectedUser);
+            // 값을 먼저 캡처 (실시간 갱신이 끼어들어도 안전)
             const upd = {};
             if (isDept) {
                 upd.thisWeek = document.getElementById('txThisWeek').value.trim();
@@ -585,6 +596,7 @@
                 upd.days = daysObj;
             }
             if (Object.keys(upd).length === 0) { alert('입력된 내용이 없습니다.'); return; }
+            // 이번주·지난주·근태를 한 번에 저장 (분할 저장 시 발생하던 누락 방지)
             dbRef.child(selectedUser).update(upd);
             alert(`${selectedUser} 저장되었습니다.`);
             activeDays = []; document.getElementById('txScDetail').value = ''; refreshDayNodesUI();
@@ -614,6 +626,7 @@
                 dbRef.child(user).child('days').child(day).remove();
         }
 
+        // 활동 텍스트 → 제목 + ○ 세부항목 (인쇄용)
         function renderActivity(text) {
             const lines = String(text).split('\n').map(l => l.trim()).filter(Boolean);
             const head = [], subs = [];
@@ -621,11 +634,12 @@
                 if (/^[○●•◦∙*\-]\s*/.test(l)) subs.push(l.replace(/^[○●•◦∙*\-]\s*/, ''));
                 else head.push(l);
             });
-            let html = `<div class="act-head" style="font-size:15px; font-weight:600; color:#232a35; line-height:1.5;">${head.map(escapeHtml).join('<br>')}</div>`;
-            if (subs.length) html += `<ul class="act-subs" style="list-style:none; margin:5px 0 0; padding-left:12px; display:flex; flex-direction:column; gap:3px;">${subs.map(s => `<li style="position:relative; font-size:14px; color:#3a4250; line-height:1.5; padding-left:15px;"><span style="position:absolute; left:0; color:#6a7484; font-size:10px; top:0px;">○</span>${escapeHtml(s)}</li>`).join('')}</ul>`;
+            let html = `<div class="act-head">${head.map(escapeHtml).join('<br>')}</div>`;
+            if (subs.length) html += `<ul class="act-subs">${subs.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>`;
             return html;
         }
 
+        // ── 부서별 간략표 + 근태 (읽기 전용, 실시간) ──
         function renderSummary() {
             let rows = '';
             ACT_MEMBERS.forEach(m => {
@@ -652,6 +666,7 @@
             requestAnimationFrame(fitAttCells);
         }
 
+        // 근태 셀: 글씨가 칸보다 길면 폰트를 줄여 칸 안에 맞춤 (엑셀 '축소하여 맞춤')
         function fitAttCells() {
             document.querySelectorAll('.att-fit').forEach(box => {
                 const txt = box.querySelector('.b-txt');
@@ -665,6 +680,7 @@
             });
         }
 
+        // ── 최종본 (finalRef 우선, 없으면 초안) ──
         function effective(m, k) {
             if (finalCache && finalCache[m] && Object.prototype.hasOwnProperty.call(finalCache[m], k))
                 return finalCache[m][k] || '';
@@ -675,7 +691,7 @@
 
         function autoGrow(el){ el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
 
-        let excludeSet = {}; 
+        let excludeSet = {}; // 최종본에서 뺀 항목 (기본은 전부 포함) — excludeRef에 저장
         function isIncluded(m, k) { return !excludeSet[`${k}-${m}`]; }
         function toggleInclude(m, k, checked) {
             const key = `${k}-${m}`;
@@ -684,6 +700,7 @@
             const row = document.getElementById(`finrow-${k}-${m}`);
             if (row) row.classList.toggle('excluded', !checked);
         }
+        // 저장된 선택 상태를 재렌더 없이 화면에 반영
         function applyExcludeUI() {
             document.querySelectorAll('.fin-row').forEach(row => {
                 const key = (row.id || '').replace('finrow-', '');
@@ -707,6 +724,7 @@
 
         function renderFinalEditor(force) {
             if (finalRendered && !force) return;
+            // 공통은 항상 표시(입력 생성용), 부서는 내용 있을 때만
             const build = (k) => finRow('공통', k) + ACT_MEMBERS.filter(m => effective(m, k).trim()).map(m => finRow(m, k)).join('');
             const cur = build('thisWeek');
             const prev = build('lastWeek');
@@ -738,6 +756,7 @@
                 const d = serverCache[m] || {};
                 updates[m] = { thisWeek: (d.thisWeek ?? d.work ?? ''), lastWeek: (d.lastWeek ?? '') };
             });
+            // 공통은 초안에 없으므로 기존 입력 유지
             if (finalCache && finalCache['공통']) updates['공통'] = finalCache['공통'];
             finalRef.set(updates);
             finalCache = JSON.parse(JSON.stringify(updates));
@@ -746,6 +765,7 @@
             renderFinalEditor(true);
         }
 
+        // 인쇄: 최종본 textarea 내용 → 정돈된 뉴스레터
         function buildFinalPrint() {
             const rowFor = (m, k) => {
                 if (!isIncluded(m, k)) return '';
@@ -753,14 +773,7 @@
                 const txt = el ? el.value : effective(m, k);
                 if (!txt.trim()) return '';
                 const cls = k === 'thisWeek' ? 'cur' : 'prev';
-                
-                let tagColor = "color: var(--cur-ink); border: 1.5px solid var(--cur-bd); background: var(--cur-bg);";
-                if(m === '공통') tagColor = "color: #155e63; border: 1.5px solid #8fcfd4; background: #e6f6f7;";
-                else if(k === 'lastWeek') tagColor = "color: var(--prev-ink); border: 1.5px solid var(--prev-bd); background: var(--prev-bg);";
-
-                return `<div class="news-row" style="display: flex; gap: 13px; align-items: flex-start; margin-bottom: 13px;">` +
-                    `<span class="dept-tag ${cls}" style="flex-shrink: 0; min-width: 50px; text-align: center; padding: 4px 6px; font-size: 13px; font-weight: 800; letter-spacing: .12em; border-radius: 5px; line-height: 1.5; margin-top: 2px; ${tagColor}">${m}</span>` +
-                    `<div class="act" style="flex: 1; min-width: 0;">${renderActivity(txt)}</div></div>`;
+                return `<div class="news-row"><span class="dept-tag ${cls}">${m}</span><div class="act">${renderActivity(txt)}</div></div>`;
             };
             const cur = ['공통', ...ACT_MEMBERS].map(m => rowFor(m, 'thisWeek')).join('');
             const prev = ['공통', ...ACT_MEMBERS].map(m => rowFor(m, 'lastWeek')).join('');
@@ -768,46 +781,37 @@
             document.getElementById('finPrevPrint').innerHTML = prev || '<div class="empty-hint">입력된 지난 주 활동이 없습니다.</div>';
         }
 
+        // 주간업무·출장근태를 이미지(PNG)로 저장
         async function captureArea(areaId, title, filename) {
             if (typeof html2canvas === 'undefined') { alert('이미지 모듈을 불러오지 못했습니다. 잠시 후 다시 시도하세요.'); return; }
             if (areaId === 'attArea') { fitAttCells(); await new Promise(r => requestAnimationFrame(r)); }
-            
             const spin = document.createElement('div');
             spin.className = 'cap-spin'; spin.textContent = '이미지 만드는 중…';
             document.body.appendChild(spin);
             try {
-                let targetDom;
-                let isFinal = (areaId === 'finalPrint');
+                // 2. [수정] 최종본 캡처 요청일 때 출력 돔 미리 생성 빌드
+                if (areaId === 'finalPrint') buildFinalPrint();
 
-                if (isFinal) {
-                    buildFinalPrint();
-                    targetDom = document.getElementById('finalPrint');
-                } else {
-                    targetDom = document.getElementById(areaId);
-                }
-
-                const clone = targetDom.cloneNode(true);
+                const src = document.getElementById(areaId);
+                const clone = src.cloneNode(true);
+                clone.classList.add('capture-target');
+                // 3. [수정] 최종본 캡처 시 스타일 깨짐 방지를 위해 display 강제 보정
                 clone.style.display = 'block';
-                if (!isFinal) {
-                    clone.classList.add('capture-target');
-                }
-                
+
                 const holder = document.createElement('div');
                 holder.style.cssText = 'position:fixed; left:-12000px; top:0;';
                 holder.appendChild(clone);
                 document.body.appendChild(holder);
-                await new Promise(r => setTimeout(r, 100));
-                
+                await new Promise(r => setTimeout(r, 60));
                 const canvas = await html2canvas(clone, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
                 document.body.removeChild(holder);
                 showImgOverlay(canvas.toDataURL('image/png'), filename);
             } catch (e) {
                 alert('이미지 생성에 실패했습니다.');
-            } military {
+            } finally {
                 spin.remove();
             }
         }
-        
         function showImgOverlay(dataUrl, filename) {
             const ov = document.createElement('div');
             ov.className = 'img-overlay';
@@ -822,12 +826,15 @@
 
         function printWork() { captureArea('workArea', '주간업무 보고', '주간업무보고.png'); }
         function printAtt() { captureArea('attArea', '출장·근태 현황', '출장근태현황.png'); }
-        function printFinal() { captureArea('finalPrint', '최종본 뉴스레터', '전력노조_최종주간업무.png'); }
+        
+        // 4. [수정] 기존 브라우저 인쇄 로직 대신 captureArea 호출로 단순 변경
+        function printFinal() { captureArea('finalPrint', '주간업무 최종본', '주간업무_최종본.png'); }
+        window.onafterprint = () => document.body.classList.remove('print-work', 'print-att', 'print-final');
 
         function maybeRenderFinal() {
             if (!serverLoaded) return;
             const ae = document.activeElement;
-            if (ae && ae.classList && ae.classList.contains('fin-ta')) return; 
+            if (ae && ae.classList && ae.classList.contains('fin-ta')) return; // 편집 중이면 보류
             renderFinalEditor(true);
         }
 
