@@ -4,8 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주간업무 작성 · 전력노조 집행부</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="주간업무">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1f2d4d">
+    <script>
+    (function(){
+      var c=document.createElement('canvas'); c.width=c.height=192;
+      var x=c.getContext('2d');
+      x.fillStyle='#1f2d4d';
+      x.beginPath(); x.roundRect(0,0,192,192,36); x.fill();
+      var img=new Image(); img.crossOrigin='anonymous';
+      img.onload=function(){
+        var tmp=document.createElement('canvas'); tmp.width=tmp.height=160;
+        var t=tmp.getContext('2d');
+        t.drawImage(img,0,0,160,160);
+        t.globalCompositeOperation='source-in';
+        t.fillStyle='#ffffff'; t.fillRect(0,0,160,160);
+        x.drawImage(tmp,16,16); setIcon(c.toDataURL('image/png'));
+      };
+      img.onerror=function(){
+        x.fillStyle='#ffffff'; x.font='bold 72px system-ui,sans-serif';
+        x.textAlign='center'; x.textBaseline='middle'; x.fillText('전',96,82);
+        x.font='bold 28px system-ui,sans-serif'; x.fillStyle='rgba(255,255,255,.7)';
+        x.fillText('주간업무',96,145); setIcon(c.toDataURL('image/png'));
+      };
+      img.src='https://knewu.netlify.app/icon-192.png';
+      function setIcon(src){
+        var l=document.createElement('link'); l.rel='apple-touch-icon'; l.href=src; document.head.appendChild(l);
+        var l2=document.createElement('link'); l2.rel='icon'; l2.type='image/png'; l2.href=src; document.head.appendChild(l2);
+      }
+    })();
+    </script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <style>
         :root {
@@ -146,6 +180,22 @@
         .print-head .ph-rule { height:3px; background:#1f2d4d; margin-top:15px; position:relative; }
         .print-head .ph-rule::before { content:""; position:absolute; left:0; top:0; width:92px; height:3px; background:#1a73e8; }
         .print-foot { margin-top:24px; padding-top:13px; border-top:1px solid var(--line); display:flex; justify-content:space-between; font-size:11.5px; font-weight:600; color:#94a0b3; letter-spacing:.02em; }
+
+        /* 이미지 캡처용 (화면 밖에서 A4 비율로 렌더) */
+        .capture-target { width:760px !important; max-width:760px !important; margin:0; background:#fff; padding:30px 34px; box-sizing:border-box; }
+        .capture-target .sub-bar { display:none !important; }
+        .capture-target .print-head { display:block !important; }
+        .capture-target .print-foot { display:flex !important; }
+        /* 이미지 결과 오버레이 */
+        .img-overlay { position:fixed; inset:0; background:rgba(15,20,30,.78); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:18px; overflow:auto; }
+        .img-overlay .img-card { background:#fff; border-radius:14px; padding:12px; max-width:94vw; box-shadow:0 18px 50px rgba(0,0,0,.4); }
+        .img-overlay img { display:block; max-width:100%; height:auto; border-radius:6px; }
+        .img-overlay .img-hint { color:#fff; font-size:12.5px; margin:12px 0 4px; text-align:center; line-height:1.6; }
+        .img-overlay .img-btns { display:flex; gap:10px; margin-top:14px; }
+        .img-overlay .img-btn { font-family:inherit; font-weight:700; font-size:14px; padding:11px 20px; border-radius:10px; border:none; cursor:pointer; text-decoration:none; }
+        .img-overlay .img-dl { background:var(--accent); color:#fff; }
+        .img-overlay .img-close { background:rgba(255,255,255,.18); color:#fff; }
+        .cap-spin { position:fixed; inset:0; background:rgba(255,255,255,.65); z-index:9998; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--ink-soft); }
         .badge-cell { font-size:11px; font-weight:700; line-height:1.3; }
         .badge-cell.출장 { background:var(--trip-bg); color:var(--trip-ink); }
         .badge-cell.근태 { background:var(--leave-bg); color:var(--leave-ink); }
@@ -168,6 +218,7 @@
         .dept-tag { flex-shrink: 0; min-width: 50px; text-align: center; padding: 4px 6px; font-size: 13px; font-weight: 800; letter-spacing: .12em; border-radius: 5px; line-height: 1.5; margin-top: 2px; }
         .dept-tag.cur { color: var(--cur-ink); border: 1.5px solid var(--cur-bd); background: var(--cur-bg); }
         .dept-tag.prev { color: var(--prev-ink); border: 1.5px solid var(--prev-bd); background: var(--prev-bg); }
+        .dept-tag.common { color: #155e63; border: 1.5px solid #8fcfd4; background: #e6f6f7; }
         .act { flex: 1; min-width: 0; }
         .act-head { font-size: 15px; font-weight: 600; color: #232a35; line-height: 1.5; }
         .act-subs { list-style: none; margin: 5px 0 0; padding-left: 12px; display: flex; flex-direction: column; gap: 3px; }
@@ -223,7 +274,7 @@
             body.print-final #finalPrint { display:block !important; border:none; border-radius:0; box-shadow:none; }
             body.print-final #finalPrint .news-pad { padding:16mm 16mm 12mm; }
 
-            .news-topbar, .dept-tag.cur, .dept-tag.prev,
+            .news-topbar, .dept-tag.cur, .dept-tag.prev, .dept-tag.common,
             .badge-cell.출장, .badge-cell.근태,
             .badge-cell .b-tag, .badge-cell.출장 .b-tag, .badge-cell.근태 .b-tag,
             .grid-table thead th, .sum-table thead th,
@@ -320,8 +371,8 @@
                 <div class="sub-bar">
                     <div class="sub-h">부서별 활동</div>
                     <button class="btn-print-xs" onclick="printWork()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                        주간업무 인쇄
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        이미지 저장
                     </button>
                 </div>
                 <table class="sum-table">
@@ -341,8 +392,8 @@
                 <div class="sub-bar">
                     <div class="sub-h">출장 · 근태 <span id="attDate" style="font-weight:600;color:var(--ink-faint);font-size:12px;"></span></div>
                     <button class="btn-print-xs" onclick="printAtt()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                        출장근태 인쇄
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        이미지 저장
                     </button>
                 </div>
                 <table class="grid-table">
@@ -661,7 +712,7 @@
         }
 
         function finRow(m, k) {
-            const cls = k === 'thisWeek' ? 'cur' : 'prev';
+            const cls = m === '공통' ? 'common' : (k === 'thisWeek' ? 'cur' : 'prev');
             const val = escapeHtml(effective(m, k));
             const inc = isIncluded(m, k);
             return `<div class="fin-row${inc ? '' : ' excluded'}" id="finrow-${k}-${m}">` +
@@ -672,7 +723,8 @@
 
         function renderFinalEditor(force) {
             if (finalRendered && !force) return;
-            const build = (k) => ACT_MEMBERS.filter(m => effective(m, k).trim()).map(m => finRow(m, k)).join('');
+            // 공통은 항상 표시(입력 생성용), 부서는 내용 있을 때만
+            const build = (k) => finRow('공통', k) + ACT_MEMBERS.filter(m => effective(m, k).trim()).map(m => finRow(m, k)).join('');
             const cur = build('thisWeek');
             const prev = build('lastWeek');
             document.getElementById('finCur').innerHTML = cur || '<div class="empty-hint">입력된 이번 주 활동이 없습니다. 위에서 부서를 골라 입력하세요.</div>';
@@ -703,6 +755,8 @@
                 const d = serverCache[m] || {};
                 updates[m] = { thisWeek: (d.thisWeek ?? d.work ?? ''), lastWeek: (d.lastWeek ?? '') };
             });
+            // 공통은 초안에 없으므로 기존 입력 유지
+            if (finalCache && finalCache['공통']) updates['공통'] = finalCache['공통'];
             finalRef.set(updates);
             finalCache = JSON.parse(JSON.stringify(updates));
             excludeRef.remove();
@@ -720,14 +774,51 @@
                 const cls = k === 'thisWeek' ? 'cur' : 'prev';
                 return `<div class="news-row"><span class="dept-tag ${cls}">${m}</span><div class="act">${renderActivity(txt)}</div></div>`;
             };
-            const cur = ACT_MEMBERS.map(m => rowFor(m, 'thisWeek')).join('');
-            const prev = ACT_MEMBERS.map(m => rowFor(m, 'lastWeek')).join('');
+            const cur = ['공통', ...ACT_MEMBERS].map(m => rowFor(m, 'thisWeek')).join('');
+            const prev = ['공통', ...ACT_MEMBERS].map(m => rowFor(m, 'lastWeek')).join('');
             document.getElementById('finCurPrint').innerHTML = cur || '<div class="empty-hint">입력된 이번 주 활동이 없습니다.</div>';
             document.getElementById('finPrevPrint').innerHTML = prev || '<div class="empty-hint">입력된 지난 주 활동이 없습니다.</div>';
         }
 
-        function printWork() { document.body.classList.add('print-work'); window.print(); }
-        function printAtt() { requestAnimationFrame(fitAttCells); document.body.classList.add('print-att'); window.print(); }
+        // 주간업무·출장근태를 이미지(PNG)로 저장
+        async function captureArea(areaId, title, filename) {
+            if (typeof html2canvas === 'undefined') { alert('이미지 모듈을 불러오지 못했습니다. 잠시 후 다시 시도하세요.'); return; }
+            if (areaId === 'attArea') { fitAttCells(); await new Promise(r => requestAnimationFrame(r)); }
+            const spin = document.createElement('div');
+            spin.className = 'cap-spin'; spin.textContent = '이미지 만드는 중…';
+            document.body.appendChild(spin);
+            try {
+                const src = document.getElementById(areaId);
+                const clone = src.cloneNode(true);
+                clone.classList.add('capture-target');
+                const holder = document.createElement('div');
+                holder.style.cssText = 'position:fixed; left:-12000px; top:0;';
+                holder.appendChild(clone);
+                document.body.appendChild(holder);
+                await new Promise(r => setTimeout(r, 60));
+                const canvas = await html2canvas(clone, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+                document.body.removeChild(holder);
+                showImgOverlay(canvas.toDataURL('image/png'), filename);
+            } catch (e) {
+                alert('이미지 생성에 실패했습니다.');
+            } finally {
+                spin.remove();
+            }
+        }
+        function showImgOverlay(dataUrl, filename) {
+            const ov = document.createElement('div');
+            ov.className = 'img-overlay';
+            ov.innerHTML =
+                `<div class="img-hint">길게 눌러 저장하거나, 아래 버튼으로 받으세요.</div>` +
+                `<div class="img-card"><img src="${dataUrl}" alt="미리보기"></div>` +
+                `<div class="img-btns"><a class="img-btn img-dl" href="${dataUrl}" download="${filename}">이미지 저장</a>` +
+                `<button class="img-btn img-close">닫기</button></div>`;
+            ov.addEventListener('click', (e) => { if (e.target === ov || e.target.classList.contains('img-close')) ov.remove(); });
+            document.body.appendChild(ov);
+        }
+
+        function printWork() { captureArea('workArea', '주간업무 보고', '주간업무보고.png'); }
+        function printAtt() { captureArea('attArea', '출장·근태 현황', '출장근태현황.png'); }
         function printFinal() { buildFinalPrint(); document.body.classList.add('print-final'); window.print(); }
         window.onafterprint = () => document.body.classList.remove('print-work', 'print-att', 'print-final');
 
