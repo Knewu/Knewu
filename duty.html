@@ -185,7 +185,7 @@
         .print-foot { margin-top:24px; padding-top:13px; border-top:1px solid var(--line); display:flex; justify-content:space-between; font-size:11.5px; font-weight:600; color:#94a0b3; letter-spacing:.02em; }
 
         /* 이미지 캡처용 (화면 밖에서 A4 비율로 렌더) */
-        .capture-target { width:760px !important; max-width:760px !important; margin:0; background:#fff; padding:30px 34px; box-sizing:border-box; }
+        .capture-target { width:760px !important; max-width:760px !important; margin:0; background:#fff; padding:30px 34px; box-sizing:border-box; display:block !important; }
         .capture-target .sub-bar { display:none !important; }
         .capture-target .print-head { display:block !important; }
         .capture-target .print-foot { display:flex !important; }
@@ -425,7 +425,7 @@
                 </div>
                 <div class="sec-actions">
                     <button class="fin-btn" onclick="reloadFinalFromDrafts()">다시<br>불러오기</button>
-                    <button class="fin-btn" onclick="printFinal()">최종본<br>인쇄</button>
+                    <button class="fin-btn" onclick="printFinal()">최종본<br>이미지</button>
                 </div>
             </div>
 
@@ -797,12 +797,19 @@
         }
 
         // 주간업무·출장근태를 이미지(PNG)로 저장
+        function dataURLtoFile(dataurl, filename) {
+            const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]); let n = bstr.length; const u8 = new Uint8Array(n);
+            while (n--) u8[n] = bstr.charCodeAt(n);
+            return new File([u8], filename, { type: mime });
+        }
         async function captureArea(areaId, title, filename) {
             if (typeof html2canvas === 'undefined') { alert('이미지 모듈을 불러오지 못했습니다. 잠시 후 다시 시도하세요.'); return; }
             if (areaId === 'attArea') { fitAttCells(); await new Promise(r => requestAnimationFrame(r)); }
             const spin = document.createElement('div');
             spin.className = 'cap-spin'; spin.textContent = '이미지 만드는 중…';
             document.body.appendChild(spin);
+            let dataUrl = null;
             try {
                 const src = document.getElementById(areaId);
                 const clone = src.cloneNode(true);
@@ -814,28 +821,50 @@
                 await new Promise(r => setTimeout(r, 60));
                 const canvas = await html2canvas(clone, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
                 document.body.removeChild(holder);
-                showImgOverlay(canvas.toDataURL('image/png'), filename);
+                dataUrl = canvas.toDataURL('image/png');
             } catch (e) {
-                alert('이미지 생성에 실패했습니다.');
-            } finally {
                 spin.remove();
+                alert('이미지 생성에 실패했습니다.');
+                return;
             }
+            spin.remove();
+            // 공유 시트로 바로 저장 시도 (아이폰: '이미지 저장')
+            try {
+                const file = dataURLtoFile(dataUrl, filename);
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title });
+                    return;
+                }
+            } catch (e) {
+                if (e && e.name === 'AbortError') return; // 사용자가 취소
+                // 그 외엔 미리보기로 폴백
+            }
+            showImgOverlay(dataUrl, filename, title);
         }
-        function showImgOverlay(dataUrl, filename) {
+        function showImgOverlay(dataUrl, filename, title) {
+            const file = dataURLtoFile(dataUrl, filename);
+            const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
             const ov = document.createElement('div');
             ov.className = 'img-overlay';
+            const primary = canShare
+                ? `<button class="img-btn img-dl" id="imgShare">사진에 저장 · 공유</button>`
+                : `<a class="img-btn img-dl" href="${dataUrl}" download="${filename}">이미지 저장</a>`;
             ov.innerHTML =
-                `<div class="img-hint">길게 눌러 저장하거나, 아래 버튼으로 받으세요.</div>` +
+                `<div class="img-hint">${canShare ? '아래 버튼 → "이미지 저장"' : '길게 눌러 저장하거나, 아래 버튼으로 받으세요.'}</div>` +
                 `<div class="img-card"><img src="${dataUrl}" alt="미리보기"></div>` +
-                `<div class="img-btns"><a class="img-btn img-dl" href="${dataUrl}" download="${filename}">이미지 저장</a>` +
-                `<button class="img-btn img-close">닫기</button></div>`;
+                `<div class="img-btns">${primary}<button class="img-btn img-close">닫기</button></div>`;
             ov.addEventListener('click', (e) => { if (e.target === ov || e.target.classList.contains('img-close')) ov.remove(); });
             document.body.appendChild(ov);
+            if (canShare) {
+                document.getElementById('imgShare').addEventListener('click', async () => {
+                    try { await navigator.share({ files: [file], title: title || '주간업무' }); } catch (e) {}
+                });
+            }
         }
 
         function printWork() { captureArea('workArea', '주간업무 보고', '주간업무보고.png'); }
         function printAtt() { captureArea('attArea', '출장·근태 현황', '출장근태현황.png'); }
-        function printFinal() { buildFinalPrint(); document.body.classList.add('print-final'); window.print(); }
+        function printFinal() { buildFinalPrint(); captureArea('finalPrint', '전국전력노동조합 주간업무', '주간업무_최종본.png'); }
         window.onafterprint = () => document.body.classList.remove('print-work', 'print-att', 'print-final');
 
         function maybeRenderFinal() {
