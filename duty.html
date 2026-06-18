@@ -682,14 +682,16 @@
         }
 
         // 근태 셀: 글씨가 칸보다 길면 폰트를 줄여 칸 안에 맞춤 (엑셀 '축소하여 맞춤')
-        function fitAttCells() {
-            document.querySelectorAll('.att-fit').forEach(box => {
+        function fitAttCells(root, startSize) {
+            if (!root || typeof root.querySelectorAll !== 'function') root = document;
+            startSize = startSize || 13;
+            root.querySelectorAll('.att-fit').forEach(box => {
                 const txt = box.querySelector('.b-txt');
                 if (!txt) return;
-                let size = 13;
+                let size = startSize;
                 txt.style.fontSize = size + 'px';
                 let guard = 0;
-                while ((box.scrollHeight > box.clientHeight + 0.5 || box.scrollWidth > box.clientWidth + 0.5) && size > 6.5 && guard < 24) {
+                while ((box.scrollHeight > box.clientHeight + 0.5 || box.scrollWidth > box.clientWidth + 0.5) && size > 6.5 && guard < 40) {
                     size -= 0.5; txt.style.fontSize = size + 'px'; guard++;
                 }
             });
@@ -818,8 +820,9 @@
                 holder.style.cssText = 'position:fixed; left:-12000px; top:0;';
                 holder.appendChild(clone);
                 document.body.appendChild(holder);
+                if (areaId === 'attArea') fitAttCells(clone, 17); // 넓은 캡처 폭에 맞게 글씨 키움
                 await new Promise(r => setTimeout(r, 60));
-                const canvas = await html2canvas(clone, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+                const canvas = await html2canvas(clone, { scale: 2.5, backgroundColor: '#ffffff', useCORS: true, logging: false });
                 document.body.removeChild(holder);
                 dataUrl = canvas.toDataURL('image/png');
             } catch (e) {
