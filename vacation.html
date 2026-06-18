@@ -6,6 +6,7 @@
     <title>여름휴가 사전 조사 · 전력노조 집행부</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 
     <style>
@@ -117,6 +118,17 @@
         }
         .btn-print svg { width: 15px; height: 15px; }
         .btn-print:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* 🌟 인라인 이미지 저장 소형 버튼 스택 스타일 */
+        .month-actions { display: flex; align-items: center; gap: 6px; }
+        .btn-save-img {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: var(--canvas); color: var(--ink-soft); border: 1px solid var(--line);
+            padding: 6px 11px; border-radius: 8px; font-size: 12px; font-weight: 700;
+            cursor: pointer; box-shadow: var(--shadow); transition: all .15s; white-space: nowrap;
+        }
+        .btn-save-img:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-save-img svg { width: 13px; height: 13px; }
 
         /* ── 등록 패널 ── */
         .register-panel {
@@ -242,8 +254,6 @@
             font-weight: 600;
             letter-spacing: -0.2px;
         }
-        /* 화면에서는 설명 라벨 숨김 (H1과 중복 방지), 인쇄에서만 노출 */
-        .month-title .mt-desc { display: none; }
 
         .calendar-grid {
             display: grid;
@@ -265,7 +275,6 @@
         .day-header:nth-child(1) { color: var(--sun); }
         .day-header:nth-child(7) { color: var(--sat); }
 
-        /* 칸 높이 고정 → 내용이 많아도 달력 모양이 일정하게 유지 */
         .day-cell {
             background: var(--canvas);
             height: 108px;
@@ -279,7 +288,6 @@
             flex-direction: column;
             overflow: hidden;
         }
-        /* 주말 열은 아주 옅은 음영으로 한 주가 한눈에 */
         .day-cell[data-wday="0"] { background: #fdf9f9; }
         .day-cell[data-wday="6"] { background: #f9fbfd; }
         .day-cell:hover { background: #eef5ff; }
@@ -309,11 +317,9 @@
         .holiday-name { display: block; width: fit-content; max-width: 100%; margin: 0 auto 3px; font-size: 10px; font-weight: 700; color: var(--holiday); background: #fdecea; padding: 1px 6px; border-radius: 4px; letter-spacing: -0.4px; line-height: 1.35; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
         .day-cell.holiday .num { color: var(--holiday); }
 
-        /* 선택 상태 (기간 선택) */
         .day-cell.selected-start { background: #d2e3fc !important; box-shadow: inset 0 0 0 2px var(--accent); }
         .day-cell.selected-in-between { background: #e8f0fe !important; }
 
-        /* 휴가 목록: 세로로 한 줄씩 쌓기(최대 4명) — 칸 균등이라 3글자도 안 줄이고 들어감 */
         .vacation-list {
             flex: 1;
             min-height: 0;
@@ -324,7 +330,7 @@
         }
         .vacation-list::-webkit-scrollbar { width: 4px; }
         .vacation-list::-webkit-scrollbar-thumb { background: #cdd2d8; border-radius: 4px; }
-        /* 사람별 색상 칩 (인쇄와 동일한 약칭, 클릭 시 삭제) — 칸 너비에 꽉 차게 한 줄 */
+        
         .vacation-badge {
             background: var(--c, #5f6368);
             color: #fff;
@@ -348,11 +354,25 @@
             white-space: nowrap;
             color: inherit;
         }
-        /* 화면·인쇄 모두 2글자 약칭 표시 (풀네임 숨김) */
         .vacation-badge .vname-full { display: none; }
         .vacation-badge .vname-short { display: block; }
 
-        /* ── 반응형 ── */
+        /* 🌟 이미지 생성 오버레이 (PC 등 폴백 화면용) */
+        .img-overlay { position:fixed; inset:0; background:rgba(15,20,30,.78); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:18px; overflow:auto; }
+        .img-overlay .img-card { background:#fff; border-radius:14px; padding:12px; max-width:94vw; box-shadow:0 18px 50px rgba(0,0,0,.4); }
+        .img-overlay img { display:block; max-width:100%; height:auto; border-radius:6px; }
+        .img-overlay .img-hint { color:#fff; font-size:12.5px; margin:12px 0 4px; text-align:center; line-height:1.6; }
+        .img-overlay .img-btns { display:flex; gap:10px; margin-top:14px; }
+        .img-overlay .img-btn { font-family:inherit; font-weight:700; font-size:14px; padding:11px 20px; border-radius:10px; border:none; cursor:pointer; text-decoration:none; }
+        .img-overlay .img-dl { background:var(--accent); color:#fff; }
+        .img-overlay .img-close { background:rgba(255,255,255,.18); color:#fff; }
+        .cap-spin { position:fixed; inset:0; background:rgba(255,255,255,.65); z-index:9998; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--ink-soft); }
+
+        /* 🌟 캡처용 가상 스케일 타겟 타겟 스타일 */
+        .capture-target { width:1024px !important; max-width:1024px !important; margin:0; background:#fff; padding:24px; box-sizing:border-box; display:block !important; }
+        .capture-target .month-actions { display:none !important; } /* 버튼은 숨김 */
+        .capture-target .month-title .mt-desc { display:block !important; font-size: 14px; color: var(--ink-soft); font-weight: 700; }
+
         @media (max-width: 640px) {
             .wrap { padding: 16px 12px 0; }
             .day-cell { height: 98px; padding: 4px 4px; }
@@ -367,11 +387,11 @@
             .hint { min-width: 100%; }
         }
 
-        /* ── 인쇄 (구글 캘린더 인쇄본 스타일 · A4 가로) ── */
+        /* ── 인쇄 ── */
         @page { size: A4 landscape; margin: 10mm; }
         @media print {
             body { background: #fff; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .topbar, .register-panel, header { display: none !important; }
+            .topbar, .register-panel, header, .month-actions { display: none !important; }
             .del-btn { display: none !important; }
             .wrap { padding: 0; max-width: none; }
             .calendar-container { gap: 0; }
@@ -381,13 +401,11 @@
                 page-break-after: always; break-after: page;
             }
             .month-section:last-child { page-break-after: auto; break-after: auto; }
-            /* 제목 밴드: 파란 밑줄 + 우측 설명 라벨 */
             .month-title { margin-bottom: 9px; padding-bottom: 6px; border-bottom: 1.5px solid var(--accent); }
             .month-title .mt-month { font-size: 19pt; }
             .month-title .mt-unit { font-size: 11pt; }
             .month-title .yr { font-size: 9pt; }
             .month-title .mt-desc { display: block; font-size: 9pt; }
-            /* 격자: 얇고 깔끔한 헤어라인 */
             .calendar-grid { border-color: #b0b4ba; }
             .day-header {
                 background: #fff !important;
@@ -397,7 +415,6 @@
                 font-size: 8pt;
                 letter-spacing: 1.5px;
             }
-            /* 인쇄는 종이라 스크롤 불가 → 고정 높이를 풀어 인원이 많아도 다 보이게 함 */
             .calendar-grid { grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(1.7cm, auto); }
             .day-cell {
                 display: block;
@@ -413,7 +430,6 @@
             .day-number .num { width: 14px; height: 14px; }
             .holiday-name { font-size: 6.5pt; padding: 0.5px 4px; }
 
-            /* 인쇄 시: 약칭만 표시 + 작은 네모 칩을 한 줄에 3개씩 가로 배치 */
             .vacation-list {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
@@ -435,7 +451,6 @@
                 background: var(--c, #5f6368) !important;
                 color: #fff !important;
             }
-            /* 칩 배경을 사람별 색으로 꽉 채우기 (연한 틴트 → 진한 단색) */
             .vacation-badge .vname-full,
             .vacation-badge .del-btn { display: none; }
             .vacation-badge .vname-short {
@@ -531,7 +546,6 @@
             "2026-09-26": "추석"
         };
 
-        // 집행부 명단 + 사람별 고정 색상 (텍스트로 읽기 좋은 진한 톤)
         const MEMBERS = [
             "위원장", "수석부위원장", "사무처장", "기획처장",
             "대외협력본부장", "총무국장", "조직쟁의실장", "기획국장",
@@ -547,12 +561,7 @@
         const memberColor = {};
         MEMBERS.forEach((m, i) => memberColor[m] = PALETTE[i % PALETTE.length]);
         function colorFor(name) { return memberColor[name] || "#5f6368"; }
-        function tint(hex, a) {
-            const n = parseInt(hex.slice(1), 16);
-            return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
-        }
 
-        // 인쇄 전용 약칭 (화면에서는 풀네임, 인쇄 시에만 짧게 표시)
         const SHORT_NAME = {
             "위원장": "長", "수석부위원장": "수석", "사무처장": "사무長",
             "기획처장": "기획長", "대외협력본부장": "대협長", "총무국장": "총무",
@@ -583,12 +592,20 @@
             monthsToRender.forEach(({year, month}) => {
                 const monthSection = document.createElement('div');
                 monthSection.className = 'month-section';
+                // 🌟 월별 캡처 매칭을 위한 ID 지정
+                monthSection.id = `month-${month}`;
 
                 const title = document.createElement('div');
                 title.className = 'month-title';
                 title.innerHTML = `
                     <div class="mt-left"><span class="mt-month">${month}</span><span class="mt-unit">월</span><span class="yr">${year}</span></div>
-                    <div class="mt-desc">제24대 집행부 여름휴가 현황</div>
+                    <div class="month-actions">
+                        <div class="mt-desc">제24대 집행부 여름휴가 현황</div>
+                        <button class="btn-save-img" onclick="event.stopPropagation(); captureMonth('${month}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            이미지 저장
+                        </button>
+                    </div>
                 `;
                 monthSection.appendChild(title);
 
@@ -648,7 +665,6 @@
             });
         }
 
-        // 3. 기간 선택 + 휴가 신청
         function handleDateClick(dateStr) {
             const nameSelect = document.getElementById('userName');
             const selectedName = nameSelect.value;
@@ -723,13 +739,11 @@
             g.classList.remove('active');
         }
 
-        // 직책 변경 시: 진행 중 선택 초기화 + 본인 등록 휴가 목록 갱신
         function onUserChange() {
             clearSelectionState();
             renderMyVacations(document.getElementById('userName').value);
         }
 
-        // 4. 내 등록 휴가 목록 (연속일은 범위로 묶어서, ✕로 삭제)
         function fmtMD(dateStr) {
             const [y, m, d] = dateStr.split('-').map(Number);
             return `${m}.${d}`;
@@ -775,7 +789,6 @@
             dbRef.update(updates);
         }
 
-        // 5. Firebase 실시간 조회
         function initFirebaseRealtime() {
             dbRef.on('value', (snapshot) => {
                 allData = snapshot.val() || {};
@@ -802,6 +815,84 @@
 
                 renderMyVacations(document.getElementById('userName').value);
             });
+        }
+
+        // 🌟 6. 월별 이미지 캡처 핵심 자바스크립트 로직
+        function dataURLtoFile(dataurl, filename) {
+            const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]); let n = bstr.length; const u8 = new Uint8Array(n);
+            while (n--) u8[n] = bstr.charCodeAt(n);
+            return new File([u8], filename, { type: mime });
+        }
+
+        async function captureMonth(monthNumber) {
+            if (typeof html2canvas === 'undefined') { alert('이미지 라이브러리를 로드하고 있습니다. 1~2초 후 다시 시도해 주세요.'); return; }
+            
+            const areaId = `month-${monthNumber}`;
+            const title = `집행부 여름휴가 현황_${monthNumber}월`;
+            const filename = `여름휴가_현황_${monthNumber}월.png`;
+            
+            const spin = document.createElement('div');
+            spin.className = 'cap-spin'; spin.textContent = `${monthNumber}월 달력 이미지 만드는 중…`;
+            document.body.appendChild(spin);
+            
+            let dataUrl = null;
+            try {
+                const src = document.getElementById(areaId);
+                const clone = src.cloneNode(true);
+                clone.classList.add('capture-target');
+                
+                const holder = document.createElement('div');
+                holder.style.cssText = 'position:fixed; left:-12000px; top:0;';
+                holder.appendChild(clone);
+                document.body.appendChild(holder);
+                
+                await new Promise(r => setTimeout(r, 80));
+                // scale: 2 적용하여 글씨가 뭉개지지 않는 선명한 고화질 확보
+                const canvas = await html2canvas(clone, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+                document.body.removeChild(holder);
+                dataUrl = canvas.toDataURL('image/png');
+            } catch (e) {
+                spin.remove();
+                alert('이미지 생성에 실패했습니다.');
+                return;
+            }
+            spin.remove();
+            
+            // iOS / 모바일용 내장 공유 시트 트리거 처리
+            try {
+                const file = dataURLtoFile(dataUrl, filename);
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title });
+                    return;
+                }
+            } catch (e) {
+                if (e && e.name === 'AbortError') return;
+            }
+            
+            // 공유 시트 차단되거나 PC 환경일 경우 다운로드 오버레이 출력
+            showImgOverlay(dataUrl, filename, title);
+        }
+
+        function showImgOverlay(dataUrl, filename, title) {
+            const file = dataURLtoFile(dataUrl, filename);
+            const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+            const ov = document.createElement('div');
+            ov.className = 'img-overlay';
+            const primary = canShare
+                ? `<button class="img-btn img-dl" id="imgShare">사진에 저장 · 공유</button>`
+                : `<a class="img-btn img-dl" href="${dataUrl}" download="${filename}">이미지 저장</a>`;
+            ov.innerHTML =
+                `<div class="img-hint">${canShare ? '아래 버튼 → "이미지 저장"' : '길게 눌러 저장하거나, 아래 버튼으로 다운로드하세요.'}</div>` +
+                `<div class="img-card"><img src="${dataUrl}" alt="미리보기"></div>` +
+                `<div class="img-btns">${primary}<button class="img-btn img-close">닫기</button></div>`;
+            ov.addEventListener('click', (e) => { if (e.target === ov || e.target.classList.contains('img-close')) ov.remove(); });
+            document.body.appendChild(ov);
+            if (canShare) {
+                document.getElementById('imgShare').addEventListener('click', async () => {
+                    try { await navigator.share({ files: [file], title: title }); } catch (e) {}
+                });
+            }
         }
 
         // 초기 실행
