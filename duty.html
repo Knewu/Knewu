@@ -118,10 +118,11 @@
         .clear-row .btn-clear { flex:1; padding:9px 6px; font-size:12.5px; }
         /* 선택 부서의 등록된 출장·근태 (하루씩 삭제) */
         .myatt-wrap { margin-top:12px; }
-        .myatt-h { font-size:11.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px; }
-        .myatt-h span { font-weight:600; color:var(--ink-faint); }
+        .myatt-h { font-size:11.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px; display:flex; align-items:center; justify-content:space-between; }
+        .myatt-h .myatt-edit { font-weight:700; color:var(--accent); font-size:11px; }
         .myatt-list { display:flex; flex-direction:column; gap:6px; }
-        .myatt-item { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:6px 8px 6px 10px; }
+        .myatt-item { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:6px 8px 6px 10px; cursor:pointer; }
+        .myatt-item:active { background:#f6f8fb; }
         .myatt-day { font-size:12px; font-weight:800; color:#1f2329; min-width:48px; }
         .myatt-pill { font-size:9px; font-weight:800; color:#fff; padding:1px 7px; border-radius:999px; letter-spacing:.04em; flex:none; }
         .myatt-pill.출장 { background:var(--trip-pill); } .myatt-pill.근태 { background:var(--leave-pill); }
@@ -345,7 +346,7 @@
                         <input type="text" id="txScDetail" class="detail-input" placeholder="상세내용">
                     </div>
                     <div class="myatt-wrap" id="myAttWrap" style="display:none;">
-                        <div class="myatt-h">등록된 출장·근태 <span>— ✏️ 수정 / ✕ 삭제</span></div>
+                        <div class="myatt-h"><span>등록된 출장·근태</span><span class="myatt-edit">✏️ 항목 눌러 수정</span></div>
                         <div class="myatt-list" id="myAttList"></div>
                     </div>
                 </div>
@@ -558,12 +559,11 @@
             const days = (serverCache[selectedUser] || {}).days || {};
             const rows = WEEKS.filter(w => days[w]).map(w => {
                 const sc = days[w];
-                return `<div class="myatt-item">` +
+                return `<div class="myatt-item" onclick="editAtt('${w}')">` +
                     `<span class="myatt-day">${w} ${dayLabels[w] || ''}</span>` +
                     `<span class="myatt-pill ${sc.type}">${sc.type}</span>` +
                     `<span class="myatt-txt">${escapeHtml(sc.text || '')}</span>` +
-                    `<button class="myatt-e" onclick="editAtt('${w}')" title="수정">✏️</button>` +
-                    `<button class="myatt-x" onclick="removeDayLive('${selectedUser}','${w}')" title="삭제">✕</button>` +
+                    `<button class="myatt-x" onclick="event.stopPropagation();removeDayLive('${selectedUser}','${w}')" title="삭제">✕</button>` +
                     `</div>`;
             });
             wrap.style.display = '';
