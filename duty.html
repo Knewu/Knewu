@@ -128,6 +128,8 @@
         .myatt-txt { flex:1; font-size:12.5px; color:#33404f; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .myatt-x { flex:none; width:26px; height:26px; border:none; background:#f1f3f6; border-radius:7px; color:#8a94a6; font-size:15px; font-weight:700; cursor:pointer; line-height:1; }
         .myatt-x:active { background:#e2e6ec; }
+        .myatt-e { flex:none; width:26px; height:26px; border:none; background:#eef4ff; border-radius:7px; font-size:13px; cursor:pointer; line-height:1; }
+        .myatt-e:active { background:#dce8fd; }
         .myatt-empty { font-size:12px; color:var(--ink-faint); padding:2px 0; }
 
         /* ── 섹션 공통 ── */
@@ -343,7 +345,7 @@
                         <input type="text" id="txScDetail" class="detail-input" placeholder="상세내용">
                     </div>
                     <div class="myatt-wrap" id="myAttWrap" style="display:none;">
-                        <div class="myatt-h">등록된 출장·근태 <span>— ✕ 눌러 하루씩 삭제</span></div>
+                        <div class="myatt-h">등록된 출장·근태 <span>— ✏️ 수정 / ✕ 삭제</span></div>
                         <div class="myatt-list" id="myAttList"></div>
                     </div>
                 </div>
@@ -422,8 +424,7 @@
                 </div>
                 <div class="sec-actions">
                     <button class="fin-btn" onclick="reloadFinalFromDrafts()">다시<br>불러오기</button>
-                    <!-- 1. [수정] 최종본 인쇄 버튼을 이미지 저장 버튼으로 명칭 변경 -->
-                    <button class="fin-btn" onclick="printFinal()">최종본<br>이미지 저장</button>
+                    <button class="fin-btn" onclick="printFinal()">최종본<br>인쇄</button>
                 </div>
             </div>
 
@@ -561,11 +562,25 @@
                     `<span class="myatt-day">${w} ${dayLabels[w] || ''}</span>` +
                     `<span class="myatt-pill ${sc.type}">${sc.type}</span>` +
                     `<span class="myatt-txt">${escapeHtml(sc.text || '')}</span>` +
+                    `<button class="myatt-e" onclick="editAtt('${w}')" title="수정">✏️</button>` +
                     `<button class="myatt-x" onclick="removeDayLive('${selectedUser}','${w}')" title="삭제">✕</button>` +
                     `</div>`;
             });
             wrap.style.display = '';
             list.innerHTML = rows.length ? rows.join('') : '<div class="myatt-empty">등록된 출장·근태가 없습니다.</div>';
+        }
+
+        // 등록된 출장·근태 항목을 입력칸으로 불러와 수정 (저장하면 그 요일 덮어쓰기)
+        function editAtt(day) {
+            if (!selectedUser) return;
+            const sc = ((serverCache[selectedUser] || {}).days || {})[day];
+            if (!sc) return;
+            document.getElementById(sc.type === '근태' ? 'sc-leave' : 'sc-trip').checked = true;
+            activeDays = [day]; refreshDayNodesUI();
+            const inp = document.getElementById('txScDetail');
+            inp.value = sc.text || '';
+            inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            inp.focus();
         }
 
         function toggleDayNode(day) {
@@ -789,15 +804,9 @@
             spin.className = 'cap-spin'; spin.textContent = '이미지 만드는 중…';
             document.body.appendChild(spin);
             try {
-                // 2. [수정] 최종본 캡처 요청일 때 출력 돔 미리 생성 빌드
-                if (areaId === 'finalPrint') buildFinalPrint();
-
                 const src = document.getElementById(areaId);
                 const clone = src.cloneNode(true);
                 clone.classList.add('capture-target');
-                // 3. [수정] 최종본 캡처 시 스타일 깨짐 방지를 위해 display 강제 보정
-                clone.style.display = 'block';
-
                 const holder = document.createElement('div');
                 holder.style.cssText = 'position:fixed; left:-12000px; top:0;';
                 holder.appendChild(clone);
@@ -826,9 +835,7 @@
 
         function printWork() { captureArea('workArea', '주간업무 보고', '주간업무보고.png'); }
         function printAtt() { captureArea('attArea', '출장·근태 현황', '출장근태현황.png'); }
-        
-        // 4. [수정] 기존 브라우저 인쇄 로직 대신 captureArea 호출로 단순 변경
-        function printFinal() { captureArea('finalPrint', '주간업무 최종본', '주간업무_최종본.png'); }
+        function printFinal() { buildFinalPrint(); document.body.classList.add('print-final'); window.print(); }
         window.onafterprint = () => document.body.classList.remove('print-work', 'print-att', 'print-final');
 
         function maybeRenderFinal() {
