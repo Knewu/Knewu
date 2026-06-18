@@ -202,11 +202,12 @@
         .badge-cell { font-size:11px; font-weight:700; line-height:1.3; }
         .badge-cell.출장 { background:var(--trip-bg); color:var(--trip-ink); }
         .badge-cell.근태 { background:var(--leave-bg); color:var(--leave-ink); }
-        .badge-cell .b-tag { display:inline-block; font-size:8.5px; font-weight:800; color:#fff; padding:1px 6px; border-radius:999px; letter-spacing:.04em; line-height:1.4; }
+        /* 🌟 가독성을 위해 배지 크기 상향 세팅 */
+        .badge-cell .b-tag { display:inline-block; font-size:10px; font-weight:800; color:#fff; padding:2px 7px; border-radius:999px; letter-spacing:.04em; line-height:1.4; margin-bottom:1px; }
         .badge-cell.출장 .b-tag { background:var(--trip-pill); }
         .badge-cell.근태 .b-tag { background:var(--leave-pill); }
-        .badge-cell .b-txt { display:block; font-weight:700; font-size:10.5px; }
-        .att-fit { height:50px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; line-height:1.2; }
+        .badge-cell .b-txt { display:block; font-weight:700; font-size:14px; line-height:1.3; }
+        .att-fit { height:54px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; line-height:1.2; padding:0 1px; }
 
         /* ── 최종본(뉴스레터) ── */
         .final-section { margin-bottom: 18px; }
@@ -306,7 +307,6 @@
             <div class="sub" id="headSub">집행부 주간업무 취합</div>
         </header>
 
-        <!-- 입력 폼 -->
         <div class="editor card">
             <div>
                 <div class="ed-label" style="margin-bottom:8px;">담당(부서) 선택</div>
@@ -361,7 +361,6 @@
             </div>
         </div>
 
-        <!-- 부서별 활동(주간업무) + 출장근태 : 각각 따로 인쇄 -->
         <section class="block card">
 
             <div class="sub-block" id="workArea">
@@ -416,7 +415,6 @@
             </div>
         </section>
 
-        <!-- 최종본 수정하기 (편집 가능 뉴스레터) — 아래에서 인쇄 -->
         <section class="final-section">
             <div class="sec-bar">
                 <div class="sec-title">
@@ -429,7 +427,6 @@
                 </div>
             </div>
 
-            <!-- 화면: 편집 가능 -->
             <div class="news screen-news">
                 <div class="news-topbar"></div>
                 <div class="news-pad">
@@ -444,7 +441,6 @@
                 </div>
             </div>
 
-            <!-- 인쇄: 정돈된 뉴스레터 (인쇄 시 생성) -->
             <div class="news" id="finalPrint" style="display:none;">
                 <div class="news-topbar"></div>
                 <div class="news-pad">
@@ -681,15 +677,16 @@
             requestAnimationFrame(fitAttCells);
         }
 
-        // 근태 셀: 글씨가 칸보다 길면 폰트를 줄여 칸 안에 맞춤 (엑셀 '축소하여 맞춤')
+        // 🌟 근태 셀: 이미지 저장 및 화면 노출 시 폰트 크기가 과하게 줄지 않도록 리미트 상향 조정
         function fitAttCells() {
             document.querySelectorAll('.att-fit').forEach(box => {
                 const txt = box.querySelector('.b-txt');
                 if (!txt) return;
-                let size = 13;
+                let size = 15.5; // 시작 폰트 크기를 기존 13에서 15.5로 상향
                 txt.style.fontSize = size + 'px';
                 let guard = 0;
-                while ((box.scrollHeight > box.clientHeight + 0.5 || box.scrollWidth > box.clientWidth + 0.5) && size > 6.5 && guard < 24) {
+                // 내용 유실 방지를 위해 최소 크기 하한선을 11.5px로 제한 (기본 6.5px에서 대폭 수정)
+                while ((box.scrollHeight > box.clientHeight + 0.5 || box.scrollWidth > box.clientWidth + 0.5) && size > 11.5 && guard < 24) {
                     size -= 0.5; txt.style.fontSize = size + 'px'; guard++;
                 }
             });
