@@ -237,6 +237,9 @@
         .dept-tag.cur { color: var(--cur-ink); border: 1.5px solid var(--cur-bd); background: var(--cur-bg); }
         .dept-tag.prev { color: var(--prev-ink); border: 1.5px solid var(--prev-bd); background: var(--prev-bg); }
         .dept-tag.common { color: #155e63; border: 1.5px solid #8fcfd4; background: #e6f6f7; }
+        .ord { display:flex; flex-direction:column; gap:2px; margin-top:3px; flex-shrink:0; }
+        .ord button { width:24px; height:18px; padding:0; border:1px solid var(--line); background:#fff; border-radius:5px; font-size:9px; line-height:1; color:#6a7484; cursor:pointer; }
+        .ord button:active { background:#eef2f7; }
         .act { flex: 1; min-width: 0; }
         .act-head { font-size: 15px; font-weight: 600; color: #232a35; line-height: 1.5; }
         .act-subs { list-style: none; margin: 5px 0 0; padding-left: 12px; display: flex; flex-direction: column; gap: 3px; }
@@ -454,7 +457,7 @@
                     <div class="news-rows" id="finCur"></div>
                     <div class="sec-h">지난 주 활동</div>
                     <div class="news-rows" id="finPrev"></div>
-                    <div class="fin-note">※ 왼쪽 체크를 끄면 그 항목은 인쇄에서 빠집니다. 칸을 직접 고치면 자동 저장돼요. 첫 줄은 제목, 다음 줄부터 ○ 또는 - 로 적으면 인쇄 시 정돈됩니다.</div>
+                    <div class="fin-note">※ 한 줄마다 별도 항목으로(부서명 반복) 나옵니다. ○ 또는 - 로 시작하는 줄은 윗 항목의 세부로 들어가요. 부서 왼쪽 ▲▼로 순서를 바꿀 수 있습니다. 체크를 끄면 인쇄에서 빠지고, 칸을 고치면 자동 저장돼요.</div>
                     <div class="news-footer">발행 | 전국전력노동조합 복지국</div>
                 </div>
             </div>
@@ -491,6 +494,7 @@
         const dbRef = database.ref('perfect_clean_report_2026');
         const finalRef = database.ref('perfect_clean_report_2026_final_v3');
         const excludeRef = database.ref('perfect_clean_report_2026_final_v3_exclude');
+        const orderRef = database.ref('perfect_clean_report_2026_final_v3_order');
 
         const MEMBERS = ["총무","조직","기획","정책","복지","산안","교문","홍部","김次","이課"];
         const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (홍部·김次·이課은 출장근태만)
@@ -504,6 +508,7 @@
         let activeDays = [];
         let serverLoaded = false;
         let finalRendered = false;
+        let finalOrder = [...ACT_MEMBERS]; // 최종본 부서 표시 순서 (orderRef에 저장)
 
         function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
         function pad(n){ return String(n).padStart(2,'0'); }
@@ -656,16 +661,25 @@
                 dbRef.child(user).child('days').child(day).remove();
         }
 
-        // 활동 텍스트 → 제목 + ○ 세부항목 (인쇄용)
-        function renderActivity(text) {
-            const lines = String(text).split('\n').map(l => l.trim()).filter(Boolean);
-            const head = [], subs = [];
+        // 활동 텍스트 → 항목 배열. 일반 줄=새 항목, ○/- 로 시작하는 줄=직전 항목의 세부
+        function splitActivityItems(text) {
+            const lines = String(text).split('\n').map(l => l.replace(/\s+$/, '')).filter(l => l.trim());
+            const items = [];
             lines.forEach(l => {
-                if (/^[○●•◦∙*\-]\s*/.test(l)) subs.push(l.replace(/^[○●•◦∙*\-]\s*/, ''));
-                else head.push(l);
+                const t = l.trim();
+                if (/^[○●•◦∙*\-]\s*/.test(t)) {
+                    const clean = t.replace(/^[○●•◦∙*\-]\s*/, '');
+                    if (!items.length) items.push({ head: '', subs: [] });
+                    items[items.length - 1].subs.push(clean);
+                } else {
+                    items.push({ head: t, subs: [] });
+                }
             });
-            let html = `<div class="act-head">${head.map(escapeHtml).join('<br>')}</div>`;
-            if (subs.length) html += `<ul class="act-subs">${subs.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>`;
+            return items;
+        }
+        function renderActivityItem(item) {
+            let html = `<div class="act-head">${escapeHtml(item.head)}</div>`;
+            if (item.subs.length) html += `<ul class="act-subs">${item.subs.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>`;
             return html;
         }
 
@@ -748,16 +762,31 @@
             const cls = m === '공통' ? 'common' : (k === 'thisWeek' ? 'cur' : 'prev');
             const val = escapeHtml(effective(m, k));
             const inc = isIncluded(m, k);
+            const ord = m === '공통' ? '' :
+                `<span class="ord"><button type="button" onclick="moveDept('${m}',-1)" title="위로">▲</button><button type="button" onclick="moveDept('${m}',1)" title="아래로">▼</button></span>`;
             return `<div class="fin-row${inc ? '' : ' excluded'}" id="finrow-${k}-${m}">` +
                 `<label class="fin-chk"><input type="checkbox" ${inc ? 'checked' : ''} onchange="toggleInclude('${m}','${k}',this.checked)"></label>` +
+                ord +
                 `<span class="dept-tag ${cls}">${m}</span>` +
                 `<textarea class="fin-ta" id="fin-${k}-${m}" oninput="onFinInput('${m}','${k}',this)">${val}</textarea></div>`;
+        }
+
+        function hasFinalContent(m) { return !!(effective(m, 'thisWeek').trim() || effective(m, 'lastWeek').trim()); }
+        function moveDept(m, dir) {
+            const idx = finalOrder.indexOf(m);
+            if (idx < 0) return;
+            let j = idx + dir;
+            while (j >= 0 && j < finalOrder.length && !hasFinalContent(finalOrder[j])) j += dir; // 표시되는 부서끼리 이동
+            if (j < 0 || j >= finalOrder.length) return;
+            const t = finalOrder[idx]; finalOrder[idx] = finalOrder[j]; finalOrder[j] = t;
+            orderRef.set(finalOrder);
+            renderFinalEditor(true);
         }
 
         function renderFinalEditor(force) {
             if (finalRendered && !force) return;
             // 공통은 항상 표시(입력 생성용), 부서는 내용 있을 때만
-            const build = (k) => finRow('공통', k) + ACT_MEMBERS.filter(m => effective(m, k).trim()).map(m => finRow(m, k)).join('');
+            const build = (k) => finRow('공통', k) + finalOrder.filter(m => effective(m, k).trim()).map(m => finRow(m, k)).join('');
             const cur = build('thisWeek');
             const prev = build('lastWeek');
             document.getElementById('finCur').innerHTML = cur || '<div class="empty-hint">입력된 이번 주 활동이 없습니다. 위에서 부서를 골라 입력하세요.</div>';
@@ -804,11 +833,12 @@
                 const el = document.getElementById(`fin-${k}-${m}`);
                 const txt = el ? el.value : effective(m, k);
                 if (!txt.trim()) return '';
-                const cls = k === 'thisWeek' ? 'cur' : 'prev';
-                return `<div class="news-row"><span class="dept-tag ${cls}">${m}</span><div class="act">${renderActivity(txt)}</div></div>`;
+                const cls = m === '공통' ? 'common' : (k === 'thisWeek' ? 'cur' : 'prev');
+                const items = splitActivityItems(txt);
+                return items.map(it => `<div class="news-row"><span class="dept-tag ${cls}">${m}</span><div class="act">${renderActivityItem(it)}</div></div>`).join('');
             };
-            const cur = ['공통', ...ACT_MEMBERS].map(m => rowFor(m, 'thisWeek')).join('');
-            const prev = ['공통', ...ACT_MEMBERS].map(m => rowFor(m, 'lastWeek')).join('');
+            const cur = ['공통', ...finalOrder].map(m => rowFor(m, 'thisWeek')).join('');
+            const prev = ['공통', ...finalOrder].map(m => rowFor(m, 'lastWeek')).join('');
             document.getElementById('finCurPrint').innerHTML = cur || '<div class="empty-hint">입력된 이번 주 활동이 없습니다.</div>';
             document.getElementById('finPrevPrint').innerHTML = prev || '<div class="empty-hint">입력된 지난 주 활동이 없습니다.</div>';
         }
@@ -914,6 +944,17 @@
         excludeRef.on('value', (snap) => {
             excludeSet = snap.val() || {};
             applyExcludeUI();
+        });
+
+        orderRef.on('value', (snap) => {
+            const v = snap.val();
+            if (Array.isArray(v) && v.length) {
+                finalOrder = v.filter(x => ACT_MEMBERS.includes(x));
+                ACT_MEMBERS.forEach(m => { if (!finalOrder.includes(m)) finalOrder.push(m); });
+            } else {
+                finalOrder = [...ACT_MEMBERS];
+            }
+            maybeRenderFinal();
         });
 
         initApp();
