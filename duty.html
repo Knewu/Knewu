@@ -519,8 +519,8 @@
         const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 사안 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
         const weekRef = database.ref('perfect_clean_report_2026_week'); // 기준 주차(월요일) 저장
 
-        const MEMBERS = ["총무","조직","기획","정책","복지","산안","교문","홍部","김次","이課"];
-        const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (홍部·김次·이課은 출장근태만)
+        const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","홍部","김次","이課"];
+        const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·김次·이課은 출장근태만)
         const WEEKS = ["월","화","수","목","금","토","일"];
         let dayLabels = {}; // 요일→날짜 라벨 (예: 월→6/22)
         const WKND = { "토":true, "일":true };
