@@ -85,6 +85,7 @@
         @media (max-width: 760px) { .fields { grid-template-columns: 1fr; } }
         .field { display: flex; flex-direction: column; gap: 6px; }
         textarea { width: 100%; height: 104px; padding: 11px; font-family: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; resize: vertical; line-height: 1.55; color: var(--ink); background: #fcfdfe; }
+        #txThisWeek { min-height: 104px; height: auto; overflow: hidden; }
         textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,.12); }
         textarea::placeholder { color: var(--ink-faint); }
         .disabled-content { opacity: .25; pointer-events: none; }
@@ -262,9 +263,8 @@
         .fin-btn:hover { border-color:var(--accent); color:var(--accent); }
         .fin-btn-new { color:#b06a00; border-color:#f0d2a0; background:#fff9ef; }
         .fin-btn-new:hover { border-color:#e0902a; color:#b06a00; }
-        .add-row { display:flex; align-items:center; gap:8px; margin-top:10px; padding:9px 11px; border:1px dashed var(--line); border-radius:9px; background:#fbfcfe; }
-        .add-row span { font-size:12px; font-weight:700; color:var(--ink-soft); }
-        .add-row select { flex:1; font-family:inherit; font-size:13px; padding:7px 9px; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--ink); }
+        .fin-row-empty { opacity:.5; }
+        .fin-row-empty:focus-within { opacity:1; }
 
         @media (max-width: 760px) {
             .wrap { padding: 18px 12px; }
@@ -342,7 +342,7 @@
                 <div class="fields" id="actFields">
                     <div class="field">
                         <label class="ed-label" id="lblThis">이번 주 활동</label>
-                        <textarea id="txThisWeek" placeholder="상세내용"></textarea>
+                        <textarea id="txThisWeek" placeholder="상세내용" oninput="autoGrow(this)"></textarea>
                         <button type="button" class="add-item" onclick="addItemSep('txThisWeek')">➕ 사안 추가</button>
                     </div>
                 </div>
@@ -516,7 +516,6 @@
         let finalRendered = false;
         let finalOrder = [...ACT_MEMBERS]; // 최종본 부서 표시 순서 (orderRef에 저장)
         let weekMonday = null; // 기준 주차의 월요일 (Date) — weekRef에서 로드
-        let extraRows = { thisWeek: new Set(), lastWeek: new Set() }; // 최종본에서 수동 추가한 부서 행
 
         function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
         function pad(n){ return String(n).padStart(2,'0'); }
@@ -576,7 +575,9 @@
             document.getElementById('actFields').style.display = isDept ? '' : 'none';
             document.getElementById('lblThis').innerText = `[${m}] 이번 주 활동`;
             const d = serverCache[m] || {};
-            document.getElementById('txThisWeek').value = d.thisWeek ?? d.work ?? '';
+            const tw = document.getElementById('txThisWeek');
+            tw.value = d.thisWeek ?? d.work ?? '';
+            autoGrow(tw);
             document.getElementById('txScDetail').value = '';
             activeDays = []; refreshDayNodesUI();
             document.getElementById('btnClearWork').style.display = isDept ? '' : 'none';
@@ -687,6 +688,7 @@
             el.value = v ? v + '\n\n' : '';
             el.focus();
             el.selectionStart = el.selectionEnd = el.value.length;
+            if (typeof autoGrow === 'function') autoGrow(el);
         }
 
         // ── 부서별 간략표 + 근태 (읽기 전용, 실시간) ──
@@ -765,15 +767,17 @@
 
         function finRow(m, k) {
             const cls = m === '공통' ? 'common' : (k === 'thisWeek' ? 'cur' : 'prev');
-            const val = escapeHtml(effective(m, k));
+            const raw = effective(m, k);
+            const val = escapeHtml(raw);
             const inc = isIncluded(m, k);
+            const empty = raw.trim() ? '' : ' fin-row-empty';
             const ord = m === '공통' ? '' :
                 `<span class="ord"><button type="button" onclick="moveDept('${m}',-1)" title="위로">▲</button><button type="button" onclick="moveDept('${m}',1)" title="아래로">▼</button></span>`;
-            return `<div class="fin-row${inc ? '' : ' excluded'}" id="finrow-${k}-${m}">` +
+            return `<div class="fin-row${inc ? '' : ' excluded'}${empty}" id="finrow-${k}-${m}">` +
                 `<label class="fin-chk"><input type="checkbox" ${inc ? 'checked' : ''} onchange="toggleInclude('${m}','${k}',this.checked)"></label>` +
                 ord +
                 `<span class="dept-tag ${cls}">${m}</span>` +
-                `<textarea class="fin-ta" id="fin-${k}-${m}" oninput="onFinInput('${m}','${k}',this)">${val}</textarea></div>`;
+                `<textarea class="fin-ta" id="fin-${k}-${m}" placeholder="(비어 있음 — 입력하면 인쇄에 표시)" oninput="onFinInput('${m}','${k}',this)">${val}</textarea></div>`;
         }
 
         function hasFinalContent(m) { return !!(effective(m, 'thisWeek').trim() || effective(m, 'lastWeek').trim()); }
@@ -790,29 +794,13 @@
 
         function renderFinalEditor(force) {
             if (finalRendered && !force) return;
-            // 공통은 항상 표시, 부서는 내용 있거나 수동 추가(extraRows)된 경우 표시
-            const build = (k) => finRow('공통', k) + finalOrder.filter(m => effective(m, k).trim() || extraRows[k].has(m)).map(m => finRow(m, k)).join('');
-            const addBar = (k) => {
-                const addable = finalOrder.filter(m => !effective(m, k).trim() && !extraRows[k].has(m));
-                if (!addable.length) return '';
-                return `<div class="add-row"><span>➕ 부서 항목 추가</span>` +
-                    `<select onchange="addFinRow('${k}', this.value); this.selectedIndex=0;">` +
-                    `<option value="">부서 선택</option>` +
-                    addable.map(m => `<option value="${m}">${m}</option>`).join('') +
-                    `</select></div>`;
-            };
-            document.getElementById('finCur').innerHTML = (build('thisWeek') || '<div class="empty-hint">입력된 이번 주 활동이 없습니다. 위에서 부서를 골라 입력하세요.</div>') + addBar('thisWeek');
-            document.getElementById('finPrev').innerHTML = (build('lastWeek') || '<div class="empty-hint">지난 주 활동이 없습니다.</div>') + addBar('lastWeek');
+            // 공통 + 모든 부서를 항상 표시 (빈 칸은 흐리게). 빈 칸은 인쇄에 안 나옴.
+            const build = (k) => ['공통', ...finalOrder].map(m => finRow(m, k)).join('');
+            document.getElementById('finCur').innerHTML = build('thisWeek');
+            document.getElementById('finPrev').innerHTML = build('lastWeek');
             document.querySelectorAll('.fin-ta').forEach(autoGrow);
             applyExcludeUI();
             finalRendered = true;
-        }
-        function addFinRow(k, m) {
-            if (!m) return;
-            extraRows[k].add(m);
-            renderFinalEditor(true);
-            const el = document.getElementById(`fin-${k}-${m}`);
-            if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
         }
 
         let saveTimer = {};
@@ -860,7 +848,6 @@
             dbRef.update(upd);
             const nm = new Date(weekMonday || autoNextMonday()); nm.setDate(nm.getDate() + 7);
             weekRef.set(isoDate(nm));
-            extraRows = { thisWeek: new Set(), lastWeek: new Set() };
             if (selectedUser) {
                 document.getElementById('txThisWeek').value = '';
                 document.getElementById('txScDetail').value = '';
@@ -973,7 +960,7 @@
             if (selectedUser) {
                 const d = serverCache[selectedUser] || {};
                 const a = document.getElementById('txThisWeek');
-                if (document.activeElement !== a) a.value = d.thisWeek ?? d.work ?? '';
+                if (document.activeElement !== a) { a.value = d.thisWeek ?? d.work ?? ''; autoGrow(a); }
                 renderMyAtt();
             }
         });
