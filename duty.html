@@ -172,11 +172,12 @@
         /* ── 근태표 ── */
         .grid-table { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; text-align:center; border:1px solid #dde3ec; border-radius:11px; overflow:hidden; }
         .grid-table thead th { background:#26344f; color:#fff; font-weight:700; font-size:11.5px; padding:8px 3px; }
-        .grid-table tbody td { border-top:1px solid #e2e6ee; padding:4px 3px; font-size:12.5px; height:60px; vertical-align:middle; color:#1f2329; }
+        .grid-table tbody td { border-top:1px solid #e2e6ee; padding:4px 3px; font-size:12.5px; height:50px; vertical-align:middle; color:#1f2329; }
         .grid-table th[data-w="토"] .th-w{color:#9fc3ff;} .grid-table th[data-w="일"] .th-w{color:#ffb0aa;}
         .grid-table th .th-w { display:block; font-size:12.5px; font-weight:800; line-height:1.2; }
         .grid-table th .th-d { display:block; font-size:9.5px; font-weight:600; color:#aeb9d0; line-height:1.2; margin-top:2px; }
-        .grid-table td.dept { font-weight:800; background:#eaeef6; color:#26344f; font-size:13.5px; letter-spacing:.03em; }
+        .grid-table td.dept { font-weight:800; background:#eaeef6; color:#26344f; font-size:13px; letter-spacing:.02em; white-space:nowrap; }
+        .grid-table th:first-child, .grid-table td.dept { width:15%; }
         .grid-table td.wknd { background:#f5f7fb; }
 
         /* 인쇄 전용 레터헤드 / 푸터 */
@@ -195,9 +196,9 @@
         .capture-target .grid-table thead th { font-size:13.5px; padding:12px 4px; }
         .capture-target .grid-table th .th-w { font-size:18px; }
         .capture-target .grid-table th .th-d { font-size:12px; margin-top:3px; }
-        .capture-target .grid-table tbody td { height:76px; font-size:14px; }
+        .capture-target .grid-table tbody td { height:62px; font-size:14px; }
         .capture-target .grid-table td.dept { font-size:19px; letter-spacing:.05em; }
-        .capture-target .att-fit { height:66px; }
+        .capture-target .att-fit { height:54px; }
         .capture-target .badge-cell .b-tag { font-size:11px; padding:2px 9px; }
         .capture-target .sum-table thead th { font-size:15px; padding:15px 16px; }
         .capture-target .sum-table tbody td { font-size:15px; padding:15px 17px; line-height:1.65; }
@@ -226,7 +227,7 @@
         .badge-cell.출장 .b-tag { background:var(--trip-pill); }
         .badge-cell.근태 .b-tag { background:var(--leave-pill); }
         .badge-cell .b-txt { display:block; font-weight:700; font-size:10.5px; }
-        .att-fit { height:50px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; line-height:1.2; }
+        .att-fit { height:42px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; line-height:1.2; }
 
         /* ── 최종본(뉴스레터) ── */
         .final-section { margin-bottom: 18px; }
@@ -293,7 +294,7 @@
             .sum-table th, .sum-table td { padding: 7px 8px; font-size: 13px; }
             .grid-table th, .grid-table td { font-size: 11px; height: 44px; padding: 3px 2px; }
             .grid-table td.dept { font-size: 12.5px; }
-            .att-fit { height: 48px; }
+            .att-fit { height: 40px; }
         }
 
         /* ═════ 인쇄 ═════ */
@@ -381,8 +382,6 @@
                             <div class="day-node" data-w="수" onclick="toggleDayNode('수')"><div class="n-w">수</div><div class="n-d" id="cd-수"></div></div>
                             <div class="day-node" data-w="목" onclick="toggleDayNode('목')"><div class="n-w">목</div><div class="n-d" id="cd-목"></div></div>
                             <div class="day-node" data-w="금" onclick="toggleDayNode('금')"><div class="n-w">금</div><div class="n-d" id="cd-금"></div></div>
-                            <div class="day-node" data-w="토" onclick="toggleDayNode('토')"><div class="n-w">토</div><div class="n-d" id="cd-토"></div></div>
-                            <div class="day-node" data-w="일" onclick="toggleDayNode('일')"><div class="n-w">일</div><div class="n-d" id="cd-일"></div></div>
                         </div>
                         <input type="text" id="txScDetail" class="detail-input" placeholder="상세내용">
                     </div>
@@ -448,8 +447,6 @@
                         <th data-w="수"><span class="th-w">수</span><span class="th-d" id="thd-수"></span></th>
                         <th data-w="목"><span class="th-w">목</span><span class="th-d" id="thd-목"></span></th>
                         <th data-w="금"><span class="th-w">금</span><span class="th-d" id="thd-금"></span></th>
-                        <th data-w="토"><span class="th-w">토</span><span class="th-d" id="thd-토"></span></th>
-                        <th data-w="일"><span class="th-w">일</span><span class="th-d" id="thd-일"></span></th>
                     </tr></thead>
                     <tbody id="attBody"></tbody>
                 </table>
@@ -522,6 +519,7 @@
         const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","홍部","김次","이課"];
         const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·김次·이課은 출장근태만)
         const WEEKS = ["월","화","수","목","금","토","일"];
+        const ATT_DAYS = ["월","화","수","목","금"]; // 출장·근태는 평일만 (토·일 제외)
         let dayLabels = {}; // 요일→날짜 라벨 (예: 월→6/22)
         const WKND = { "토":true, "일":true };
 
@@ -566,12 +564,12 @@
             document.getElementById('phWorkFoot').innerText = today;
             document.getElementById('phAttFoot').innerText = today;
 
-            WEEKS.forEach((w, i) => {
+            ATT_DAYS.forEach((w, i) => {
                 const t = new Date(mon); t.setDate(mon.getDate() + i);
                 const lbl = `${t.getMonth()+1}/${t.getDate()}`;
                 dayLabels[w] = lbl;
-                document.getElementById(`cd-${w}`).innerText = lbl;
-                document.getElementById(`thd-${w}`).innerText = lbl;
+                const cd = document.getElementById(`cd-${w}`); if (cd) cd.innerText = lbl;
+                const thd = document.getElementById(`thd-${w}`); if (thd) thd.innerText = lbl;
             });
         }
 
@@ -604,7 +602,7 @@
             const list = document.getElementById('myAttList');
             if (!selectedUser) { wrap.style.display = 'none'; return; }
             const days = (serverCache[selectedUser] || {}).days || {};
-            const rows = WEEKS.filter(w => days[w]).map(w => {
+            const rows = ATT_DAYS.filter(w => days[w]).map(w => {
                 const sc = days[w];
                 return `<div class="myatt-item" onclick="editAtt('${w}')">` +
                     `<span class="myatt-day">${w} ${dayLabels[w] || ''}</span>` +
@@ -741,11 +739,10 @@
             let grid = '';
             MEMBERS.forEach(m => {
                 let row = `<tr><td class="dept">${m}</td>`;
-                WEEKS.forEach(w => {
+                ATT_DAYS.forEach(w => {
                     const sc = serverCache[m]?.days?.[w];
-                    const wk = WKND[w] ? ' wknd' : '';
-                    if (sc) row += `<td class="badge-cell ${sc.type}${wk}" title="더블클릭 삭제" ondblclick="removeDayLive('${m}','${w}')"><div class="att-fit"><span class="b-tag">${sc.type}</span><span class="b-txt">${escapeHtml(sc.text)}</span></div></td>`;
-                    else row += `<td class="${wk.trim()}"></td>`;
+                    if (sc) row += `<td class="badge-cell ${sc.type}" title="더블클릭 삭제" ondblclick="removeDayLive('${m}','${w}')"><div class="att-fit"><span class="b-tag">${sc.type}</span><span class="b-txt">${escapeHtml(sc.text)}</span></div></td>`;
+                    else row += `<td></td>`;
                 });
                 grid += row + `</tr>`;
             });
@@ -908,10 +905,10 @@
                 return;
             }
             spin.remove();
-            // 공유 시트로 바로 저장 시도 (아이폰: '이미지 저장')
+            // 공유 시트는 모바일에서만 (데스크톱 크롬은 파일공유가 부실 → 다운로드로)
             try {
                 const file = dataURLtoFile(dataUrl, filename);
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                if (isMobileShare() && navigator.canShare({ files: [file] })) {
                     await navigator.share({ files: [file], title });
                     return;
                 }
@@ -921,16 +918,22 @@
             }
             showImgOverlay(dataUrl, filename, title);
         }
+        function isMobileShare() {
+            const ua = navigator.userAgent || '';
+            const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
+            const android = /Android/.test(ua);
+            return (ios || android) && !!navigator.canShare;
+        }
         function showImgOverlay(dataUrl, filename, title) {
             const file = dataURLtoFile(dataUrl, filename);
-            const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+            const canShare = isMobileShare() && navigator.canShare({ files: [file] });
             const ov = document.createElement('div');
             ov.className = 'img-overlay';
             const primary = canShare
                 ? `<button class="img-btn img-dl" id="imgShare">사진에 저장 · 공유</button>`
                 : `<a class="img-btn img-dl" href="${dataUrl}" download="${filename}">이미지 저장</a>`;
             ov.innerHTML =
-                `<div class="img-hint">${canShare ? '아래 버튼 → "이미지 저장"' : '길게 눌러 저장하거나, 아래 버튼으로 받으세요.'}</div>` +
+                `<div class="img-hint">${canShare ? '아래 버튼 → "이미지 저장"' : '아래 「이미지 저장」을 누르면 PNG로 다운로드돼요. (이미지를 우클릭/길게 눌러 저장도 가능)'}</div>` +
                 `<div class="img-card"><img src="${dataUrl}" alt="미리보기"></div>` +
                 `<div class="img-btns">${primary}<button class="img-btn img-close">닫기</button></div>`;
             ov.addEventListener('click', (e) => { if (e.target === ov || e.target.classList.contains('img-close')) ov.remove(); });
