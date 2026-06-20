@@ -357,7 +357,7 @@
         <!-- 입력 폼 -->
         <div class="editor card">
             <div>
-                <div class="ed-label" style="margin-bottom:8px;">담당 선택</div>
+                <div class="ed-label" style="margin-bottom:8px;">직책 선택</div>
                 <select class="member-select" id="memberSelect" onchange="clickMemberBtn(this.value)"></select>
             </div>
 
@@ -365,9 +365,9 @@
                 <div class="fields" id="actFields">
                     <div class="field">
                         <label class="ed-label" id="lblThis">이번 주 활동</label>
-                        <div class="field-hint">한 칸에 한 사안씩 · 주제가 다르면 ➕ 사안 추가로 칸을 나눠요</div>
+                        <div class="field-hint">한 칸에 한 업무씩 · 주제가 다르면 ➕ 업무 추가로 칸을 나눠요</div>
                         <div id="twBoxes"></div>
-                        <button type="button" class="add-item" onclick="addTwBox()">➕ 사안 추가</button>
+                        <button type="button" class="add-item" onclick="addTwBox()">➕ 업무 추가</button>
                     </div>
                 </div>
 
@@ -386,6 +386,7 @@
                             <div class="day-node" data-w="수" onclick="toggleDayNode('수')"><div class="n-w">수</div><div class="n-d" id="cd-수"></div></div>
                             <div class="day-node" data-w="목" onclick="toggleDayNode('목')"><div class="n-w">목</div><div class="n-d" id="cd-목"></div></div>
                             <div class="day-node" data-w="금" onclick="toggleDayNode('금')"><div class="n-w">금</div><div class="n-d" id="cd-금"></div></div>
+                            <div class="day-node" data-w="토" onclick="toggleDayNode('토')"><div class="n-w">토</div><div class="n-d" id="cd-토"></div></div>
                         </div>
                         <input type="text" id="txScDetail" class="detail-input" placeholder="상세내용">
                     </div>
@@ -451,6 +452,7 @@
                         <th data-w="수"><span class="th-w">수</span><span class="th-d" id="thd-수"></span></th>
                         <th data-w="목"><span class="th-w">목</span><span class="th-d" id="thd-목"></span></th>
                         <th data-w="금"><span class="th-w">금</span><span class="th-d" id="thd-금"></span></th>
+                        <th data-w="토"><span class="th-w">토</span><span class="th-d" id="thd-토"></span></th>
                     </tr></thead>
                     <tbody id="attBody"></tbody>
                 </table>
@@ -482,7 +484,7 @@
                     <div class="news-rows" id="finCur"></div>
                     <div class="sec-h">지난 주 활동</div>
                     <div class="news-rows" id="finPrev"></div>
-                    <div class="fin-note">※ 사안 하나가 한 항목입니다. <b>중요도 순으로 ▲▼</b>로 자유롭게 배치하세요(같은 부서가 위·아래 떨어져 반복될 수 있어요). 각 항목 왼쪽 <b>부서 선택</b>으로 라벨 지정, 체크 끄면 인쇄 제외. 아래 <b>➕ 항목 추가</b>로 새 항목, <b>다시 불러오기</b>로 각 부서 입력을 항목으로 불러옵니다.</div>
+                    <div class="fin-note">※ 업무 하나가 한 항목입니다. <b>중요도 순으로 ▲▼</b>로 자유롭게 배치하세요(같은 부서가 위·아래 떨어져 반복될 수 있어요). 각 항목 왼쪽 <b>부서 선택</b>으로 라벨 지정, 체크 끄면 인쇄 제외. 아래 <b>➕ 항목 추가</b>로 새 항목, <b>다시 불러오기</b>로 각 부서 입력을 항목으로 불러옵니다.</div>
                     <div class="news-footer">발행 | 전국전력노동조합 복지국</div>
                 </div>
             </div>
@@ -517,19 +519,19 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const dbRef = database.ref('perfect_clean_report_2026');
-        const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 사안 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
+        const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 업무 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
         const weekRef = database.ref('perfect_clean_report_2026_week'); // 기준 주차(월요일) 저장
 
         const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","홍部","김次","이課"];
         const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·김次·이課은 출장근태만)
         const WEEKS = ["월","화","수","목","금","토","일"];
-        const ATT_DAYS = ["월","화","수","목","금"]; // 출장·근태는 평일만 (토·일 제외)
+        const ATT_DAYS = ["월","화","수","목","금","토"]; // 출장·근태는 월~토 (일요일 제외)
         let dayLabels = {}; // 요일→날짜 라벨 (예: 월→6/22)
         const WKND = { "토":true, "일":true };
 
         let selectedUser = "";
         let serverCache = {};
-        let finalItems = { thisWeek: [], lastWeek: [] }; // 사안 단위 평면 목록
+        let finalItems = { thisWeek: [], lastWeek: [] }; // 업무 단위 평면 목록
         let activeDays = [];
         let serverLoaded = false;
         let finalRendered = false;
@@ -580,7 +582,7 @@
         function initApp() {
             calcDates();
             document.getElementById('memberSelect').innerHTML =
-                '<option value="">담당 선택…</option>' + MEMBERS.map(m => `<option value="${m}">${m}</option>`).join('');
+                '<option value="">직책 선택…</option>' + MEMBERS.map(m => `<option value="${m}">${m}</option>`).join('');
         }
 
         function clickMemberBtn(m) {
@@ -688,7 +690,7 @@
                 dbRef.child(user).child('days').child(day).remove();
         }
 
-        // 활동 텍스트 → 사안(항목) 배열. 빈 줄로 사안 구분. 한 사안 안에서는 줄을 그대로 표시
+        // 활동 텍스트 → 업무(항목) 배열. 빈 줄로 업무 구분. 한 업무 안에서는 줄을 그대로 표시
         function splitActivityItems(text) {
             return String(text).replace(/\r/g, '').split(/\n\s*\n+/).map(b => b.trim()).filter(Boolean);
         }
@@ -704,12 +706,12 @@
             if (subs.length) html += `<ul class="act-subs">${subs.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>`;
             return html;
         }
-        // 이번주 활동: 사안별 입력 박스(여러 칸)
+        // 이번주 활동: 업무별 입력 박스(여러 칸)
         function renderTwBoxes(matters) {
             if (!matters || !matters.length) matters = [''];
             document.getElementById('twBoxes').innerHTML = matters.map(v =>
-                `<div class="mbox"><textarea class="mbox-ta" placeholder="사안 입력 — 다른 사안은 ➕ 사안 추가" oninput="autoGrow(this)">${escapeHtml(v)}</textarea>` +
-                `<button type="button" class="mbox-x" onclick="rmTwBox(this)" title="이 사안 삭제">✕</button></div>`
+                `<div class="mbox"><textarea class="mbox-ta" placeholder="업무 입력 — 다른 업무는 ➕ 업무 추가" oninput="autoGrow(this)">${escapeHtml(v)}</textarea>` +
+                `<button type="button" class="mbox-x" onclick="rmTwBox(this)" title="이 업무 삭제">✕</button></div>`
             ).join('');
             document.querySelectorAll('#twBoxes .mbox-ta').forEach(autoGrow);
         }
@@ -772,7 +774,7 @@
 
         function autoGrow(el){ el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
 
-        // ── 최종본: 사안 단위 평면 목록 (중요도 순 자유 배치, 부서 라벨 반복 가능) ──
+        // ── 최종본: 업무 단위 평면 목록 (중요도 순 자유 배치, 부서 라벨 반복 가능) ──
         const DEPT_OPTS = ['공통', ...ACT_MEMBERS];
         function deptCls(d, k) { return d === '공통' ? 'common' : (k === 'thisWeek' ? 'cur' : 'prev'); }
 
@@ -865,7 +867,7 @@
             alert('새 주가 시작되었습니다.\n부서들이 이번주 활동을 입력한 뒤, ‘다시 불러오기’로 항목을 불러와 순서를 정하세요.');
         }
 
-        // 인쇄: 사안 항목 → 정돈된 뉴스레터 (순서 그대로, 부서 라벨 반복)
+        // 인쇄: 업무 항목 → 정돈된 뉴스레터 (순서 그대로, 부서 라벨 반복)
         function buildFinalPrint() {
             const rowsFor = (k) => (finalItems[k] || []).filter(it => !it.x && (it.t || '').trim()).map(it =>
                 `<div class="news-row"><span class="dept-tag ${deptCls(it.d, k)}">${it.d}</span><div class="act">${renderActivityItem(it.t)}</div></div>`
