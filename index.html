@@ -116,7 +116,7 @@
     .tile-icon.c1 { background: #e8f0fe; }
     .tile-icon.c2 { background: #e3f2fd; }
     .tile-icon.c3 { background: #fef7e0; }
-    .tile-icon.c4 { background: #fce8e6; } /* 새 앱 컬러 스키마와 통일감을 주는 연한 오렌지/레드 계열 배경 */
+    .tile-icon.c4 { background: #fce8e6; }
     .tile-icon .dot {
       position: absolute; top: -3px; right: -3px;
       width: 16px; height: 16px; border-radius: 50%;
@@ -203,22 +203,57 @@
   <div class="modal-card" onclick="event.stopPropagation()">
     <div class="modal-title">양방향 행사용 게임</div>
     <div class="modal-btns">
-      <a href="game/index.html" class="modal-btn primary">게임 참여 (일반 사용자)</a>
-      <a href="game/host.html" class="modal-btn secondary">게임 진행 (관리자 호스트)</a>
+      <a href="game/index.html" target="_blank" class="modal-btn primary" onclick="closeGameModal()">
+        🎮 게임 참여하기 (새 탭)
+      </a>
+      
+      <button class="modal-btn secondary" onclick="copyGameUrl()" style="background: #e8f0fe; color: var(--blue); border-color: #c2e7ff;">
+        🔗 참여 주소 복사 (배포용)
+      </button>
+
+      <a href="game/host.html" class="modal-btn secondary" onclick="closeGameModal()">
+        ⚙️ 게임 진행 (관리자 호스트)
+      </a>
+      
       <button class="modal-btn cancel" onclick="closeGameModal()">닫기</button>
     </div>
   </div>
 </div>
 
 <footer>
+  전국전력노동조합 제24대 집행부 내부 시스템 · 외부 공개 금지
 </footer>
 
 <script>
+  // 모달 열기 (기존 타일 클릭 시 실행)
   function openGameModal() {
     document.getElementById('gameModal').classList.add('show');
   }
+  
+  // 모달 닫기
   function closeGameModal(e) {
     document.getElementById('gameModal').classList.remove('show');
+  }
+
+  // 게임 참여 주소 복사 함수
+  function copyGameUrl() {
+    // 현재 포털 주소를 기반으로 game/index.html 주소를 자동으로 계산합니다.
+    const currentUrl = window.location.href;
+    const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+    const gameUrl = baseUrl + '/game/index.html';
+
+    // 클립보드에 주소 복사 실행
+    navigator.clipboard.writeText(gameUrl).then(() => {
+      alert('📋 게임 참여 주소가 복사되었습니다!\n카톡이나 문자창에 [붙여넣기]해서 배포하세요.');
+    }).catch(err => {
+      // 구형 브라우저나 일부 환경 대응용 임시 복사 로직
+      const t = document.createElement("textarea");
+      document.body.appendChild(t);
+      t.value = gameUrl; t.select();
+      document.execCommand('copy');
+      document.body.removeChild(t);
+      alert('📋 게임 참여 주소가 복사되었습니다!');
+    });
   }
 </script>
 
