@@ -282,7 +282,9 @@
         .fin-row-empty { opacity:.5; }
         .fin-row-empty:focus-within { opacity:1; }
         .fin-row { gap:8px; }
-        .dept-sel { flex-shrink:0; width:64px; margin-top:1px; font-family:inherit; font-size:12.5px; font-weight:800; letter-spacing:.03em; text-align:center; padding:5px 2px; border-radius:6px; -webkit-appearance:none; appearance:none; cursor:pointer; }
+        .fin-btn-sm { font-size:10.5px; line-height:1.3; padding-left:2px; padding-right:2px; }
+        .dept-sel { flex-shrink:0; width:64px; margin-top:1px; font-family:inherit; font-size:12.5px; font-weight:800; letter-spacing:.03em; text-align:center; text-align-last:center; padding:5px 2px; border-radius:6px; -webkit-appearance:none; appearance:none; cursor:pointer; }
+        .dept-sel option { text-align:center; }
         .dept-sel.cur { color:var(--cur-ink); border:1.5px solid var(--cur-bd); background:var(--cur-bg); }
         .dept-sel.prev { color:var(--prev-ink); border:1.5px solid var(--prev-bd); background:var(--prev-bg); }
         .dept-sel.common { color:#155e63; border:1.5px solid #8fcfd4; background:#e6f6f7; }
@@ -463,12 +465,11 @@
             <div class="sec-bar">
                 <div class="sec-title">
                     <h2>최종본 수정하기</h2>
-                    <div class="hint-mini">넣을 항목 체크 및 편집 가능</div>
                 </div>
                 <div class="sec-actions">
-                    <button class="fin-btn" onclick="reloadFinalFromDrafts()">다시<br>불러오기</button>
+                    <button class="fin-btn fin-btn-sm" onclick="reloadFinalFromDrafts()">이번주 활동<br>다시 불러오기</button>
                     <button class="fin-btn" onclick="printFinal()">최종본<br>이미지</button>
-                    <button class="fin-btn fin-btn-new" onclick="startNewWeek()">새로<br>작성</button>
+                    <button class="fin-btn fin-btn-new fin-btn-sm" onclick="startNewWeek()">다음주<br>주간업무 작성</button>
                 </div>
             </div>
 
