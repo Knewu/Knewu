@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>사회자 콘솔 — 전국전력노동조합</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{--ivory:#F5F2EA;--navy:#16284F;--ink:#21242B;--accent:#E8623A;--gold:#F2B544;--mist:rgba(245,242,234,.6)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif;background:#0E1B38;color:var(--ivory);min-height:100dvh;padding-bottom:60px}
+button{font-family:inherit;border:none;cursor:pointer}
+header{padding:16px 18px 12px;border-bottom:1px solid rgba(245,242,234,.12);display:flex;justify-content:space-between;align-items:center}
+.h-t{font-size:15px;font-weight:900}
+.badge{font-size:12px;font-weight:800;background:var(--accent);padding:6px 12px;border-radius:99px}
+.status{display:flex;gap:8px;padding:12px 18px;font-size:12px;color:var(--mist);flex-wrap:wrap}
+.status b{color:var(--ivory)}
+main{max-width:480px;margin:0 auto;padding:6px 14px}
+.sec{background:rgba(245,242,234,.07);border:1px solid rgba(245,242,234,.12);border-radius:18px;padding:16px;margin-bottom:14px}
+.sec h3{font-size:13px;font-weight:800;letter-spacing:.14em;color:var(--gold);margin-bottom:12px}
+.gbtn{display:flex;align-items:center;gap:12px;width:100%;background:var(--ivory);color:var(--ink);border-radius:14px;padding:15px 14px;margin-bottom:9px;text-align:left}
+.gbtn .no{width:32px;height:32px;border-radius:10px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex:none}
+.gbtn .nm{font-size:15px;font-weight:800;flex:1}
+.gbtn .won{font-size:11px;font-weight:800;color:var(--accent)}
+.act{display:block;width:100%;padding:17px;border-radius:14px;font-size:17px;font-weight:900;margin-bottom:10px;background:var(--accent);color:#fff}
+.act.gold{background:var(--gold);color:#3a2a05}
+.act.ghost{background:rgba(245,242,234,.12);color:var(--ivory);font-weight:700;font-size:14px;padding:13px}
+.act.danger{background:transparent;border:1px solid rgba(232,98,58,.5);color:#f08f6e;font-size:13px;padding:12px}
+.qprev{background:var(--navy);border-radius:12px;padding:14px;font-size:15px;font-weight:800;line-height:1.5;margin-bottom:12px;letter-spacing:.03em}
+.live{max-height:240px;overflow-y:auto}
+.lrow{display:flex;gap:10px;align-items:center;background:rgba(245,242,234,.08);border-radius:10px;padding:9px 11px;margin-bottom:6px;font-size:13.5px}
+.lrow .r{min-width:24px;height:24px;border-radius:50%;background:rgba(242,180,68,.25);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;flex:none}
+.lrow .n{font-weight:800;flex:1}
+.lrow .d{color:var(--mist);font-size:12px}
+.lrow.tap{cursor:pointer;outline:1px solid rgba(242,180,68,.3)}
+.bignum{display:flex;gap:10px;text-align:center;margin-bottom:6px}
+.bignum div{flex:1;background:rgba(245,242,234,.08);border-radius:12px;padding:14px 0}
+.bignum b{display:block;font-size:30px;font-weight:900;color:var(--gold)}
+.bignum span{font-size:11px;color:var(--mist)}
+.hint{font-size:12px;color:var(--mist);line-height:1.6;margin-top:4px}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ivory);color:var(--ink);font-size:13.5px;font-weight:800;padding:11px 18px;border-radius:99px;display:none;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:88%;text-align:center}
+.boss-box{background:rgba(242,180,68,.15);padding:14px;border-radius:12px;text-align:center;margin-bottom:12px}
+.boss-box p{font-size:13px;font-weight:800;color:var(--gold);margin-bottom:10px}
+.boss-btns{display:flex;gap:8px}
+.boss-btns button{flex:1;padding:12px;border-radius:8px;font-weight:900;font-size:15px;background:#fff;color:var(--ink)}
+.boss-btns button.active{background:var(--accent);color:#fff}
+.q-input-box{background:rgba(245,242,234,.08);border-radius:12px;padding:14px;margin-bottom:12px}
+.q-input-box label{font-size:12px;color:var(--gold);font-weight:800;display:block;margin-bottom:8px}
+.q-input-box input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(245,242,234,.2);background:rgba(245,242,234,.1);color:var(--ivory);font-size:14px;font-family:inherit}
+.q-input-box input::placeholder{color:rgba(245,242,234,.4)}
+/* 키 입력 화면 */
+.key-screen{display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:24px}
+.key-card{background:var(--navy);border-radius:20px;padding:32px 24px;max-width:360px;width:100%;text-align:center}
+.key-card h2{font-size:22px;font-weight:900;margin-bottom:8px}
+.key-card p{font-size:14px;color:var(--mist);margin-bottom:20px}
+.key-card input{width:100%;padding:14px;border-radius:12px;border:2px solid rgba(245,242,234,.2);background:rgba(245,242,234,.08);color:var(--ivory);font-size:20px;font-weight:900;text-align:center;font-family:inherit;letter-spacing:.2em;margin-bottom:14px}
+.key-card button{width:100%;padding:16px;border-radius:12px;background:var(--accent);color:#fff;font-size:16px;font-weight:900;font-family:inherit}
+</style>
+</head>
+<body>
+
+<!-- 키 입력 화면 -->
+<div id="keyScreen" class="key-screen">
+  <div class="key-card">
+    <h2><img src="https://knewu.netlify.app/icon-192.png" alt="로고" style="width:28px;height:28px;border-radius:6px;object-fit:contain;vertical-align:middle;margin-right:6px" onerror="this.outerHTML='⚡'">사회자 입장</h2>
+    <p>사회자 키 4자리를 입력하세요</p>
+    <input id="keyIn" type="text" inputmode="text" placeholder="사회자 키 입력" autocomplete="off">
+    <button onclick="checkKey()">입장</button>
+    <div id="keyMsg" style="margin-top:12px;font-size:13px;color:var(--accent)"></div>
+  </div>
+</div>
+
+<!-- 메인 콘솔 -->
+<div id="console" style="display:none">
+<header>
+  <div class="h-t"><img src="https://knewu.netlify.app/icon-192.png" alt="로고" style="width:18px;height:18px;border-radius:4px;object-fit:contain;vertical-align:middle;margin-right:5px" onerror="this.outerHTML='⚡'">사회자 콘솔</div>
+  <div class="badge" id="cnt">0명</div>
+</header>
+<div class="status" id="stLine">연결 중…</div>
+<main id="main"></main>
+</div>
+
+<div id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, update, remove }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB186Tg9fsrnR-K_lufo4X5iY9OVpgDeHk",
+  authDomain: "knewu24th-15ebc.firebaseapp.com",
+  databaseURL: "https://knewu24th-15ebc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "knewu24th-15ebc",
+  storageBucket: "knewu24th-15ebc.firebasestorage.app",
+  messagingSenderId: "617159229534",
+  appId: "1:617159229534:web:360195e7b3bc5a38b034cf"
+};
+
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const HOST_KEY = 'kepco1357!';
+const GN = {1:'동료 이름 빨리 쓰기',2:'가위바위보 서바이벌',3:'근사치 퀴즈',4:'중복되지 않는 제일 작은 숫자 선택하기',5:'OX 서바이벌'};
+
+let ST = null, currentBossSel = '', g3Scores = {}, g4Scores = {};
+let BANK = {ox:[], approx:[]};   // 문제은행 (Firebase 동기화)
+let showBank = false;            // 문제 관리 패널 열림 여부
+
+// ── 유틸 ──
+function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function jsq(t){ return String(t).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function fmtSec(ms){ var s=Math.max(0,Math.round(ms/1000)); return Math.floor(s/60)+':'+(('0'+(s%60)).slice(-2)); }
+async function dbGet(path){ return (await get(ref(db,path))).val(); }
+async function dbSet(path,val){ await set(ref(db,path),val); }
+async function dbUpdate(path,val){ await update(ref(db,path),val); }
+
+function toast(t){
+  const el=document.getElementById('toast');
+  el.textContent=t; el.style.display='block';
+  clearTimeout(el._t); el._t=setTimeout(()=>el.style.display='none',2200);
+}
+
+// ── 키 확인 ──
+window.checkKey = function(){
+  const v=document.getElementById('keyIn').value.trim();
+  if(v===HOST_KEY){ document.getElementById('keyScreen').style.display='none'; document.getElementById('console').style.display='block'; startConsole(); }
+  else { document.getElementById('keyMsg').textContent='키가 올바르지 않습니다'; }
+};
+
+// ── 콘솔 시작 ──
+function startConsole(){
+  onValue(ref(db,'state'), snap=>{
+    ST = snap.val() || defaultState();
+    paint();
+  });
+  onValue(ref(db,'roster'), snap=>{
+    const r=snap.val()||{};
+    document.getElementById('cnt').textContent=Object.keys(r).length+'명';
+  });
+  onValue(ref(db,'bank'), snap=>{
+    const b=snap.val()||{};
+    BANK={ox:b.ox||[], approx:b.approx||[]};
+    paint();
+  });
+  onValue(ref(db,'gameScores'), snap=>{   // 누적 기록 복구 (새로고침해도 유지)
+    const gs=snap.val()||{};
+    g3Scores = gs.g3||{};
+    g4Scores = gs.g4||{};
+  });
+}
+
+// ── 상태 기본값 ──
+function defaultState(){
+  return {seq:0,phase:'lobby',status:'',gameId:0,qIndex:0,qTotal:0,qText:'',openedAt:0,
+    result:null,banner:null,reviveMsg:'',survivors:null,winners:[],finale:null};
+}
+
+async function saveState(s){
+  s.seq=(ST&&ST.seq||0)+1;
+  await dbSet('state',s);
+}
+
+// ── 게임 시작 ──
+window.startG = async function(g){
+  if(!confirm('G'+g+' ['+GN[g]+'] 게임을 시작할까요?')) return;
+  currentBossSel=''; g3Scores={}; g4Scores={};
+  await dbSet('gameScores/g3', null);   // 누적 기록 초기화
+  await dbSet('gameScores/g4', null);
+  const roster=await dbGet('roster')||{};
+  const names=Object.values(roster);
+  let qTotal=1;
+  if(g===2||g===5) qTotal=99; // 서바이벌은 무한
+  if(g===3||g===4) qTotal=3;
+  const s=defaultState();
+  s.phase='game'; s.gameId=g; s.status='intro'; s.qTotal=qTotal;
+  s.winners = (ST&&ST.winners)||[];   // 기존 우승자 유지
+  s.banner = (ST&&ST.banner)||null;   // 배너 상태 유지
+  if(g===2||g===5) s.survivors=names;
+  await dbSet('subs/g'+g,null); // 해당 게임 제출 초기화
+  await saveState(s);
+  toast('G'+g+' 시작!');
+};
+
+// ── 문제 열기 ──
+window.openQ = async function(advance){
+  let s={...ST};
+  if(advance) s.qIndex++;
+  s.status='open'; s.openedAt=Date.now(); s.result=null; s.reviveMsg='';
+
+  if(s.gameId===1) s.qText='주변 동료의 이름을 10명 이상! 쉼표나 줄바꿈으로 구분해 적고 바로 제출!';
+  else if(s.gameId===2) s.qText='가위바위보 서바이벌 - 제 '+(s.qIndex+1)+'라운드! 수석님을 이길 선택은?';
+  else if(s.gameId===4) s.qText='제 '+(s.qIndex+1)+'판! 나만 고를 것 같은 가장 낮은 숫자를 고르세요 (1~100)';
+  else {
+    // 근사치/OX 문제: 입력칸 값 사용
+    const qInput=document.getElementById('qInput');
+    if(qInput&&qInput.value.trim()) s.qText=qInput.value.trim();
+    else { toast('문제 텍스트를 입력해 주세요'); return; }
+    // picker로 정답이 함께 정해졌으면 state에 저장 (마감 시 자동 사용)
+    if(window._pickedAnswer!=null && String(window._pickedAnswer)!==''){
+      s.preAnswer=String(window._pickedAnswer);
+    } else {
+      s.preAnswer=null;
+    }
+    window._pickedAnswer=null;
+  }
+  await saveState(s);
+  toast('문제 열기 완료');
+};
+
+// ── 마감 ──
+window.closeQ = async function(){
+  const s=ST; if(!s||s.status!=='open') return;
+  const subs=await dbGet('subs/g'+s.gameId+'/q'+s.qIndex)||{};
+  let result=null, newSurvivors=null, reviveMsg='';
+
+  if(s.gameId===1){
+    const list=Object.values(subs).sort((a,b)=>a.order-b.order);
+    const verify=list.slice(0,5).map((x,i)=>({rank:i+1,name:x.name,n:x.n,ans:x.ans||''}));
+    result={title:GN[1]+' 결과',rows:list.map((x,i)=>({r:i+1,name:x.name,d:x.n+'명 · '+fmtSec(x.t-s.openedAt)})),note:'상위 5명 답안을 검증한 뒤 이름을 눌러 우승 확정',verify};
+  }
+  else if(s.gameId===2){
+    const boss=currentBossSel;
+    if(!boss){ toast('수석님 선택을 먼저 입력해 주세요!'); return; }
+    const winMap={'가위':'바위','바위':'보','보':'가위'};
+    const target=winMap[boss];
+    const surv=s.survivors||[];
+    let alive=[],dead=[];
+    surv.forEach(nm=>{
+      const sub=Object.values(subs).find(x=>x.name===nm&&x.isSurv);
+      if(sub&&sub.ans===target) alive.push(nm); else dead.push(nm);
+    });
+    const revive=alive.length===0;
+    newSurvivors=revive?surv.slice():alive;
+    reviveMsg=revive?'전원 오답 → 모두 부활! 같은 멤버로 다음 라운드 갑니다':'';
+    const rows=[];
+    newSurvivors.forEach(nm=>{ const sub=Object.values(subs).find(x=>x.name===nm); rows.push({r:'',name:nm,d:'생존 ✅ ('+(sub?sub.ans:'미제출')+')'});});
+    if(!revive) dead.forEach(nm=>{ const sub=Object.values(subs).find(x=>x.name===nm); rows.push({r:'',name:nm,d:'탈락 ❌ ('+(sub?sub.ans:'미제출')+')'});});
+    const note=revive?'전원 오답 → 전원 부활!':newSurvivors.length===1?'🏆 최후의 1인 탄생!':'생존 '+newSurvivors.length+'명 / 탈락 '+dead.length+'명';
+    result={title:'라운드 '+(s.qIndex+1)+' 결과 — 수석님: '+boss+' (이길 조건: '+target+')',rows,note,final:newSurvivors.length===1};
+  }
+  else if(s.gameId===3){
+    const answerEl=document.getElementById('answerInput');
+    let raw = (answerEl&&answerEl.value.trim()) ? answerEl.value : (s.preAnswer!=null?s.preAnswer:'');
+    const truth=parseFloat(raw);
+    if(isNaN(truth)){ toast('정답을 입력해 주세요'); return; }
+    const arr=Object.values(subs).map(x=>({name:x.name,v:x.ans,rate:Math.abs(x.ans-truth)/Math.max(1,Math.abs(truth))}));
+    arr.sort((a,b)=>a.rate-b.rate);
+    arr.forEach(x=>{ g3Scores[x.name]=(g3Scores[x.name]||0)+x.rate; });
+    await dbSet('gameScores/g3', g3Scores);   // 누적 기록 저장
+    result={title:'근사치 문제 '+(s.qIndex+1)+' 결과',truth:'정답: '+truth,rows:arr.map((x,i)=>({r:i+1,name:x.name,d:x.v+' · 오차 '+(x.rate*100).toFixed(1)+'%'})),note:'다음 판을 진행 후 최종 순위를 발표하세요'};
+  }
+  else if(s.gameId===4){
+    const cnt={};
+    Object.values(subs).forEach(x=>{ cnt[x.ans]=(cnt[x.ans]||0)+1; });
+    const arr=Object.values(subs).map(x=>({name:x.name,v:x.ans,c:cnt[x.ans],t:x.t}));
+    // 단독(c===1)을 먼저, 그 안에서 작은 수 순
+    arr.sort((a,b)=>a.c-b.c||a.v-b.v||a.t-b.t);
+    let anyUnique=false;
+    const rows=arr.map(x=>{
+      let d='';
+      if(x.c===1){
+        anyUnique=true;
+        // 본인 최고기록(가장 낮은 단독 숫자) 갱신
+        const prev=g4Scores[x.name];
+        if(prev==null || x.v<prev) g4Scores[x.name]=x.v;
+        d=x.v+'번 (단독 성공! 🎉) — 현재 최고기록 '+g4Scores[x.name]+'번';
+      } else {
+        d=x.v+'번 ('+x.c+'명 충돌 ❌) — 기록 없음';
+      }
+      return {r:x.c===1?'✓':'·',name:x.name,d};
+    });
+    await dbSet('gameScores/g4', g4Scores);   // 최고기록 저장
+    result={title:'제 '+(s.qIndex+1)+'판 결과',rows,note:anyUnique?'단독으로 낸 가장 낮은 숫자가 본인 최고기록 — 3판 중 제일 낮은 기록이 우승!':'이번 판은 전원 충돌 — 단독 성공자 없음 ⚡'};
+  }
+  else if(s.gameId===5){
+    const answerEl=document.getElementById('answerInput');
+    let raw = (answerEl&&answerEl.value.trim()) ? answerEl.value : (s.preAnswer!=null?s.preAnswer:'');
+    const truth=String(raw).toUpperCase()==='X'?'X':'O';
+    const surv=s.survivors||[];
+    let alive=[],dead=[];
+    surv.forEach(nm=>{
+      const sub=Object.values(subs).find(x=>x.name===nm&&x.isSurv);
+      if(sub&&sub.ans===truth) alive.push(nm); else dead.push(nm);
+    });
+    const revive=alive.length===0;
+    newSurvivors=revive?surv.slice():alive;
+    reviveMsg=revive?'전원 오답 → 모두 부활!':'';
+    const rows=[];
+    newSurvivors.forEach(nm=>rows.push({r:'',name:nm,d:'생존 ✅'}));
+    if(!revive) dead.forEach(nm=>rows.push({r:'',name:nm,d:'탈락'}));
+    const note=revive?'전원 오답 → 전원 부활!':newSurvivors.length===1?'🏆 최후의 1인 탄생!':'생존 '+newSurvivors.length+'명 / 탈락 '+dead.length+'명';
+    result={title:'문제 '+(s.qIndex+1)+' — 정답: '+truth,rows,note,final:newSurvivors.length===1};
+  }
+
+  const newS={...s,status:'result',result};
+  if(newSurvivors) newS.survivors=newSurvivors;
+  if(reviveMsg) newS.reviveMsg=reviveMsg;
+  await saveState(newS);
+  toast('집계 완료');
+};
+
+// ── 최종 합산 ──
+window.finishGame = async function(){
+  const s=ST; let result=null;
+  if(s.gameId===3){
+    const arr=Object.entries(g3Scores).map(([name,sum])=>({name,avg:sum/3}));
+    arr.sort((a,b)=>a.avg-b.avg);
+    result={title:GN[3]+' — 최종 순위',rows:arr.map((x,i)=>({r:i+1,name:x.name,d:'평균 오차 '+(x.avg*100).toFixed(1)+'%'})),note:'우승자를 확정해 주세요',final:true};
+  } else if(s.gameId===4){
+    // g4Scores[name] = 3판 중 단독으로 낸 가장 낮은 숫자(최고기록). 낮을수록 우승
+    const arr=Object.entries(g4Scores).map(([name,best])=>({name,best}));
+    arr.sort((a,b)=>a.best-b.best);
+    result={title:GN[4]+' — 최종 순위 (최고기록 낮은 순)',rows:arr.map((x,i)=>({r:i+1,name:x.name,d:'최고기록 '+x.best+'번'})),note:arr.length?'3판 중 단독 성공한 가장 낮은 숫자가 우승! (한 번도 단독 성공 못한 사람은 순위 제외)':'단독 성공자가 아무도 없습니다 ⚡',final:true};
+  } else if(s.gameId===2||s.gameId===5){
+    const surv=s.survivors||[];
+    result={title:GN[s.gameId]+' — 서바이벌 결과',rows:surv.map(x=>({r:1,name:x,d:'최종 생존'})),note:surv.length===1?'🏆 최후의 1인! 이름을 눌러 우승 확정':'공동 생존자 — 이름을 눌러 우승 확정',final:true};
+  }
+  if(!result) return;
+  await saveState({...s,status:'result',result});
+};
+
+// ── 우승 확정 ──
+window.winner = async function(name){
+  if(!confirm('「'+name+'」 우승 확정?')) return;
+  const s=ST;
+  const winners=[...(s.winners||[]),{g:s.gameId,name}];
+  const banner={name,label:'GAME '+s.gameId+' · '+(GN[s.gameId]||''),t:Date.now()};
+  await saveState({...s,winners,banner});
+  toast('🏆 '+name+' 우승 확정!');
+};
+
+// ── 문제은행 관리 ──
+window.toggleBank = function(){ showBank=!showBank; paint(); };
+
+window.addOX = async function(){
+  const qEl=document.getElementById('bankOXq');
+  const aEl=document.getElementById('bankOXa');
+  const q=(qEl?qEl.value:'').trim();
+  const a=(aEl?aEl.value:'').toUpperCase();
+  if(!q){ toast('문제를 입력해 주세요'); return; }
+  if(a!=='O'&&a!=='X'){ toast('정답은 O 또는 X'); return; }
+  const list=[...BANK.ox, {q, a}];
+  await dbSet('bank/ox', list);
+  toast('OX 문제 저장됨');
+};
+
+window.addApprox = async function(){
+  const qEl=document.getElementById('bankAPq');
+  const aEl=document.getElementById('bankAPa');
+  const q=(qEl?qEl.value:'').trim();
+  const a=parseFloat((aEl?aEl.value:'').replace(/[^\d.\-]/g,''));
+  if(!q){ toast('문제를 입력해 주세요'); return; }
+  if(isNaN(a)){ toast('정답 숫자를 입력해 주세요'); return; }
+  const list=[...BANK.approx, {q, a}];
+  await dbSet('bank/approx', list);
+  toast('근사치 문제 저장됨');
+};
+
+window.delBank = async function(type, idx){
+  if(!confirm('이 문제를 삭제할까요?')) return;
+  const key = type==='ox'?'ox':'approx';
+  const list = (BANK[key]||[]).filter((_,i)=>i!==idx);
+  await dbSet('bank/'+key, list);
+  toast('삭제됨');
+};
+
+// 저장된 문제를 진행 입력칸에 채우기
+window.pickBank = function(type, idx){
+  const item = (type==='ox'?BANK.ox:BANK.approx)[idx];
+  if(!item) return;
+  const qEl=document.getElementById('qInput');
+  const aEl=document.getElementById('answerInput');
+  if(qEl) qEl.value=item.q;
+  if(aEl) aEl.value=item.a;
+  // 정답 입력칸이 화면에 아직 없으면 임시 저장해뒀다가 마감 때 사용
+  window._pickedAnswer = item.a;
+  toast('문제 불러옴: '+item.q.slice(0,16)+(item.q.length>16?'…':''));
+};
+
+
+// ── 로비 ──
+window.toLobby = async function(){
+  const s={...defaultState(),winners:ST&&ST.winners||[],banner:ST&&ST.banner||null};
+  await saveState(s);
+  toast('로비로 이동');
+};
+
+// ── 피날레 ──
+window.doFinale = async function(){
+  const s=ST;
+  const finale=(s.winners||[]).map(w=>({g:w.g,gn:GN[w.g]||'',name:w.name}));
+  await saveState({...s,phase:'final',finale});
+};
+
+// ── 수석님 가위바위보 선택 ──
+window.selectBossRSP = function(v){
+  currentBossSel=v;
+  ['bGa','bBa','bBo'].forEach(id=>{ const el=document.getElementById(id); if(el) el.className=''; });
+  const map={'가위':'bGa','바위':'bBa','보':'bBo'};
+  const sel=document.getElementById(map[v]); if(sel) sel.className='active';
+  toast('수석님 선택 ['+v+'] 입력 완료');
+};
+
+// ── 전체 초기화 ──
+window.resetAll = async function(){
+  if(!confirm('전체 초기화할까요? 참가자 명단·진행 상태 전부 삭제됩니다.\n※ 등록된 문제(OX·근사치)는 유지됩니다.')) return;
+  if(!confirm('한 번 더 확인합니다 — 초기화 실행?')) return;
+  await dbSet('state', defaultState());
+  await dbSet('roster', null);
+  await dbSet('subs', null);
+  toast('전체 초기화 완료 (문제은행은 유지됨)');
+};
+
+// ── 페인트 ──
+// 진행 중 "저장된 문제 불러오기" 칩 목록 HTML
+function bankPicker(type){
+  const list = type==='ox'?BANK.ox:BANK.approx;
+  if(!list||!list.length) return '';
+  let h='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--gold);font-weight:800;margin-bottom:6px">📌 등록된 문제 (탭하면 입력칸에 채워집니다)</div><div style="display:flex;flex-direction:column;gap:6px">';
+  list.forEach((it,i)=>{
+    h+='<button onclick="pickBank(\''+type+'\','+i+')" style="text-align:left;background:rgba(245,242,234,.08);border:1px solid rgba(245,242,234,.15);border-radius:8px;padding:9px 11px;color:var(--ivory);font-size:13px;font-weight:600">'+esc(it.q)+' <b style="color:var(--gold)">('+esc(it.a)+')</b></button>';
+  });
+  h+='</div></div>';
+  return h;
+}
+
+function paint(){
+  const s=ST||defaultState();
+  const turnLabel=s.gameId===2?'제 '+(s.qIndex+1)+'라운드':(s.qTotal>1?'판 '+(s.qIndex+1)+'/'+s.qTotal:'');
+  document.getElementById('stLine').innerHTML=
+    '단계 <b>'+({lobby:'로비',game:'게임',final:'피날레'}[s.phase]||s.phase)+'</b>'+
+    (s.gameId?' · <b>G'+s.gameId+' '+GN[s.gameId]+'</b>':'')+
+    (turnLabel?' · <b>'+turnLabel+'</b>':'')+
+    (s.status?' · 상태 <b>'+({intro:'소개',open:'진행 중',closed:'마감',result:'결과 발표'}[s.status]||s.status)+'</b>':'');
+
+  let h='';
+
+  // 게임 선택
+  h+='<div class="sec"><h3>게임 선택</h3>';
+  for(let g=1;g<=5;g++){
+    const won=(s.winners||[]).filter(w=>w.g===g).map(w=>w.name);
+    const cur=s.phase==='game'&&s.gameId===g;
+    h+=`<button class="gbtn" ${cur?'style="outline:3px solid var(--gold)"':''} onclick="startG(${g})">
+      <div class="no">${g}</div><div class="nm">${GN[g]}${cur?' <b>(진행중)</b>':''}</div>
+      ${won.length?'<div class="won">🏆 '+won.join(', ')+'</div>':''}</button>`;
+  }
+  h+='</div>';
+
+  // 문제 관리 섹션
+  h+='<div class="sec"><h3 style="display:flex;justify-content:space-between;align-items:center">'+
+     '<span>📝 문제 미리 등록 (OX · 근사치)</span>'+
+     '<button onclick="toggleBank()" style="background:rgba(242,180,68,.2);color:var(--gold);font-size:11px;font-weight:800;padding:5px 10px;border-radius:8px">'+(showBank?'닫기 ▲':'열기 ▼')+'</button></h3>';
+  if(showBank){
+    h+='<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:800;color:var(--ivory);margin-bottom:6px">OX 문제 추가</div>'+
+       '<input id="bankOXq" placeholder="문제 텍스트" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(245,242,234,.2);background:rgba(245,242,234,.1);color:var(--ivory);font-size:14px;font-family:inherit;margin-bottom:6px">'+
+       '<div style="display:flex;gap:8px"><input id="bankOXa" placeholder="정답 O/X" maxlength="1" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(245,242,234,.2);background:rgba(245,242,234,.1);color:var(--ivory);font-size:14px;font-family:inherit;text-transform:uppercase">'+
+       '<button onclick="addOX()" style="flex:1;background:var(--accent);color:#fff;border-radius:8px;font-weight:800;font-size:14px">+ 저장</button></div></div>';
+    if((BANK.ox||[]).length){
+      h+='<div style="margin-bottom:14px">';
+      BANK.ox.forEach((it,i)=>{
+        h+='<div class="lrow"><div class="n">'+esc(it.q)+' <b style="color:var(--gold)">('+esc(it.a)+')</b></div>'+
+           '<button onclick="delBank(\'ox\','+i+')" style="background:transparent;color:#f08f6e;font-size:12px;font-weight:800">삭제</button></div>';
+      });
+      h+='</div>';
+    }
+    h+='<div style="border-top:1px solid rgba(245,242,234,.12);padding-top:12px;margin-bottom:6px"><div style="font-size:12px;font-weight:800;color:var(--ivory);margin-bottom:6px">근사치 문제 추가</div>'+
+       '<input id="bankAPq" placeholder="문제 텍스트" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(245,242,234,.2);background:rgba(245,242,234,.1);color:var(--ivory);font-size:14px;font-family:inherit;margin-bottom:6px">'+
+       '<div style="display:flex;gap:8px"><input id="bankAPa" placeholder="정답 숫자" inputmode="decimal" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(245,242,234,.2);background:rgba(245,242,234,.1);color:var(--ivory);font-size:14px;font-family:inherit">'+
+       '<button onclick="addApprox()" style="flex:1;background:var(--accent);color:#fff;border-radius:8px;font-weight:800;font-size:14px">+ 저장</button></div></div>';
+    if((BANK.approx||[]).length){
+      BANK.approx.forEach((it,i)=>{
+        h+='<div class="lrow"><div class="n">'+esc(it.q)+' <b style="color:var(--gold)">('+esc(it.a)+')</b></div>'+
+           '<button onclick="delBank(\'approx\','+i+')" style="background:transparent;color:#f08f6e;font-size:12px;font-weight:800">삭제</button></div>';
+      });
+    }
+    h+='<div class="hint">여기 등록해두면 게임 진행 중 한 번 탭으로 불러올 수 있어요.</div>';
+  }
+  h+='</div>';
+
+  if(s.phase==='game'){
+    h+='<div class="sec"><h3>현재 게임 제어: G'+s.gameId+' · '+GN[s.gameId]+'</h3>';
+    if(s.qText) h+='<div class="qprev">'+esc(s.qText)+'</div>';
+
+    if(s.status==='intro'){
+      // 근사치/OX는 문제 텍스트 입력 필드 표시
+      if(s.gameId===3||s.gameId===5){
+        h+=bankPicker(s.gameId===3?'approx':'ox');
+        h+=`<div class="q-input-box"><label>문제 텍스트 입력</label>
+          <input id="qInput" placeholder="${s.gameId===3?'근사치 문제를 입력하세요':'OX 문제를 입력하세요'}"></div>`;
+      }
+      h+=`<button class="act" onclick="openQ(false)">${s.gameId===2?'1라운드 열기':(s.qTotal>1?'1번 판 열기':'문제 열기')}</button>
+        <div class="hint">참가자 화면에 규칙이 표시되어 있습니다.</div>`;
+    }
+    else if(s.status==='open'){
+      // 가위바위보 수석 선택
+      if(s.gameId===2){
+        h+=`<div class="boss-box"><p>👑 수석님 선택 입력</p>
+          <div class="boss-btns">
+          <button id="bGa" onclick="selectBossRSP('가위')">✌️ 가위</button>
+          <button id="bBa" onclick="selectBossRSP('바위')">✊ 바위</button>
+          <button id="bBo" onclick="selectBossRSP('보')">✋ 보</button></div>
+          <div class="hint" style="color:var(--accent);margin-top:6px">※ 마감 전 반드시 선택해주세요</div></div>`;
+      }
+      // 근사치/OX 정답 입력
+      if(s.gameId===3||s.gameId===5){
+        if(!s.preAnswer) h+=bankPicker(s.gameId===3?'approx':'ox');
+        h+=`<div class="q-input-box"><label>${s.gameId===3?'정답 숫자 입력':'정답 (O 또는 X) 입력'}${s.preAnswer?' — 등록 정답 ('+esc(s.preAnswer)+') 자동 적용됨':''}</label>
+          <input id="answerInput" placeholder="${s.preAnswer?'비워두면 등록 정답 사용':(s.gameId===3?'숫자 입력':'O 또는 X')}"></div>`;
+      }
+      // 다음 판 문제 입력(근사치/OX)
+      if((s.gameId===3||s.gameId===5)&&s.qIndex+1<s.qTotal){
+        h+=`<div class="q-input-box"><label>다음 문제 미리 입력 (선택)</label>
+          <input id="qInput" placeholder="다음 문제 텍스트"></div>`;
+      }
+      h+=`<button class="act" onclick="closeQ()">⏱ 마감하기</button>`;
+    }
+    else if(s.status==='result'){
+      const r=s.result||{};
+      // G1 답안 검증 피드 (상위 5명 원문)
+      if(r.verify && r.verify.length){
+        h+='<div style="background:rgba(242,180,68,.15);border:2px dashed var(--gold);border-radius:12px;padding:14px;margin-bottom:12px">';
+        h+='<div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:10px">🔍 상위 5명 답안 검증 (오타 확인 후 우승 확정)</div>';
+        r.verify.forEach(v=>{
+          h+='<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(245,242,234,.12)">'+
+             '<div style="font-size:13px;font-weight:800;color:var(--ivory);margin-bottom:4px">'+v.rank+'위 · '+esc(v.name)+' <span style="color:var(--gold)">('+v.n+'명)</span></div>'+
+             '<div style="font-size:13px;line-height:1.6;color:#ffe3ae;word-break:break-all">'+esc(v.ans)+'</div></div>';
+        });
+        h+='</div>';
+      }
+      h+='<div class="live">';
+      (r.rows||[]).forEach(row=>{
+        h+=`<div class="lrow tap" onclick="winner('${jsq(row.name)}')">
+          <div class="r">${row.r||'·'}</div><div class="n">${esc(row.name)}</div>
+          <div class="d">${esc(row.d||'')}</div></div>`;
+      });
+      h+='</div>';
+      if(r.note) h+='<div class="hint">'+esc(r.note)+'</div>';
+
+      const isSurvival=(s.gameId===2||s.gameId===5);
+      if(isSurvival){
+        // 서바이벌: 최후 1인이 아니면 다음 라운드 / 여기서 종료 선택
+        if(!r.final){
+          if(s.gameId===5){
+            h+=bankPicker('ox');
+            h+=`<div class="q-input-box" style="margin-top:12px"><label>다음 문제 입력</label>
+              <input id="qInput" placeholder="다음 OX 문제 텍스트"></div>
+              <div class="q-input-box"><label>다음 문제 정답 (O/X)</label>
+              <input id="answerInput" placeholder="O 또는 X (등록 문제 선택 시 자동)"></div>`;
+          }
+          h+=`<button class="act" onclick="openQ(true)">▶ 다음 라운드 (${s.qIndex+2})</button>`;
+          h+=`<button class="act gold" onclick="finishGame()">🏁 여기서 종료 — 생존자 시상</button>`;
+        }
+        // r.final이면 결과 행의 이름을 탭해서 우승 확정
+      } else if(s.gameId===3||s.gameId===4){
+        // G3/G4: 3판 누적
+        if(s.qIndex+1<s.qTotal){
+          if(s.gameId===3){
+            h+=bankPicker('approx');
+            h+=`<div class="q-input-box" style="margin-top:12px"><label>다음 문제 입력</label>
+              <input id="qInput" placeholder="다음 근사치 문제 텍스트"></div>
+              <div class="q-input-box"><label>다음 문제 정답 (숫자)</label>
+              <input id="answerInput" placeholder="숫자 (등록 문제 선택 시 자동)"></div>`;
+          }
+          h+=`<button class="act" onclick="openQ(true)">▶ 다음 판 (${s.qIndex+2}/${s.qTotal})</button>`;
+        } else if(!r.final){
+          h+=`<button class="act gold" onclick="finishGame()">🏁 최종 합산 순위 발표</button>`;
+        }
+      }
+      // G1은 단판 — 결과 행 이름을 탭하면 바로 우승 확정
+    }
+    h+=`<button class="act ghost" onclick="toLobby()">게임 강제 종료 → 로비</button></div>`;
+  }
+
+  h+=`<div class="sec"><h3>시스템</h3>
+    <button class="act gold" onclick="doFinale()">🏆 최종 시상 화면</button>
+    ${s.phase==='final'?'<button class="act ghost" onclick="toLobby()">로비로 복귀</button>':''}
+    <button class="act danger" onclick="resetAll()">전체 데이터 초기화</button>
+    <div class="hint">우승자 누적: ${(s.winners||[]).length}명</div></div>`;
+
+  document.getElementById('main').innerHTML=h;
+
+  // 수석 버튼 상태 복원
+  if(s.gameId===2&&s.status==='open'&&currentBossSel){
+    const map={'가위':'bGa','바위':'bBa','보':'bBo'};
+    const sel=document.getElementById(map[currentBossSel]); if(sel) sel.className='active';
+  }
+}
+</script>
+</body>
+</html>
