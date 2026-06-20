@@ -386,7 +386,6 @@
                             <div class="day-node" data-w="수" onclick="toggleDayNode('수')"><div class="n-w">수</div><div class="n-d" id="cd-수"></div></div>
                             <div class="day-node" data-w="목" onclick="toggleDayNode('목')"><div class="n-w">목</div><div class="n-d" id="cd-목"></div></div>
                             <div class="day-node" data-w="금" onclick="toggleDayNode('금')"><div class="n-w">금</div><div class="n-d" id="cd-금"></div></div>
-                            <div class="day-node" data-w="토" onclick="toggleDayNode('토')"><div class="n-w">토</div><div class="n-d" id="cd-토"></div></div>
                         </div>
                         <input type="text" id="txScDetail" class="detail-input" placeholder="상세내용">
                     </div>
@@ -452,7 +451,6 @@
                         <th data-w="수"><span class="th-w">수</span><span class="th-d" id="thd-수"></span></th>
                         <th data-w="목"><span class="th-w">목</span><span class="th-d" id="thd-목"></span></th>
                         <th data-w="금"><span class="th-w">금</span><span class="th-d" id="thd-금"></span></th>
-                        <th data-w="토"><span class="th-w">토</span><span class="th-d" id="thd-토"></span></th>
                     </tr></thead>
                     <tbody id="attBody"></tbody>
                 </table>
@@ -525,7 +523,7 @@
         const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","홍部","김次","이課"];
         const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·김次·이課은 출장근태만)
         const WEEKS = ["월","화","수","목","금","토","일"];
-        const ATT_DAYS = ["월","화","수","목","금","토"]; // 출장·근태는 월~토 (일요일 제외)
+        const ATT_DAYS = ["월","화","수","목","금"]; // 출장·근태는 월~금 (주말 제외)
         let dayLabels = {}; // 요일→날짜 라벨 (예: 월→6/22)
         const WKND = { "토":true, "일":true };
 
@@ -710,7 +708,7 @@
         function renderTwBoxes(matters) {
             if (!matters || !matters.length) matters = [''];
             document.getElementById('twBoxes').innerHTML = matters.map(v =>
-                `<div class="mbox"><textarea class="mbox-ta" placeholder="업무 입력 — 다른 업무는 ➕ 업무 추가" oninput="autoGrow(this)">${escapeHtml(v)}</textarea>` +
+                `<div class="mbox"><textarea class="mbox-ta" placeholder="업무 입력 — 다른 업무은 ➕ 업무 추가" oninput="autoGrow(this)">${escapeHtml(v)}</textarea>` +
                 `<button type="button" class="mbox-x" onclick="rmTwBox(this)" title="이 업무 삭제">✕</button></div>`
             ).join('');
             document.querySelectorAll('#twBoxes .mbox-ta').forEach(autoGrow);
