@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>노사합동 봉사활동</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --ivory:#F5F2EA; --navy:#16284F; --navy-deep:#0C1834; --ink:#21242B;
+  --accent:#E8623A; --gold:#F2B544; --mist:rgba(245,242,234,.62);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif;
+  background:linear-gradient(168deg,#1B3160 0%,#16284F 45%,#0C1834 100%);
+  color:var(--ivory);min-height:100dvh}
+button{font-family:inherit;border:none;cursor:pointer}
+input,textarea{font-family:inherit}
+
+#splash{position:fixed;inset:0;background:var(--ivory);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:100;transition:opacity .6s}
+#splash.hide{opacity:0;pointer-events:none}
+.sp-logo{font-size:52px;opacity:0;animation:rise .7s .15s forwards}
+.sp-org{margin-top:22px;font-size:12px;font-weight:700;letter-spacing:.32em;color:#9a948a;
+  opacity:0;animation:rise .7s .4s forwards}
+.sp-title{margin-top:8px;font-size:27px;font-weight:900;color:var(--ink);letter-spacing:-.01em;
+  opacity:0;animation:rise .7s .55s forwards}
+.sp-slogan{margin-top:14px;font-size:15px;font-weight:700;color:var(--accent);letter-spacing:.02em;
+  opacity:0;animation:rise .7s .85s forwards}
+.sp-load{position:absolute;bottom:56px;font-size:12px;color:#b3ada1;opacity:0;animation:rise .7s 1.2s forwards}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+#app{display:none;min-height:100dvh;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px 12px;border-bottom:1px solid rgba(245,242,234,.12)}
+.h-title-wrap{display:flex;align-items:center;gap:6px}
+.h-title{font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+.h-title small{display:block;font-size:10px;font-weight:600;letter-spacing:.22em;color:var(--mist);margin-bottom:1px}
+.h-me{font-size:12px;font-weight:700;background:rgba(245,242,234,.12);padding:6px 12px;border-radius:99px}
+.h-sub{display:flex;align-items:center;gap:6px;padding:8px 18px;font-size:12px;color:var(--mist)}
+.dot{width:7px;height:7px;border-radius:50%;background:#5BD08A;animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.35}}
+main{flex:1;padding:18px 16px 40px;max-width:480px;width:100%;margin:0 auto}
+.card{background:var(--ivory);color:var(--ink);border-radius:20px;padding:22px 20px;
+  box-shadow:0 12px 32px rgba(5,12,28,.35)}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.3em;color:var(--accent);margin-bottom:8px}
+.card h2{font-size:21px;font-weight:900;letter-spacing:-.01em;line-height:1.3}
+.card p.desc{margin-top:10px;font-size:14px;line-height:1.65;color:#5a5e66}
+.btn{display:block;width:100%;padding:16px;border-radius:14px;font-size:16px;font-weight:800;
+  background:var(--accent);color:#fff;margin-top:16px;transition:transform .08s}
+.btn:active{transform:scale(.97)}
+.btn[disabled]{background:#cfc9bd;color:#8d887e}
+.field{width:100%;padding:15px 14px;border-radius:13px;border:2px solid #E2DCCE;background:#fff;
+  font-size:16px;margin-top:14px;color:var(--ink)}
+.field:focus{outline:none;border-color:var(--accent)}
+textarea.field{min-height:150px;resize:vertical;line-height:1.6}
+.hint{margin-top:9px;font-size:12px;color:#8b867b}
+.msg{margin-top:12px;font-size:14px;font-weight:700;color:var(--accent);min-height:18px}
+.msg.ok{color:#1f9d5f}
+.qbox{margin-top:14px;background:var(--navy);color:var(--ivory);border-radius:14px;
+  padding:18px 16px;font-size:19px;font-weight:800;line-height:1.5;letter-spacing:.04em;text-align:center}
+.waiting{text-align:center;padding:54px 20px}
+.waiting .big{font-size:44px;font-weight:900;color:var(--gold)}
+.waiting .lbl{font-size:13px;color:var(--mist);margin-top:6px}
+.pulse{width:54px;height:54px;border-radius:50%;border:4px solid rgba(245,242,234,.25);
+  border-top-color:var(--gold);margin:0 auto 18px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.grid100{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:16px;
+  max-height:280px;overflow-y:auto;padding:8px;border:1px solid #E2DCCE;border-radius:12px;background:#FAF8F5}
+.grid100 button{aspect-ratio:1.2;border-radius:8px;background:#fff;border:1px solid #E2DCCE;
+  font-size:14px;font-weight:800;color:var(--ink)}
+.grid100 button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.rspwrap{display:flex;gap:10px;margin-top:16px}
+.rspwrap button{flex:1;border-radius:18px;padding:24px 0;font-size:20px;font-weight:900;
+  background:#fff;border:3px solid #E2DCCE;color:var(--ink)}
+.rspwrap button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.oxwrap{display:flex;gap:12px;margin-top:16px}
+.oxwrap button{flex:1;border-radius:18px;padding:30px 0;font-size:48px;font-weight:900;
+  background:#fff;border:3px solid #E2DCCE;color:var(--ink)}
+.oxwrap .o.sel{background:#2C72D9;border-color:#2C72D9;color:#fff}
+.oxwrap .x.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.spec{margin-top:12px;background:#FFF1E9;border:1px dashed var(--accent);border-radius:12px;
+  padding:10px 12px;font-size:13px;font-weight:700;color:var(--accent);text-align:center}
+.truth{display:inline-block;background:var(--gold);color:#3a2a05;font-size:14px;font-weight:900;
+  padding:7px 14px;border-radius:99px;margin-top:12px}
+.rlist{margin-top:14px}
+.rrow{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;
+  background:#fff;margin-bottom:7px}
+.rrow.me{outline:2px solid var(--accent)}
+.rk{min-width:30px;height:30px;border-radius:50%;background:#ECE7DA;color:#6a655a;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex:none}
+.rk.g1{background:var(--gold);color:#3a2a05}.rk.g2{background:#D8D8DC;color:#4a4a52}.rk.g3{background:#E5B08C;color:#5a3414}
+.rname{font-size:15px;font-weight:800;flex:1}
+.rd{font-size:12.5px;color:#8b867b;font-weight:600}
+.note{margin-top:12px;font-size:13px;color:#8b867b;line-height:1.55}
+.revive{margin-top:12px;background:#FFF6DF;border-radius:12px;padding:11px 12px;
+  font-size:14px;font-weight:800;color:#9a6a00;text-align:center}
+#banner{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;
+  background:rgba(6,12,30,.93);backdrop-filter:blur(4px)}
+#banner.show{display:flex}
+.bn-inner{text-align:center;padding:40px;width:100%}
+.bn-lan{font-size:54px}
+.bn-label{font-size:13px;font-weight:800;letter-spacing:.28em;color:var(--gold);margin-top:14px}
+.bn-name{font-size:42px;font-weight:900;color:var(--ivory);margin-top:8px}
+.bn-sub{font-size:14px;color:var(--mist);margin-top:12px}
+.fin{background:linear-gradient(150deg,#2a3f74,#16284F);border:1px solid rgba(242,180,68,.4);color:var(--ivory)}
+.fin .rrow{background:rgba(245,242,234,.1)}
+.fin .rname,.fin .rd{color:var(--ivory)}
+footer{text-align:center;padding:0 0 26px;font-size:11px;color:rgba(245,242,234,.4);letter-spacing:.06em}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="sp-logo"><img src="https://knewu.netlify.app/icon-192.png" alt="로고" style="width:76px;height:76px;border-radius:18px;object-fit:contain" onerror="this.outerHTML='⚡'"></div>
+  <div class="sp-org">전국전력노동조합</div>
+  <div class="sp-title">노사합동 봉사활동</div>
+  <div class="sp-slogan">"우리에게 이로움, 함께하는 새로움"</div>
+  <div class="sp-load">불러오는 중…</div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="h-title-wrap">
+      <img src="https://knewu.netlify.app/icon-192.png" alt="로고" style="width:18px;height:18px;border-radius:4px;object-fit:contain" onerror="this.style.display='none'">
+      <div class="h-title"><small>전국전력노동조합</small>노사합동 봉사활동</div>
+    </div>
+    <div class="h-me" id="meChip" style="display:none"></div>
+  </header>
+  <div class="h-sub"><span class="dot"></span><span id="countTxt">접속 확인 중…</span></div>
+  <main id="main"></main>
+  <footer>우리에게 이로움 · 함께하는 새로움</footer>
+</div>
+
+<div id="banner"><div class="bn-inner">
+  <div class="bn-lan">🎆</div>
+  <div class="bn-label" id="bnLabel"></div>
+  <div class="bn-name" id="bnName"></div>
+  <div class="bn-sub">만찬 스페셜 게임 우승! 🎉</div>
+</div></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, push, update, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB186Tg9fsrnR-K_lufo4X5iY9OVpgDeHk",
+  authDomain: "knewu24th-15ebc.firebaseapp.com",
+  databaseURL: "https://knewu24th-15ebc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "knewu24th-15ebc",
+  storageBucket: "knewu24th-15ebc.firebasestorage.app",
+  messagingSenderId: "617159229534",
+  appId: "1:617159229534:web:360195e7b3bc5a38b034cf"
+};
+
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ── 상수 ──
+const GAME_NAMES = {1:'동료 이름 빨리 쓰기',2:'가위바위보 서바이벌',3:'근사치 퀴즈',4:'중복되지 않는 제일 작은 숫자 선택하기',5:'OX 서바이벌'};
+const RULES = {
+  1:'주변 동료의 이름을 10명 이상 적어 주세요! 쉼표나 줄바꿈으로 구분합니다.\n먼저 접수한 순서대로 순위가 매겨집니다.',
+  2:'화면의 버튼을 눌러 수석님을 이기세요!\n수석님의 가위바위보 선택을 "이긴 사람만" 생존하는 실시간 서바이벌!',
+  3:'정답에 가장 가까운 숫자를 적어내세요. 총 3문제, 오차율 평균이 가장 낮은 사람이 우승합니다.',
+  4:'1~100 중 숫자 하나를 고르세요. 나만 고른 숫자(단독)면 성공! 총 3판 동안 단독으로 낸 가장 낮은 숫자가 본인 최고기록이 되고, 3판 중 최고기록이 가장 낮은 사람이 우승합니다. 겹치면 기록 없음!',
+  5:'O 또는 X! 틀리면 탈락, 끝까지 살아남는 한 사람이 우승합니다.\n탈락해도 예측 모드로 끝까지 함께해요.'
+};
+
+// ── 로컬 상태 ──
+let PID = localStorage.getItem('bs_pid') || '';
+let MYNAME = localStorage.getItem('bs_name') || '';
+let ST = null;
+let lastBannerT = 0;
+let done = {};
+let unsubState = null;
+let rosterCount = 0;
+
+// ── 유틸 ──
+function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function gname(g){ return GAME_NAMES[g]||'게임'; }
+function norm(t){ return String(t||'').replace(/\s+/g,'').toLowerCase().trim(); }
+function fmtSec(ms){ var s=Math.max(0,Math.round(ms/1000)); return Math.floor(s/60)+':'+(('0'+(s%60)).slice(-2)); }
+function splitNames(text){
+  var raw=String(text||'').split(/[\s,，、.;:·\/\n\r]+/), seen={}, out=[];
+  raw.forEach(t=>{t=t.trim(); if(t.length>=2&&t.length<=8&&/^[가-힣a-zA-Z]+$/.test(t)&&!seen[t]){seen[t]=1;out.push(t);}});
+  return out;
+}
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+// ── Firebase 래퍼 ──
+async function dbGet(path){ return (await get(ref(db,path))).val(); }
+async function dbSet(path,val){ await set(ref(db,path),val); }
+async function dbUpdate(path,val){ await update(ref(db,path),val); }
+
+// ── 시작 ──
+setTimeout(async ()=>{
+  if(PID){
+    const name = await dbGet('roster/'+PID);
+    if(name){ MYNAME=name; }
+    else { PID=''; MYNAME=''; localStorage.removeItem('bs_pid'); localStorage.removeItem('bs_name'); }
+  }
+  hideSplash();
+  enterApp();
+}, 2000);
+
+function hideSplash(){ document.getElementById('splash').className='hide'; }
+function enterApp(){
+  document.getElementById('app').style.display='flex';
+  if(MYNAME){ showMe(); }
+  else { renderJoin(); return; }
+  subscribeState();
+}
+function showMe(){
+  const c=document.getElementById('meChip');
+  c.style.display='block'; c.textContent=MYNAME;
+}
+
+// ── 상태 구독 ──
+function subscribeState(){
+  if(unsubState) unsubState();
+  unsubState = onValue(ref(db,'state'), snap=>{
+    ST = snap.val();
+    if(ST) onState();
+    else { ST=null; render(); }  // 게임 시작 전: 로비 화면
+  });
+  onValue(ref(db,'roster'), snap=>{
+    const r = snap.val()||{};
+    rosterCount = Object.keys(r).length;
+    const names = Object.values(r);
+    const last = names.length ? names[names.length-1] : '';
+    document.getElementById('countTxt').textContent='참가 '+rosterCount+'명'+(last?' · 최근 입장: '+last:'');
+    // 로비 화면이면 인원수 갱신
+    if(ST && ST.phase!=='game' && ST.phase!=='final') render();
+  });
+}
+
+// ── 상태 처리 ──
+let lastScreenKey='';
+function onState(){
+  const s=ST;
+  // 배너
+  if(s.banner && s.banner.t && s.banner.t!==lastBannerT){
+    lastBannerT=s.banner.t;
+    document.getElementById('bnLabel').textContent=s.banner.label||'우승';
+    document.getElementById('bnName').textContent=s.banner.name;
+    const bn=document.getElementById('banner'); bn.className='show';
+    try{navigator.vibrate&&navigator.vibrate([60,40,60]);}catch(e){}
+    setTimeout(()=>{ bn.className=''; },6500);
+  }
+  const key=[s.phase,s.gameId,s.status,s.qIndex,s.seq||0].join('|');
+  if(key!==lastScreenKey){ lastScreenKey=key; render(); }
+}
+
+// ── 렌더 ──
+function render(){
+  const s=ST, m=document.getElementById('main');
+  if(!MYNAME){ renderJoin(); return; }
+  // 입장은 했으나 게임 상태가 아직 없음(시작 전) → 로비 대기 화면
+  if(!s || (s.phase!=='game' && s.phase!=='final')){
+    m.innerHTML=`<div class="waiting"><div class="big">${rosterCount}</div>
+      <div class="lbl">명 입장 완료 · 잠시 후 시작합니다</div></div>
+      <div class="card"><div class="eyebrow">TONIGHT</div><h2>만찬 스페셜 게임</h2>
+      <p class="desc" style="line-height:1.8;text-align:center;font-weight:700;margin-top:12px;color:var(--accent)">🎁 각 게임마다 푸짐한 우승 상품 대기 중!</p>
+      <p class="desc" style="margin-top:12px;text-align:center">사회자 진행에 따라 화면이 automatic 전환됩니다. 스마트폰 들고 대기해 주세요!</p></div>`;
+    return;
+  }
+  if(s.phase==='final'){ m.innerHTML=renderFinal(s); return; }
+  if(s.status==='intro'){ m.innerHTML=renderIntro(s); return; }
+  if(s.status==='open'){ m.innerHTML=renderOpen(s); return; }
+  if(s.status==='closed'){
+    m.innerHTML='<div class="waiting"><div class="pulse"></div><div class="lbl">집계 중… 곧 발표합니다!</div></div>'; return;
+  }
+  if(s.status==='result'){ m.innerHTML=renderResult(s); try{navigator.vibrate&&navigator.vibrate(50);}catch(e){} return; }
+  m.innerHTML='<div class="waiting"><div class="pulse"></div><div class="lbl">대기 중…</div></div>';
+}
+
+function renderJoin(){
+  document.getElementById('main').innerHTML=`<div class="card">
+    <div class="eyebrow">WELCOME</div>
+    <h2>게임에 입장합니다</h2>
+    <p class="desc">본명으로 입장해 주십시오</p>
+    <input class="field" id="nameIn" maxlength="10" placeholder="이름 (예: 홍길동)">
+    <div class="msg" id="joinMsg"></div>
+    <button class="btn" id="joinBtn" onclick="doJoin()">입장하기</button></div>`;
+}
+
+async function doJoin(){
+  const v=(document.getElementById('nameIn').value||'').trim();
+  const b=document.getElementById('joinBtn'); b.disabled=true; b.textContent='입장 중…';
+  if(!v||v.length<2||v.length>10){
+    document.getElementById('joinMsg').textContent='이름을 2~10자로 입력해 주세요';
+    b.disabled=false; b.textContent='입장하기'; return;
+  }
+  const roster = await dbGet('roster') || {};
+  for(const k in roster){ if(roster[k]===v){ document.getElementById('joinMsg').textContent='같은 이름이 이미 입장했어요. 뒤에 부서나 이니셜을 붙여 주세요 (예: '+v+'B)'; b.disabled=false; b.textContent='입장하기'; return; } }
+  PID = uid();
+  await dbSet('roster/'+PID, v);
+  MYNAME=v;
+  localStorage.setItem('bs_pid',PID);
+  localStorage.setItem('bs_name',MYNAME);
+  showMe();
+  subscribeState();
+}
+window.doJoin = doJoin;
+
+function renderIntro(s){
+  const roundLabel = s.gameId===2 ? '서바이벌' : (s.qTotal>1 ? s.qTotal+'판' : '');
+  return `<div class="card"><div class="eyebrow">GAME 0${s.gameId}${roundLabel?' · '+roundLabel:''}</div>
+    <h2>${gname(s.gameId)}</h2>
+    <p class="desc">${(RULES[s.gameId]||'').replace(/\n/g,'<br>')}</p>
+    <div class="hint" style="margin-top:14px;text-align:center">사회자가 시작하면 자동으로 문제가 열립니다</div></div>`;
+}
+
+function renderOpen(s){
+  const numLabel = s.gameId===2 ? '제 '+(s.qIndex+1)+'라운드' : (s.qTotal>1?'판 '+(s.qIndex+1)+'/'+s.qTotal:'');
+  const head=`<div class="card"><div class="eyebrow">GAME 0${s.gameId}${numLabel?' · '+numLabel:''}</div><h2>${gname(s.gameId)}</h2>`;
+  const q=`<div class="qbox">${esc(s.qText)}</div>`;
+
+  if(s.gameId===1){
+    const k='g1'+s.openedAt;
+    if(done[k]) return head+q+'<div class="hint" style="margin-top:14px;text-align:center">🎉 '+done[k]+'</div><p class="hint" style="text-align:center">제출 완료! 결과 발표를 기다려 주세요.</p></div>';
+    return head+q+`<textarea class="field" id="g1in" placeholder="홍길동, 김철수, 이영희 …" oninput="g1count()"></textarea>
+      <div class="hint">서로 다른 이름 <b id="g1n">0</b>개 / 10개 이상</div>
+      <div class="msg" id="fb"></div><button class="btn" id="sb" onclick="sendG1()">제출!</button></div>`;
+  }
+  if(s.gameId===2){
+    const alive=!s.survivors||(s.survivors||[]).includes(MYNAME);
+    const spec=alive?'':'<div class="spec">아쉽게 탈락! 수석님 결과 예측 모드 👀</div>';
+    return head+q+spec+`<div class="rspwrap">
+      <button id="rGa" onclick="sendG2('가위')">✌️ 가위</button>
+      <button id="rBa" onclick="sendG2('바위')">✊ 바위</button>
+      <button id="rBo" onclick="sendG2('보')">✋ 보</button></div>
+      <div class="msg" id="fb"></div></div>`;
+  }
+  if(s.gameId===3){
+    return head+q+`<input class="field" id="g3in" type="number" inputmode="decimal" placeholder="숫자 입력">
+      <div class="msg" id="fb"></div><button class="btn" onclick="sendG3()">제출 (수정 가능)</button></div>`;
+  }
+  if(s.gameId===4){
+    let g='';
+    for(let i=1;i<=100;i++) g+=`<button id="n${i}" onclick="sendG4(${i})">${i}</button>`;
+    return head+q+`<div style="text-align:center;font-weight:700;color:var(--accent);font-size:13px;margin-top:8px">※ 나만 고른 가장 낮은 숫자가 최고기록 (3판 진행)</div>
+      <div class="grid100">${g}</div><div class="msg" id="fb"></div></div>`;
+  }
+  if(s.gameId===5){
+    const alive=!s.survivors||(s.survivors||[]).includes(MYNAME);
+    const spec=alive?'':'<div class="spec">탈락! 예측 모드로 참여 중 👀</div>';
+    return head+q+spec+`<div class="oxwrap">
+      <button class="o" id="oBtn" onclick="sendG5('O')">O</button>
+      <button class="x" id="xBtn" onclick="sendG5('X')">X</button></div>
+      <div class="msg" id="fb"></div></div>`;
+  }
+  return head+q+'</div>';
+}
+
+function renderResult(s){
+  const r=s.result||{rows:[]};
+  let h=`<div class="card"><div class="eyebrow">GAME 0${s.gameId} RESULT</div><h2>${esc(r.title||'결과')}</h2>`;
+  if(r.truth) h+=`<div class="truth">${esc(r.truth)}</div>`;
+  if(s.reviveMsg) h+=`<div class="revive">${esc(s.reviveMsg)}</div>`;
+  h+='<div class="rlist">';
+  const winners=(s.winners||[]).map(w=>w.name);
+  (r.rows||[]).forEach(row=>{
+    const me=row.name===MYNAME?' me':'';
+    const rk=row.r===1?'rk g1':row.r===2?'rk g2':row.r===3?'rk g3':'rk';
+    const crown=winners.includes(row.name)?'🏆 ':'';
+    h+=`<div class="rrow${me}"><div class="${rk}">${row.r||'·'}</div><div class="rname">${crown}${esc(row.name)}</div><div class="rd">${esc(row.d||'')}</div></div>`;
+  });
+  if(!(r.rows||[]).length) h+='<div class="note">표시할 결과가 없어요</div>';
+  h+='</div>';
+  if(r.note) h+=`<div class="note">${esc(r.note)}</div>`;
+  return h+'</div>';
+}
+
+function renderFinal(s){
+  let h=`<div class="card fin"><div class="eyebrow" style="color:var(--gold)">FINALE</div>
+    <h2 style="color:var(--ivory)">오늘의 주인공들 🏆</h2><div class="rlist">`;
+  (s.finale||[]).forEach((w,i)=>{
+    h+=`<div class="rrow"><div class="rk g1">${w.g||i+1}</div><div class="rname">${esc(w.name)}</div><div class="rd">${esc(w.gn||'')}</div></div>`;
+  });
+  h+='</div><div class="note" style="color:var(--mist)">함께해 주셔서 고맙습니다 — 우리에게 이로움, 함께하는 새로움!</div></div>';
+  return h;
+}
+
+// ── 제출 함수 ──
+function fb(msg, ok){
+  const el=document.getElementById('fb'); if(!el) return;
+  el.className='msg'+(ok?' ok':'');
+  el.textContent=msg;
+}
+
+window.g1count = function(){
+  const t=document.getElementById('g1in').value;
+  const n=splitNames(t).length;
+  document.getElementById('g1n').textContent=n;
+};
+window.sendG1 = async function(){
+  const t=document.getElementById('g1in').value;
+  const names=splitNames(t);
+  if(names.length<10){ fb('서로 다른 이름이 '+names.length+'개예요 — 10개 이상 적어 주세요!',false); return; }
+  const s=ST; if(!s||s.status!=='open') return;
+  const subRef=ref(db,'subs/g'+s.gameId+'/q'+s.qIndex+'/'+PID);
+  const existing=(await get(subRef)).val();
+  if(existing){ const order=existing.order; done['g1'+s.openedAt]=order+'번째 접수!'; render(); return; }
+  const list=(await dbGet('subs/g1/q0'))||{};
+  const order=Object.keys(list).length+1;
+  await dbSet('subs/g1/q0/'+PID,{name:MYNAME,n:names.length,t:Date.now(),ans:names.join(', '),order});
+  done['g1'+s.openedAt]=order+'번째 접수! ('+names.length+'명)';
+  render();
+};
+window.sendG2 = async function(v){
+  ['rGa','rBa','rBo'].forEach(id=>{ const el=document.getElementById(id); if(el) el.className=''; });
+  const map={'가위':'rGa','바위':'rBa','보':'rBo'};
+  const sel=document.getElementById(map[v]); if(sel) sel.className='sel';
+  const s=ST; if(!s||s.status!=='open') return;
+  const isSurv=!s.survivors||(s.survivors||[]).includes(MYNAME);
+  await dbSet('subs/g2/q'+s.qIndex+'/'+PID,{name:MYNAME,ans:v,t:Date.now(),isSurv});
+  fb(isSurv?v+' 제출! 마감 전까지 변경 가능':v+' (탈락자 예측 모드 👀)',true);
+};
+window.sendG3 = async function(){
+  const t=document.getElementById('g3in').value;
+  const v=parseFloat(String(t).replace(/[^\d.\-]/g,''));
+  if(isNaN(v)){ fb('숫자로 입력해 주세요',false); return; }
+  const s=ST; if(!s||s.status!=='open') return;
+  await dbSet('subs/g3/q'+s.qIndex+'/'+PID,{name:MYNAME,ans:v,t:Date.now()});
+  fb(v+' 접수! 마감 전까지 수정 가능',true);
+};
+window.sendG4 = async function(v){
+  for(let i=1;i<=100;i++){const b=document.getElementById('n'+i); if(b)b.className='';}
+  const sel=document.getElementById('n'+v); if(sel) sel.className='sel';
+  const s=ST; if(!s||s.status!=='open') return;
+  await dbSet('subs/g4/q'+s.qIndex+'/'+PID,{name:MYNAME,ans:v,t:Date.now()});
+  fb(v+'번 선택! 마감 전까지 변경 가능',true);
+};
+window.sendG5 = async function(v){
+  const o=document.getElementById('oBtn'),x=document.getElementById('xBtn');
+  if(o)o.className='o'+(v==='O'?' sel':''); if(x)x.className='x'+(v==='X'?' sel':'');
+  const s=ST; if(!s||s.status!=='open') return;
+  const isSurv=!s.survivors||(s.survivors||[]).includes(MYNAME);
+  await dbSet('subs/g5/q'+s.qIndex+'/'+PID,{name:MYNAME,ans:v,t:Date.now(),isSurv});
+  fb(isSurv?v+' 제출! 마감 전까지 변경 가능':v+' (탈락자 예측 모드 👀)',true);
+};
+</script>
+</body>
+</html>
