@@ -105,7 +105,7 @@
         .seg input { position:absolute; opacity:0; pointer-events:none; }
         .seg label { padding:7px 16px; font-size:13px; font-weight:700; color:var(--ink-soft); border-radius:6px; cursor:pointer; }
         .seg input:checked + label { background:#fff; color:var(--accent); box-shadow:0 1px 2px rgba(0,0,0,.1); }
-        .days-row { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+        .days-row { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; }
         .day-node { background:#fff; border:1px solid var(--line); border-radius:8px; padding:8px 2px; text-align:center; cursor:pointer; user-select:none; }
         .day-node .n-w { font-size:13px; font-weight:800; color:#1e293b; }
         .day-node .n-d { font-size:10px; color:var(--ink-faint); margin-top:1px; }
@@ -523,7 +523,7 @@
         const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 업무 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
         const weekRef = database.ref('perfect_clean_report_2026_week'); // 기준 주차(월요일) 저장
 
-        const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","홍部","손課","김次","이課"];
+        const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","손課","홍部","김次","이課"];
         const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·손課·김次·이課은 출장근태만)
         const WEEKS = ["월","화","수","목","금","토","일"];
         const ATT_DAYS = ["월","화","수","목","금"]; // 출장·근태는 월~금 (주말 제외)
