@@ -179,8 +179,9 @@
         .grid-table th[data-w="토"] .th-w{color:#9fc3ff;} .grid-table th[data-w="일"] .th-w{color:#ffb0aa;}
         .grid-table th .th-w { display:block; font-size:12.5px; font-weight:800; line-height:1.2; }
         .grid-table th .th-d { display:block; font-size:9.5px; font-weight:600; color:#aeb9d0; line-height:1.2; margin-top:2px; }
-        .grid-table td.dept { font-weight:800; background:#eaeef6; color:#26344f; font-size:13px; letter-spacing:.02em; white-space:nowrap; }
-        .grid-table th:first-child, .grid-table td.dept { width:15%; }
+        .grid-table td.dept { font-weight:800; background:#eaeef6; color:#26344f; font-size:13px; letter-spacing:.02em; white-space:nowrap; width:60px !important; flex-shrink:0; }
+        .grid-table th:first-child { width:60px !important; }
+        .grid-table th[data-w] { width: 20% !important; }
         .grid-table td.wknd { background:#f5f7fb; }
 
         /* 인쇄 전용 레터헤드 / 푸터 */
@@ -200,7 +201,8 @@
         .capture-target .grid-table th .th-w { font-size:18px; }
         .capture-target .grid-table th .th-d { font-size:12px; margin-top:3px; }
         .capture-target .grid-table tbody td { height:62px; font-size:14px; }
-        .capture-target .grid-table td.dept { font-size:19px; letter-spacing:.05em; }
+        .capture-target .grid-table td.dept { font-size:19px; letter-spacing:.05em; width:60px !important; }
+        .capture-target .grid-table th[data-w] { width:20% !important; }
         .capture-target .att-fit { height:54px; }
         .capture-target .badge-cell .b-tag { font-size:11px; padding:2px 9px; }
         .capture-target .sum-table thead th { font-size:15px; padding:15px 16px; }
@@ -521,8 +523,8 @@
         const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 업무 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
         const weekRef = database.ref('perfect_clean_report_2026_week'); // 기준 주차(월요일) 저장
 
-        const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","홍部","김次","이課"];
-        const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·김次·이課은 출장근태만)
+        const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","홍部","손課","김次","이課"];
+        const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·손課·김次·이課은 출장근태만)
         const WEEKS = ["월","화","수","목","금","토","일"];
         const ATT_DAYS = ["월","화","수","목","금"]; // 출장·근태는 월~금 (주말 제외)
         let dayLabels = {}; // 요일→날짜 라벨 (예: 월→6/22)
