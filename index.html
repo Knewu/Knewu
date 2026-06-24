@@ -1,258 +1,318 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>전력노조 집행부 업무포털</title>
-  
-  <link rel="manifest" href="./manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  
-  <meta name="apple-mobile-web-app-title" content="전력노조 업무포털">
-  
-  <link rel="apple-touch-icon" href="https://pub-8419615a133446dfbe9e0ef7cfa8e1b1.r2.dev/kpwu-portal.png">
-  <style>
-    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전국전력노동조합 업무포털</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue: #1a73e8;
+            --blue-dk: #1557b0;
+            --ink: #26344f;
+            --ink2: #6a7484;
+            --line: #e2e6ee;
+            --white: #ffffff;
+            --light: #f7f9fc;
+        }
 
-    :root {
-      --blue:    #1a73e8;
-      --blue-dk: #1557b0;
-      --ink:     #202124;
-      --ink2:    #5f6368;
-      --line:    #dadce0;
-      --bg:      #f1f3f4;
-      --white:   #ffffff;
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background: var(--light);
+            color: var(--ink);
+            padding: 20px;
+        }
 
-    body {
-      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
 
-    /* ── 슬림 헤더 ── */
-    header {
-      background: var(--white);
-      border-bottom: 1px solid var(--line);
-      padding: 0 18px;
-      height: 54px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .logo-icon { width: 30px; height: 30px; border-radius: 7px; overflow: hidden; flex-shrink: 0; }
-    .logo-icon img { width: 100%; height: 100%; object-fit: contain; }
-    .logo-text { font-size: 14.5px; font-weight: 700; letter-spacing: -0.3px; }
-    .logo-text span { color: var(--blue); }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
 
-    /* ── 슬림 히어로 (타이틀 바) ── */
-    .hero {
-      background: linear-gradient(135deg, #1557b0 0%, #1a73e8 60%, #4285f4 100%);
-      color: #fff;
-      padding: 15px 20px;
-      text-align: center;
-    }
-    .hero h1 { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; }
+        .logo {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--ink);
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
 
-    /* ── 메인 ── */
-    main {
-      max-width: 760px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 24px 18px 60px;
-      flex: 1;
-    }
-    .section-label {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      color: var(--ink2);
-      text-transform: uppercase;
-      margin: 2px 2px 16px;
-    }
+        .tagline {
+            font-size: 13px;
+            color: var(--ink2);
+        }
 
-    /* ── 서비스 타일 (크고 또렷하게) ── */
-    .app-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 14px;
-    }
-    .tile {
-      background: var(--white);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 26px 16px 22px;
-      text-decoration: none;
-      color: inherit;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-      transition: box-shadow .2s, transform .2s, border-color .2s;
-      cursor: pointer;
-    }
-    .tile:hover {
-      box-shadow: 0 8px 22px rgba(0,0,0,.09);
-      transform: translateY(-3px);
-      border-color: #4285f4;
-    }
-    .tile-icon {
-      position: relative;
-      width: 68px; height: 68px;
-      border-radius: 19px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 35px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.08);
-    }
-    .tile-icon.c1 { background: #e8f0fe; }
-    .tile-icon.c2 { background: #e3f2fd; }
-    .tile-icon.c3 { background: #fef7e0; }
-    .tile-icon.c4 { background: #fce8e6; }
-    .tile-icon .dot {
-      position: absolute; top: -3px; right: -3px;
-      width: 16px; height: 16px; border-radius: 50%;
-      background: #34a853; border: 3px solid var(--white);
-    }
-    .tile-label {
-      font-size: 15.5px;
-      font-weight: 700;
-      text-align: center;
-      line-height: 1.4;
-      letter-spacing: -0.3px;
-      color: var(--ink);
-    }
+        .tiles {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
 
-    /* ── 게임 모달 팝업 스타일 ── */
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 1000; opacity: 0; pointer-events: none;
-      transition: opacity 0.2s ease;
-    }
-    .modal-overlay.show { opacity: 1; pointer-events: auto; }
-    .modal-card {
-      background: var(--white); border-radius: 20px;
-      width: 90%; max-width: 340px; padding: 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-      text-align: center; transform: translateY(10px);
-      transition: transform 0.2s ease;
-    }
-    .modal-overlay.show .modal-card { transform: translateY(0); }
-    .modal-title { font-size: 17px; font-weight: 800; margin-bottom: 18px; color: var(--ink); }
-    .modal-btns { display: flex; flex-direction: column; gap: 10px; }
-    .modal-btn {
-      display: block; width: 100%; padding: 14px; border-radius: 12px;
-      font-size: 15px; font-weight: 700; text-decoration: none; text-align: center;
-      transition: background 0.15s; border: none; cursor: pointer;
-    }
-    .modal-btn.primary { background: var(--blue); color: #fff; }
-    .modal-btn.primary:hover { background: var(--blue-dk); }
-    .modal-btn.secondary { background: #f1f3f4; color: var(--ink); border: 1px solid var(--line); }
-    .modal-btn.secondary:hover { background: #e8eaed; }
-    .modal-btn.cancel { background: transparent; color: var(--ink2); font-size: 13px; margin-top: 6px; font-weight: 500; }
-  </style>
+        .tile {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid var(--line);
+        }
+
+        .tile:hover {
+            border-color: var(--blue);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.12);
+        }
+
+        .tile:active {
+            transform: scale(0.98);
+        }
+
+        .tile-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            background: #eef4ff;
+            position: relative;
+        }
+
+        .tile-icon.c1 { background: #eef4ff; }
+        .tile-icon.c2 { background: #fce8e6; }
+        .tile-icon.c3 { background: #fbf4e2; }
+        .tile-icon.c4 { background: #fce8e6; }
+
+        .dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ff5252;
+            border-radius: 50%;
+            top: 4px;
+            right: 4px;
+        }
+
+        .tile-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--ink2);
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--line);
+        }
+
+        /* 모달 팝업 스타일 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: var(--white);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 340px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            transform: translateY(10px);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.show .modal-card {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            font-size: 17px;
+            font-weight: 800;
+            margin-bottom: 18px;
+            color: var(--ink);
+        }
+
+        .modal-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            text-decoration: none;
+            text-align: center;
+            transition: background 0.15s;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .modal-btn.primary {
+            background: var(--blue);
+            color: #fff;
+        }
+
+        .modal-btn.primary:hover {
+            background: var(--blue-dk);
+        }
+
+        .modal-btn.secondary {
+            background: #f1f3f4;
+            color: var(--ink);
+            border: 1px solid var(--line);
+        }
+
+        .modal-btn.secondary:hover {
+            background: #e8eaed;
+        }
+
+        .modal-btn.cancel {
+            background: transparent;
+            color: var(--ink2);
+            font-size: 13px;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <div class="logo">전국전력<br>노동조합</div>
+            <div class="tagline">업무 편의 포털</div>
+        </header>
 
-<header>
-  <div class="logo-icon"><img src="https://knewu.netlify.app/icon-192.png" alt="로고"></div>
-  <div class="logo-text">전국전력노동조합 <span>집행부 업무포털</span></div>
-</header>
+        <div class="tiles">
+            <a href="https://knewu.github.io/directory/" class="tile" target="_blank">
+                <div class="tile-icon c1">👥</div>
+                <div class="tile-label">조직원<br>찾기</div>
+            </a>
 
-<div class="hero">
-  <h1>제24대 집행부 업무포털</h1>
-</div>
+            <a href="https://knewu.netlify.app/" class="tile" target="_blank">
+                <div class="tile-icon c2">📋</div>
+                <div class="tile-label">주간<br>업무 보고</div>
+            </a>
 
-<main>
-  <div class="section-label">서비스</div>
-  <div class="app-grid">
+            <a href="https://knewu.github.io/vacation/" class="tile" target="_blank">
+                <div class="tile-icon c3">🗓️</div>
+                <div class="tile-label">휴가<br>일정</div>
+            </a>
 
-    <a href="vacation.html" class="tile">
-      <div class="tile-icon c1">🏖️<span class="dot"></span></div>
-      <div class="tile-label">여름휴가 일정</div>
-    </a>
+            <div class="tile" onclick="openGameModal()">
+                <div class="tile-icon c4">⚡<span class="dot"></span></div>
+                <div class="tile-label">양방향<br>행사용 게임</div>
+            </div>
 
-    <a href="duty.html" class="tile">
-      <div class="tile-icon c2">📋<span class="dot"></span></div>
-      <div class="tile-label">주간업무 · 근태</div>
-    </a>
+            <a href="vote/index.html" class="tile" target="_blank">
+                <div class="tile-icon c1">🗳️</div>
+                <div class="tile-label">간편<br>투표</div>
+            </a>
+        </div>
 
-    <a href="menu.html" class="tile">
-      <div class="tile-icon c3">🍽️<span class="dot"></span></div>
-      <div class="tile-label">메뉴 고르기</div>
-    </a>
-
-    <div class="tile" onclick="openGameModal()">
-      <div class="tile-icon c4">⚡<span class="dot"></span></div>
-      <div class="tile-label">양방향 행사용 게임</div>
+        <footer>
+            발행 | 전국전력노동조합 북지국
+        </footer>
     </div>
 
-  </div>
-</main>
+    <!-- 양방향 행사용 게임 선택 모달창 -->
+    <div class="modal-overlay" id="gameModal" onclick="closeGameModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-title">양방향 행사용 게임</div>
+            <div class="modal-btns">
+                <a href="game/index.html" target="_blank" class="modal-btn primary" onclick="closeGameModal()">
+                    🎮 게임 참여하기 (새 탭)
+                </a>
 
-<div class="modal-overlay" id="gameModal" onclick="closeGameModal(event)">
-  <div class="modal-card" onclick="event.stopPropagation()">
-    <div class="modal-title">양방향 행사용 게임</div>
-    <div class="modal-btns">
-      <a href="game/index.html" target="_blank" class="modal-btn primary" onclick="closeGameModal()">
-        🎮 게임 참여하기 (새 탭)
-      </a>
-      
-      <button class="modal-btn secondary" onclick="copyGameUrl()" style="background: #e8f0fe; color: var(--blue); border-color: #c2e7ff;">
-        🔗 참여 주소 복사 (배포용)
-      </button>
+                <button class="modal-btn secondary" onclick="copyGameUrl()" style="background: #e8f0fe; color: var(--blue); border-color: #c2e7ff;">
+                    🔗 참여 주소 복사 (배포용)
+                </button>
 
-      <a href="game/host.html" class="modal-btn secondary" onclick="closeGameModal()">
-        ⚙️ 게임 진행 (관리자 호스트)
-      </a>
-      
-      <button class="modal-btn cancel" onclick="closeGameModal()">닫기</button>
+                <a href="game/host.html" class="modal-btn secondary" onclick="closeGameModal()">
+                    ⚙️ 게임 진행 (관리자 호스트)
+                </a>
+
+                <button class="modal-btn cancel" onclick="closeGameModal()">닫기</button>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
+    <script>
+        // 뒤로가기 보안 차단 (새로고침 강제)
+        window.addEventListener('popstate', () => {
+            window.location.href = window.location.href;
+        });
 
-<script>
-  // 모달 열기 (기존 타일 클릭 시 실행)
-  function openGameModal() {
-    document.getElementById('gameModal').classList.add('show');
-  }
-  
-  // 모달 닫기
-  function closeGameModal(e) {
-    document.getElementById('gameModal').classList.remove('show');
-  }
+        // 1. 타일 클릭 시 팝업 띄우기
+        function openGameModal() {
+            document.getElementById('gameModal').classList.add('show');
+        }
 
-  // 게임 참여 주소 복사 함수
-  function copyGameUrl() {
-    // 현재 포털 주소를 기반으로 game/index.html 주소를 자동으로 계산합니다.
-    const currentUrl = window.location.href;
-    const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
-    const gameUrl = baseUrl + '/game/index.html';
+        // 2. 팝업 닫기
+        function closeGameModal(e) {
+            if (e && e.target !== document.getElementById('gameModal')) return;
+            document.getElementById('gameModal').classList.remove('show');
+        }
 
-    // 클립보드에 주소 복사 실행
-    navigator.clipboard.writeText(gameUrl).then(() => {
-      alert('📋 게임 참여 주소가 복사되었습니다!\n카톡이나 문자창에 [붙여넣기]해서 배포하세요.');
-    }).catch(err => {
-      // 구형 브라우저나 일부 환경 대응용 임시 복사 로직
-      const t = document.createElement("textarea");
-      document.body.appendChild(t);
-      t.value = gameUrl; t.select();
-      document.execCommand('copy');
-      document.body.removeChild(t);
-      alert('📋 게임 참여 주소가 복사되었습니다!');
-    });
-  }
-</script>
+        // 3. 현재 도메인 주소 기반 배포용 링크 복사 기능
+        function copyGameUrl() {
+            const currentUrl = window.location.href;
+            const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+            const gameUrl = baseUrl + '/game/index.html';
 
+            navigator.clipboard.writeText(gameUrl).then(() => {
+                alert('📋 게임 참여 주소가 복사되었습니다!\n카톡이나 문자창에 [붙여넣기]해서 배포하세요.');
+            }).catch(err => {
+                const t = document.createElement("textarea");
+                document.body.appendChild(t);
+                t.value = gameUrl;
+                t.select();
+                document.execCommand('copy');
+                document.body.removeChild(t);
+                alert('📋 게임 참여 주소가 복사되었습니다!');
+            });
+        }
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeGameModal();
+        });
+    </script>
 </body>
 </html>
