@@ -711,7 +711,7 @@
         function renderTwBoxes(matters) {
             if (!matters || !matters.length) matters = [''];
             document.getElementById('twBoxes').innerHTML = matters.map(v =>
-                `<div class="mbox"><textarea class="mbox-ta" placeholder="업무 입력 — 다른 업무은 ➕ 업무 추가" oninput="autoGrow(this)">${escapeHtml(v)}</textarea>` +
+                `<div class="mbox"><textarea class="mbox-ta" placeholder="업무 입력 — 다른 업무는 ➕ 업무 추가" oninput="autoGrow(this)">${escapeHtml(v)}</textarea>` +
                 `<button type="button" class="mbox-x" onclick="rmTwBox(this)" title="이 업무 삭제">✕</button></div>`
             ).join('');
             document.querySelectorAll('#twBoxes .mbox-ta').forEach(autoGrow);
