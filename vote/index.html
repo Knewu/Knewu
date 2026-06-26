@@ -79,6 +79,10 @@
   .loading{ text-align:center; color:var(--ink2); padding:40px 0; font-size:14px; }
   .timer{ font-size:13px; color:var(--blue); font-weight:700; text-align:center; margin-top:10px; }
   .pin-input{ letter-spacing:6px; text-align:center; font-weight:800; font-size:20px; }
+  .seg { display:flex; gap:8px; }
+  .seg-btn { flex:1; padding:13px; border:1px solid var(--line); border-radius:12px; background:#fcfdfe;
+    font-family:inherit; font-size:14.5px; font-weight:700; color:var(--ink2); cursor:pointer; transition:all .12s; }
+  .seg-btn.on { background:#eef4ff; border-color:var(--blue); color:var(--blue-dk); }
 </style>
 </head>
 <body>
@@ -114,8 +118,10 @@ const LS_OWNER = 'knewu_vote_owner_v1'; // 만든 폰 표식 {pin}
 const LS_MYROLE = 'knewu_vote_role_v1'; // 마지막 선택 직책 기억
 
 let session = null;     // 현재 투표 데이터
-let myChoice = null;    // 만들기 화면 임시
+let myChoice = null;    // 만들기 화면 임시 (단일)
+let myChoices = [];     // 투표 화면 임시 (복수)
 let optCount = 2;
+let draft = { q:'', opts:['',''], timer:'0', multi:false }; // 만들기 입력 보존
 
 /* ===== 유틸 ===== */
 const $ = (id) => document.getElementById(id);
@@ -140,27 +146,35 @@ function render(){
 /* ====== ① 만들기 화면 ====== */
 function viewCreate(){
   let opts = '';
-  for(let i=0;i<optCount;i++){
+  for(let i=0;i<draft.opts.length;i++){
     opts += `<div class="opt-row">
-      <input type="text" id="opt${i}" placeholder="보기 ${i+1}" autocomplete="off">
+      <input type="text" id="opt${i}" placeholder="보기 ${i+1}" autocomplete="off" value="${esc(draft.opts[i]||'')}" oninput="saveDraft()">
       ${i>=2?`<button class="opt-x" onclick="rmOpt(${i})">✕</button>`:''}
     </div>`;
   }
+  const t = (v)=> draft.timer===v ? 'selected':'';
   return `<div class="card">
     <h2>투표 만들기</h2>
     <div class="sub">질문과 보기를 입력하세요. 만든 사람이 마감할 수 있어요.</div>
     <label class="fld">질문</label>
-    <input type="text" id="q" placeholder="예) 새 명칭 공모 1등은?" autocomplete="off">
+    <input type="text" id="q" placeholder="예) 새 명칭 공모 1등은?" autocomplete="off" value="${esc(draft.q||'')}" oninput="saveDraft()">
     <label class="fld">보기</label>
     <div id="opts">${opts}</div>
     <button class="btn btn-add mt2" onclick="addOpt()">➕ 보기 추가</button>
+
+    <label class="fld">선택 방식</label>
+    <div class="seg">
+      <button type="button" class="seg-btn ${!draft.multi?'on':''}" onclick="setMulti(false)">하나만 선택</button>
+      <button type="button" class="seg-btn ${draft.multi?'on':''}" onclick="setMulti(true)">복수 선택</button>
+    </div>
+
     <label class="fld">자동 마감 (선택)</label>
-    <select id="timer">
-      <option value="0">자동 마감 없음 (수동으로 마감)</option>
-      <option value="5">5분 후 자동 마감</option>
-      <option value="10">10분 후 자동 마감</option>
-      <option value="30">30분 후 자동 마감</option>
-      <option value="60">1시간 후 자동 마감</option>
+    <select id="timer" onchange="saveDraft()">
+      <option value="0" ${t('0')}>자동 마감 없음 (수동으로 마감)</option>
+      <option value="5" ${t('5')}>5분 후 자동 마감</option>
+      <option value="10" ${t('10')}>10분 후 자동 마감</option>
+      <option value="30" ${t('30')}>30분 후 자동 마감</option>
+      <option value="60" ${t('60')}>1시간 후 자동 마감</option>
     </select>
     <button class="btn btn-primary mt" onclick="createVote()">투표 생성</button>
     <div class="err hide" id="cErr"></div>
@@ -170,25 +184,33 @@ function viewCreate(){
   </div>`;
 }
 function bindCreate(){}
-function addOpt(){ optCount++; render(); }
-function rmOpt(i){ if(optCount>2){ optCount--; } render(); }
+function saveDraft(){
+  const q = $('q'); if(q) draft.q = q.value;
+  for(let i=0;i<draft.opts.length;i++){ const el=$('opt'+i); if(el) draft.opts[i]=el.value; }
+  const tm = $('timer'); if(tm) draft.timer = tm.value;
+}
+function setMulti(v){ saveDraft(); draft.multi = v; render(); }
+function addOpt(){ saveDraft(); draft.opts.push(''); render(); }
+function rmOpt(i){ saveDraft(); if(draft.opts.length>2){ draft.opts.splice(i,1); } render(); }
 function createVote(){
-  const q = $('q').value.trim();
-  const opts = [];
-  for(let i=0;i<optCount;i++){ const v=$('opt'+i).value.trim(); if(v) opts.push(v); }
+  saveDraft();
+  const q = (draft.q||'').trim();
+  const opts = draft.opts.map(s=>(s||'').trim()).filter(Boolean);
   const err = $('cErr');
   if(!q){ err.textContent='질문을 입력하세요.'; err.classList.remove('hide'); return; }
   if(opts.length<2){ err.textContent='보기를 2개 이상 입력하세요.'; err.classList.remove('hide'); return; }
-  const mins = parseInt($('timer').value,10) || 0;
+  const mins = parseInt(draft.timer,10) || 0;
   const pin = genPin();
   const now = Date.now();
   const data = {
     q, options: opts, status:'open', pin,
+    multi: !!draft.multi,
     createdAt: now,
     closeAt: mins>0 ? now + mins*60000 : 0,
-    votes: {} // { 직책: optionIndex }
+    votes: {} // 단일: {직책:index} / 복수: {직책:[index,...]}
   };
   try{ localStorage.setItem(LS_OWNER, JSON.stringify({pin, createdAt:now})); }catch(e){}
+  draft = { q:'', opts:['',''], timer:'0', multi:false };
   voteRef.set(data);
 }
 
@@ -201,12 +223,14 @@ function viewVote(){
     .concat(ROLES.map(r=>`<option value="${r}">${r}</option>`)).join('');
   const choices = session.options.map((o,i)=>
     `<button class="choice" data-i="${i}" onclick="pick(${i})">${esc(o)}</button>`).join('');
+  const modeTx = session.multi ? '여러 개 선택할 수 있어요' : '하나만 선택하세요';
   return `<div class="card">
     <span class="pill pill-live">● 투표 진행 중</span>
     <div class="q-title mt2">${esc(session.q)}</div>
     <label class="fld">내 직책</label>
     <select id="role">${roleOpts}</select>
-    <div id="choices" class="mt">${choices}</div>
+    <div class="sub" style="margin:10px 0 0;">${modeTx}</div>
+    <div id="choices" class="mt2">${choices}</div>
     <button class="btn btn-primary mt" id="submitBtn" onclick="submitVote()">투표 제출</button>
     <div class="err hide" id="vErr"></div>
     <div id="voteDone" class="hide"></div>
@@ -242,30 +266,48 @@ function ownerPanel(total){
 }
 function bindVote(){
   const r = $('role'); if(r && myRole()) r.value = myRole();
-  // 이미 이 직책으로 투표했으면 표시
+  myChoice = null; myChoices = [];
   refreshMyChoiceUI();
   startTimer();
 }
 function pick(i){
-  myChoice = i;
-  document.querySelectorAll('.choice').forEach(c=>c.classList.toggle('sel', +c.dataset.i===i));
+  if(session.multi){
+    const k = myChoices.indexOf(i);
+    if(k>=0) myChoices.splice(k,1); else myChoices.push(i);
+    document.querySelectorAll('.choice').forEach(c=>c.classList.toggle('sel', myChoices.includes(+c.dataset.i)));
+  } else {
+    myChoice = i;
+    document.querySelectorAll('.choice').forEach(c=>c.classList.toggle('sel', +c.dataset.i===i));
+  }
+}
+function applyPrev(prev){
+  document.querySelectorAll('.choice').forEach(c=>c.classList.remove('sel'));
+  myChoice=null; myChoices=[];
+  if(prev===undefined || prev===null) return;
+  if(session.multi && Array.isArray(prev)){
+    myChoices = prev.slice();
+    document.querySelectorAll('.choice').forEach(c=>c.classList.toggle('sel', myChoices.includes(+c.dataset.i)));
+  } else if(!session.multi && typeof prev==='number'){
+    myChoice = prev;
+    document.querySelectorAll('.choice').forEach(c=>c.classList.toggle('sel', +c.dataset.i===prev));
+  }
 }
 function refreshMyChoiceUI(){
   const r = $('role'); if(!r) return;
-  r.onchange = ()=>{
-    try{ localStorage.setItem(LS_MYROLE, r.value); }catch(e){}
-    const prev = session.votes && session.votes[r.value];
-    if(prev!==undefined && prev!==null){ pick(prev); }
-  };
+  const pre = ()=>{ const prev = session.votes && session.votes[r.value]; applyPrev(prev); };
+  if(r.value) pre();
+  r.onchange = ()=>{ try{ localStorage.setItem(LS_MYROLE, r.value); }catch(e){} pre(); };
 }
 function submitVote(){
   const role = $('role').value;
   const err = $('vErr');
   if(!role){ err.textContent='직책을 선택하세요.'; err.classList.remove('hide'); return; }
-  if(myChoice===null){ err.textContent='보기를 선택하세요.'; err.classList.remove('hide'); return; }
+  const payload = session.multi ? myChoices.slice().sort((a,b)=>a-b) : myChoice;
+  if(session.multi ? payload.length===0 : payload===null){
+    err.textContent='보기를 선택하세요.'; err.classList.remove('hide'); return; }
   err.classList.add('hide');
   try{ localStorage.setItem(LS_MYROLE, role); }catch(e){}
-  voteRef.child('votes').child(role).set(myChoice).then(()=>{
+  voteRef.child('votes').child(role).set(payload).then(()=>{
     $('choices').classList.add('hide');
     $('submitBtn').classList.add('hide');
     const d = $('voteDone'); d.classList.remove('hide');
@@ -315,26 +357,32 @@ function closeWithPin(){
 function viewResult(){
   const votes = session.votes || {};
   const counts = session.options.map(()=>0);
-  Object.values(votes).forEach(i=>{ if(i>=0 && i<counts.length) counts[i]++; });
+  Object.values(votes).forEach(v=>{
+    if(Array.isArray(v)){ v.forEach(i=>{ if(i>=0 && i<counts.length) counts[i]++; }); }
+    else if(typeof v==='number'){ if(v>=0 && v<counts.length) counts[v]++; }
+  });
   const total = Object.keys(votes).length;
   const max = Math.max(1, ...counts);
   const isWin = counts.map(c=> c===max && c>0);
+  const denom = session.multi ? max : (total||1); // 복수는 최다표 기준 막대
   const rows = session.options.map((o,i)=>{
-    const c = counts[i], pct = total? Math.round(c/total*100):0;
+    const c = counts[i];
+    const pct = total ? Math.round(c/total*100) : 0;
     const w = isWin[i];
     return `<div class="res-row">
       <div class="res-head">
         <span class="res-name ${w?'win':''}">${w?'<span class="crown">👑</span> ':''}${esc(o)}</span>
-        <span class="res-cnt">${c}표 · ${pct}%</span>
+        <span class="res-cnt">${c}표${session.multi?'':' · '+pct+'%'}</span>
       </div>
       <div class="res-bar"><div class="res-fill ${w?'win':''}" style="width:${(c/max*100)||0}%"></div></div>
     </div>`;
   }).join('');
   const owner = isOwner();
+  const modeNote = session.multi ? '복수 선택 투표 · 보기별 득표 합계' : '집계 결과';
   return `<div class="card">
     <span class="pill pill-closed">■ 투표 마감됨</span>
     <div class="q-title mt2">${esc(session.q)}</div>
-    <div class="sub" style="margin-top:8px;">총 ${total}명 참여 · 집계 결과</div>
+    <div class="sub" style="margin-top:8px;">총 ${total}명 참여 · ${modeNote}</div>
     <div class="mt">${rows}</div>
     <div class="meta">누가 무엇을 골랐는지는 공개되지 않습니다 (집계만).</div>
   </div>
@@ -346,7 +394,8 @@ function viewResult(){
 function newVote(){
   if(!confirm('새 투표를 만들까요? 현재 결과는 사라집니다.')) return;
   try{ localStorage.removeItem(LS_OWNER); }catch(e){}
-  optCount=2; myChoice=null;
+  myChoice=null; myChoices=[];
+  draft = { q:'', opts:['',''], timer:'0', multi:false };
   voteRef.remove();
 }
 </script>
