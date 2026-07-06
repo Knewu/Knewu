@@ -265,6 +265,11 @@
         .fin-ta { flex:1; min-width:0; border:1px solid transparent; border-radius:8px; padding:6px 9px; font-family:inherit; font-size:14.5px; line-height:1.55; color:#232a35; background:#f7f9fc; resize:none; overflow:hidden; }
         .fin-ta:focus { outline:none; border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px rgba(26,115,232,.12); }
         .fin-note { font-size:12px; color:var(--ink-faint); margin-top:12px; line-height:1.5; }
+        .week-picker { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:12px 0 4px; }
+        .week-picker > label { font-size:12.5px; font-weight:800; color:var(--ink); flex-shrink:0; }
+        .week-picker select { flex:1; min-width:180px; font-family:inherit; font-size:14px; font-weight:700; color:#26344f; padding:11px 12px; border:1px solid var(--line); border-radius:11px; background:#fcfdfe; cursor:pointer; -webkit-appearance:none; appearance:none; }
+        .week-picker select:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(26,115,232,.12); }
+        .edit-badge { width:100%; font-size:12.5px; font-weight:800; color:#8a5a00; background:#fff4dd; border:1px solid #f3dca0; border-radius:9px; padding:8px 12px; text-align:center; }
         .fin-chk { flex-shrink:0; margin-top:7px; }
         .fin-chk input { width:18px; height:18px; accent-color:var(--accent); cursor:pointer; }
         .fin-row.excluded { opacity:.4; }
@@ -369,7 +374,7 @@
                 <div class="fields" id="actFields">
                     <div class="field">
                         <label class="ed-label" id="lblThis">이번 주 활동</label>
-                        <div class="field-hint"></div>
+                        <div class="field-hint">한 칸에 한 업무씩 · 주제가 다르면 ➕ 업무 추가로 칸을 나눠요</div>
                         <div id="twBoxes"></div>
                         <button type="button" class="add-item" onclick="addTwBox()">➕ 업무 추가</button>
                     </div>
@@ -469,10 +474,16 @@
                     <h2>최종본 수정하기</h2>
                 </div>
                 <div class="sec-actions">
-                    <button class="fin-btn fin-btn-sm" onclick="reloadFinalFromDrafts()">이번주 활동<br>다시 불러오기</button>
+                    <button class="fin-btn fin-btn-sm" id="btnReload" onclick="reloadFinalFromDrafts()">이번주 활동<br>다시 불러오기</button>
                     <button class="fin-btn" onclick="printFinal()">최종본<br>이미지</button>
-                    <button class="fin-btn fin-btn-new fin-btn-sm" onclick="startNewWeek()">다음주<br>주간업무 작성</button>
+                    <button class="fin-btn fin-btn-new fin-btn-sm" id="btnNewWeek" onclick="startNewWeek()">다음주<br>주간업무 작성</button>
                 </div>
+            </div>
+
+            <div class="week-picker">
+                <label for="weekSel">주차 선택</label>
+                <select id="weekSel" onchange="onWeekSelChange(this.value)"></select>
+                <span id="editingBadge" class="edit-badge hide"></span>
             </div>
 
             <!-- 화면: 편집 가능 -->
@@ -522,6 +533,7 @@
         const dbRef = database.ref('perfect_clean_report_2026');
         const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 업무 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
         const weekRef = database.ref('perfect_clean_report_2026_week'); // 기준 주차(월요일) 저장
+        const archiveRef = database.ref('perfect_clean_report_2026_final_archive'); // 주차별 최종본 보관 {ISO: {thisWeek,lastWeek,label,savedAt}}
 
         const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","손課","홍部","김次","이課"];
         const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·손課·김次·이課은 출장근태만)
@@ -532,7 +544,10 @@
 
         let selectedUser = "";
         let serverCache = {};
-        let finalItems = { thisWeek: [], lastWeek: [] }; // 업무 단위 평면 목록
+        let finalItems = { thisWeek: [], lastWeek: [] }; // 업무 단위 평면 목록 (현재 주)
+        let archiveList = {};   // 아카이브 주차 목록 {ISO: entry}
+        let editingWeek = null; // null=현재 주 편집 / ISO=과거 주 편집
+        let archiveItems = { thisWeek: [], lastWeek: [] }; // 과거 주 편집 버퍼
         let activeDays = [];
         let serverLoaded = false;
         let finalRendered = false;
@@ -549,6 +564,17 @@
             return mon;
         }
         function isoDate(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+        function isoToDate(iso) { const p = iso.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+        function weekLabelFromISO(iso) {
+            const mon = isoToDate(iso); const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+            return `${mon.getMonth() + 1}월 ${mon.getDate()}일 ~ ${fri.getMonth() + 1}월 ${fri.getDate()}일`;
+        }
+        // 현재 편집 대상(현재 주 or 과거 주) 데이터와 저장 경로
+        function activeItems() { return editingWeek ? archiveItems : finalItems; }
+        function saveActive() {
+            if (editingWeek) archiveRef.child(editingWeek).update({ thisWeek: archiveItems.thisWeek || [], lastWeek: archiveItems.lastWeek || [], label: weekLabelFromISO(editingWeek) });
+            else finalRef.set(finalItems);
+        }
 
         function calcDates() {
             const now = new Date();
@@ -711,7 +737,7 @@
         function renderTwBoxes(matters) {
             if (!matters || !matters.length) matters = [''];
             document.getElementById('twBoxes').innerHTML = matters.map(v =>
-                `<div class="mbox"><textarea class="mbox-ta" placeholder="업무 입력 — 다른 업무는 ➕ 업무 추가" oninput="autoGrow(this)">${escapeHtml(v)}</textarea>` +
+                `<div class="mbox"><textarea class="mbox-ta" placeholder="업무 입력 — 다른 업무은 ➕ 업무 추가" oninput="autoGrow(this)">${escapeHtml(v)}</textarea>` +
                 `<button type="button" class="mbox-x" onclick="rmTwBox(this)" title="이 업무 삭제">✕</button></div>`
             ).join('');
             document.querySelectorAll('#twBoxes .mbox-ta').forEach(autoGrow);
@@ -798,10 +824,11 @@
         }
         function renderFinalEditor(force) {
             if (finalRendered && !force) return;
+            const items = activeItems();
             const build = (k) => {
-                const arr = finalItems[k] || [];
+                const arr = items[k] || [];
                 const rows = arr.map((it, i) => itemRow(k, i, it)).join('');
-                const hint = arr.length ? '' : `<div class="empty-hint">항목이 없습니다. 아래에서 부서를 골라 추가하거나 ‘다시 불러오기’로 각 부서 입력을 불러오세요.</div>`;
+                const hint = arr.length ? '' : `<div class="empty-hint">항목이 없습니다. 아래에서 부서를 골라 추가하거나 ‘이번주 활동 다시 불러오기’로 각 부서 입력을 불러오세요.</div>`;
                 return rows + hint + addBar(k);
             };
             document.getElementById('finCur').innerHTML = build('thisWeek');
@@ -811,32 +838,35 @@
         }
 
         let finSaveTimer = null;
-        function saveFinalNow() { finalRef.set(finalItems); }
-        function saveFinalDebounced() { clearTimeout(finSaveTimer); finSaveTimer = setTimeout(saveFinalNow, 500); }
-        function onItemInput(k, i, el) { autoGrow(el); if (finalItems[k] && finalItems[k][i]) finalItems[k][i].t = el.value; saveFinalDebounced(); }
-        function setItemDept(k, i, d) { if (finalItems[k] && finalItems[k][i]) { finalItems[k][i].d = d; saveFinalNow(); renderFinalEditor(true); } }
-        function toggleItemInc(k, i, checked) { if (finalItems[k] && finalItems[k][i]) { finalItems[k][i].x = !checked; saveFinalNow(); renderFinalEditor(true); } }
+        function saveFinalNow() { saveActive(); }
+        function saveFinalDebounced() { clearTimeout(finSaveTimer); finSaveTimer = setTimeout(saveActive, 500); }
+        function onItemInput(k, i, el) { autoGrow(el); const a = activeItems(); if (a[k] && a[k][i]) a[k][i].t = el.value; saveFinalDebounced(); }
+        function setItemDept(k, i, d) { const a = activeItems(); if (a[k] && a[k][i]) { a[k][i].d = d; saveActive(); renderFinalEditor(true); } }
+        function toggleItemInc(k, i, checked) { const a = activeItems(); if (a[k] && a[k][i]) { a[k][i].x = !checked; saveActive(); renderFinalEditor(true); } }
         function moveItem(k, i, dir) {
-            const arr = finalItems[k]; if (!arr) return;
+            const arr = activeItems()[k]; if (!arr) return;
             const j = i + dir; if (j < 0 || j >= arr.length) return;
             const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
-            saveFinalNow(); renderFinalEditor(true);
+            saveActive(); renderFinalEditor(true);
         }
         function addItem(k, d) {
             if (!d) return;
-            if (!finalItems[k]) finalItems[k] = [];
-            finalItems[k].push({ d: d, t: '', x: false });
-            saveFinalNow(); renderFinalEditor(true);
+            const a = activeItems();
+            if (!a[k]) a[k] = [];
+            a[k].push({ d: d, t: '', x: false });
+            saveActive(); renderFinalEditor(true);
             const tas = document.querySelectorAll(`#fin${k === 'thisWeek' ? 'Cur' : 'Prev'} .fin-mbox-ta`);
             const last = tas[tas.length - 1]; if (last) { last.scrollIntoView({ behavior: 'smooth', block: 'center' }); last.focus(); }
         }
         function removeItem(k, i) {
-            if (!finalItems[k]) return;
-            finalItems[k].splice(i, 1);
-            saveFinalNow(); renderFinalEditor(true);
+            const a = activeItems();
+            if (!a[k]) return;
+            a[k].splice(i, 1);
+            saveActive(); renderFinalEditor(true);
         }
 
         function reloadFinalFromDrafts() {
+            if (editingWeek) { alert('과거 주를 편집 중일 땐 불러올 수 없어요.\n상단 주차 선택에서 ‘이번 주(현재)’로 돌아간 뒤 사용하세요.'); return; }
             if (!confirm('각 부서가 입력한 이번주 내용을 항목으로 불러올까요?\n(현재 이번주 항목/순서는 새로 채워집니다. 지난주 항목은 그대로 유지됩니다.)')) return;
             const tw = [];
             ACT_MEMBERS.forEach(m => {
@@ -847,11 +877,19 @@
             saveFinalNow(); renderFinalEditor(true);
         }
 
-        // 새 주 시작: 이번주 최종본 항목 → 다음주 지난주로 순서 그대로 이월, 이번주·근태 비움, 주차 +7
+        // 새 주 시작: 현재 주 최종본을 주차별로 보관 → 이번주 항목을 다음주 지난주로 이월, 비우고 주차 +7
         function startNewWeek() {
             if (!serverLoaded) return;
-            const msg = '새 주를 시작할까요?\n\n• 이번주 최종본 항목(제외 제외)이 순서 그대로 다음 주 「지난주 활동」으로 넘어갑니다\n• 모든 부서의 이번주 활동과 출장·근태가 비워집니다\n• 작성 주간이 다음 주(월~일)로 이동합니다\n\n되돌릴 수 없습니다. 진행할까요?';
+            if (editingWeek) { alert('과거 주를 편집 중입니다.\n상단 주차 선택에서 ‘이번 주(현재)’로 돌아간 뒤 진행하세요.'); return; }
+            const msg = '다음 주 주간업무를 시작할까요?\n\n• 현재 주 최종본이 주차별 보관함에 저장됩니다 (나중에 드롭다운에서 다시 불러와 수정 가능)\n• 이번주 최종본 항목(제외 제외)이 순서 그대로 다음 주 「지난주 활동」으로 넘어갑니다\n• 모든 부서의 이번주 활동과 출장·근태가 비워집니다\n• 작성 주간이 다음 주로 이동합니다\n\n진행할까요?';
             if (!confirm(msg)) return;
+            // 1) 현재 주 보관
+            const key = isoDate(weekMonday || autoNextMonday());
+            archiveRef.child(key).set({
+                thisWeek: finalItems.thisWeek || [], lastWeek: finalItems.lastWeek || [],
+                label: weekLabelFromISO(key), savedAt: Date.now()
+            });
+            // 2) 이월 + 비우기
             const carried = (finalItems.thisWeek || []).filter(it => !it.x && (it.t || '').trim()).map(it => ({ d: it.d, t: it.t, x: false }));
             finalItems = { thisWeek: [], lastWeek: carried };
             saveFinalNow();
@@ -865,16 +903,22 @@
                 document.getElementById('txScDetail').value = '';
                 activeDays = []; refreshDayNodesUI();
             }
-            alert('새 주가 시작되었습니다.\n부서들이 이번주 활동을 입력한 뒤, ‘다시 불러오기’로 항목을 불러와 순서를 정하세요.');
+            alert('저장 완료 · 새 주가 시작되었습니다.\n지난 주는 상단 ‘주차 선택’에서 다시 불러와 수정할 수 있어요.');
         }
 
-        // 인쇄: 업무 항목 → 정돈된 뉴스레터 (순서 그대로, 부서 라벨 반복)
+        // 인쇄: 업무 항목 → 정돈된 뉴스레터 (현재 주 or 편집 중인 과거 주)
         function buildFinalPrint() {
-            const rowsFor = (k) => (finalItems[k] || []).filter(it => !it.x && (it.t || '').trim()).map(it =>
+            const items = activeItems();
+            const rowsFor = (k) => (items[k] || []).filter(it => !it.x && (it.t || '').trim()).map(it =>
                 `<div class="news-row"><span class="dept-tag ${deptCls(it.d, k)}">${it.d}</span><div class="act">${renderActivityItem(it.t)}</div></div>`
             ).join('');
             const cur = rowsFor('thisWeek');
             const prev = rowsFor('lastWeek');
+            // 인쇄 날짜 = 편집 중인 주 기준
+            const mon = editingWeek ? isoToDate(editingWeek) : (weekMonday || autoNextMonday());
+            const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+            const range = `${mon.getFullYear()}. ${pad(mon.getMonth()+1)}. ${pad(mon.getDate())} ~ ${pad(fri.getMonth()+1)}. ${pad(fri.getDate())}`;
+            const fdp = document.getElementById('finDatePrint'); if (fdp) fdp.innerText = range;
             document.getElementById('finCurPrint').innerHTML = cur || '<div class="empty-hint">이번 주 활동이 없습니다.</div>';
             document.getElementById('finPrevPrint').innerHTML = prev || '<div class="empty-hint">지난 주 활동이 없습니다.</div>';
         }
@@ -964,6 +1008,58 @@
             renderFinalEditor(true);
         }
 
+        // ── 주차 선택(드롭다운) ──
+        function renderWeekPicker() {
+            const sel = document.getElementById('weekSel');
+            if (!sel) return;
+            const curKey = isoDate(weekMonday || autoNextMonday());
+            const curLabel = weekLabelFromISO(curKey);
+            // 과거 주 = 아카이브 중 현재 주 키 제외, 최신순
+            const keys = Object.keys(archiveList).filter(k => k !== curKey).sort().reverse();
+            let html = `<option value="">🟢 이번 주 (현재) · ${curLabel}</option>`;
+            keys.forEach(k => {
+                const lb = (archiveList[k] && archiveList[k].label) || weekLabelFromISO(k);
+                html += `<option value="${k}">🗂 ${lb}</option>`;
+            });
+            sel.innerHTML = html;
+            sel.value = editingWeek || '';
+        }
+        function onWeekSelChange(val) {
+            if (!val) { exitEditing(); return; }
+            enterEditing(val);
+        }
+        function enterEditing(key) {
+            editingWeek = key;
+            const e = archiveList[key] || {};
+            archiveItems = {
+                thisWeek: Array.isArray(e.thisWeek) ? JSON.parse(JSON.stringify(e.thisWeek)) : [],
+                lastWeek: Array.isArray(e.lastWeek) ? JSON.parse(JSON.stringify(e.lastWeek)) : []
+            };
+            updateEditingUI();
+            renderFinalEditor(true);
+        }
+        function exitEditing() {
+            editingWeek = null;
+            updateEditingUI();
+            renderFinalEditor(true);
+        }
+        function updateEditingUI() {
+            const badge = document.getElementById('editingBadge');
+            const dateEl = document.getElementById('finDate');
+            const reloadBtn = document.getElementById('btnReload');
+            const newBtn = document.getElementById('btnNewWeek');
+            if (editingWeek) {
+                const lb = weekLabelFromISO(editingWeek);
+                if (badge) { badge.textContent = `🗂 과거 주 편집 중 · ${lb}`; badge.classList.remove('hide'); }
+                if (dateEl) dateEl.innerText = lb;
+                [reloadBtn, newBtn].forEach(b => { if (b) { b.disabled = true; b.style.opacity = '.4'; } });
+            } else {
+                if (badge) badge.classList.add('hide');
+                calcDates(); // finDate 현재 주로 복구
+                [reloadBtn, newBtn].forEach(b => { if (b) { b.disabled = false; b.style.opacity = ''; } });
+            }
+        }
+
         dbRef.on('value', (snap) => {
             serverCache = snap.val() || {};
             serverLoaded = true;
@@ -980,7 +1076,12 @@
         finalRef.on('value', (snap) => {
             const v = snap.val() || {};
             finalItems = { thisWeek: Array.isArray(v.thisWeek) ? v.thisWeek : [], lastWeek: Array.isArray(v.lastWeek) ? v.lastWeek : [] };
-            maybeRenderFinal();
+            if (!editingWeek) maybeRenderFinal(); // 과거 주 편집 중이면 현재 주 변경으로 화면 안 건드림
+        });
+
+        archiveRef.on('value', (snap) => {
+            archiveList = snap.val() || {};
+            renderWeekPicker();
         });
 
         weekRef.on('value', (snap) => {
@@ -992,7 +1093,8 @@
                 weekMonday = autoNextMonday();
                 weekRef.set(isoDate(weekMonday)); // 최초 1회 저장
             }
-            calcDates();
+            if (!editingWeek) calcDates();
+            renderWeekPicker();
         });
 
         initApp();
