@@ -368,10 +368,31 @@
         .img-overlay .img-close { background:rgba(255,255,255,.18); color:#fff; }
         .cap-spin { position:fixed; inset:0; background:rgba(255,255,255,.65); z-index:9998; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--ink-soft); }
 
-        /* 🌟 캡처용 가상 스케일 타겟 타겟 스타일 */
-        .capture-target { width:1024px !important; max-width:1024px !important; margin:0; background:#fff; padding:24px; box-sizing:border-box; display:block !important; }
+        /* 🌟 캡처용 가상 스케일 타겟 스타일 (모바일 세로형) */
+        .capture-target { width:720px !important; max-width:720px !important; margin:0; background:#fff; padding:22px; box-sizing:border-box; display:block !important; }
         .capture-target .month-actions { display:none !important; } /* 버튼은 숨김 */
-        .capture-target .month-title .mt-desc { display:block !important; font-size: 14px; color: var(--ink-soft); font-weight: 700; }
+        .capture-target .month-title .mt-desc { display:block !important; font-size: 13px; color: var(--ink-soft); font-weight: 700; }
+
+        /* 셀이 잘리지 않도록: 고정 높이 → 내용만큼 자동으로 늘어남 */
+        .capture-target .day-cell {
+            height: auto !important;
+            min-height: 100px;
+            overflow: visible !important;
+        }
+        /* 사람이 몰리는 주도 너무 길어지지 않게 뱃지를 2열로 타일링 */
+        .capture-target .vacation-list {
+            overflow: visible !important;
+            max-height: none !important;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            align-content: start;
+        }
+        .capture-target .vacation-badge {
+            font-size: 10px;
+            padding: 1px 3px;
+            flex-shrink: 0;
+        }
 
         @media (max-width: 640px) {
             .wrap { padding: 16px 12px 0; }
