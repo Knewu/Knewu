@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>우리 퀴즈쇼 🎪</title>
+<title>우리 게임랜드 🎪</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
@@ -39,9 +39,8 @@ textarea{resize:none}
   border-radius:999px;padding:3px 12px}
 .row{display:flex;gap:10px}.row>*{flex:1}
 .center{text-align:center}
-/* 답 버튼 (참가자) */
+/* 답 버튼 (퀴즈) */
 .ansGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
-.ansGrid.two{grid-template-columns:1fr 1fr}
 .ans{border:var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px 10px;text-align:center;
   cursor:pointer;color:#fff;transition:transform .08s;min-height:110px;display:flex;flex-direction:column;
   justify-content:center;gap:6px}
@@ -52,13 +51,11 @@ textarea{resize:none}
 .ans.c2{background:var(--mint)}.ans.c3{background:var(--sky)}
 .ans.picked{outline:5px solid var(--ink);outline-offset:-2px;transform:scale(.97)}
 .ans.dim{opacity:.35;pointer-events:none}
-.ans.correct{animation:pop .5s ease}
-@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
 /* 타이머 */
 .timerBar{height:16px;border:var(--line);border-radius:999px;background:#fff;overflow:hidden;margin:12px 0}
 .timerFill{height:100%;background:var(--mint);width:100%;transition:width .25s linear}
 .timerFill.hurry{background:var(--coral)}
-.bigTime{font-family:'Jua';font-size:26px;text-align:center}
+.bigTime{font-family:'Jua';font-size:24px;text-align:center}
 /* 점수판 */
 .rank{display:flex;align-items:center;gap:10px;padding:10px 6px;border-bottom:2px dashed #e5decf}
 .rank:last-child{border-bottom:none}
@@ -71,13 +68,13 @@ textarea{resize:none}
 .podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:18px 0}
 .pod{flex:1;text-align:center}
 .pod .box{border:var(--line);border-radius:14px 14px 0 0;box-shadow:var(--shadow);
-  display:flex;flex-direction:column;justify-content:flex-end;padding:8px 4px;color:#fff;font-family:'Jua'}
-.pod .who{font-size:15px;margin-bottom:8px;word-break:keep-all;color:var(--ink)}
+  display:flex;flex-direction:column;justify-content:flex-end;padding:8px 4px;font-family:'Jua'}
+.pod .who{font-size:15px;margin-bottom:8px;word-break:keep-all}
 .pod .medal{font-size:30px}
-.pod1 .box{height:120px;background:var(--sun);color:var(--ink)}
-.pod2 .box{height:90px;background:#C9C9C9;color:var(--ink)}
-.pod3 .box{height:70px;background:#E0A96D;color:var(--ink)}
-/* 호스트 문제목록 */
+.pod1 .box{height:120px;background:var(--sun)}
+.pod2 .box{height:90px;background:#C9C9C9}
+.pod3 .box{height:70px;background:#E0A96D}
+/* 호스트 */
 .qItem{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fff;
   display:flex;align-items:center;gap:8px}
 .qItem .qt{flex:1;font-size:15px;word-break:keep-all}
@@ -98,6 +95,33 @@ textarea{resize:none}
 .muted{color:#8a8378;font-size:13px}
 .playerChip{display:inline-block;border:2px solid var(--ink);background:#fff;border-radius:999px;
   padding:5px 12px;margin:3px;font-size:14px}
+/* 게임 선택 카드 */
+.gameSel{border:var(--line);border-radius:18px;box-shadow:var(--shadow);background:#fff;
+  padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:transform .08s}
+.gameSel:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.gameSel .ico{font-size:36px}
+.gameSel .gname{font-family:'Jua';font-size:20px}
+.gameSel .gdesc{font-size:13px;color:#8a8378}
+.gameSel[data-off="1"]{opacity:.45;pointer-events:none}
+/* 그림판 */
+.canvasBox{border:var(--line);border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+canvas{display:block;width:100%;touch-action:none}
+.paint{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.dot{width:38px;height:38px;border-radius:50%;border:3px solid var(--ink);cursor:pointer;flex-shrink:0}
+.dot.on{outline:4px solid var(--sun);outline-offset:2px}
+.toolBtn{border:var(--line);border-radius:10px;background:#fff;padding:8px 12px;font-size:14px;cursor:pointer;
+  font-family:'Jua'}
+.wordBanner{font-family:'Jua';font-size:22px;text-align:center;background:var(--sun);border:var(--line);
+  border-radius:14px;box-shadow:var(--shadow);padding:12px;margin-bottom:12px}
+/* 채팅/추측 피드 */
+.guessRow{display:flex;gap:8px;margin-top:10px}
+.guessRow input{flex:1}
+.guessRow button{border:var(--line);border-radius:12px;background:var(--sky);color:#fff;font-family:'Jua';
+  font-size:17px;padding:0 18px;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.feed{margin-top:10px;max-height:160px;overflow-y:auto}
+.feedItem{font-size:15px;padding:4px 2px;border-bottom:1px dashed #e5decf}
+.feedItem b{font-weight:700}
+.choBig{font-family:'Jua';font-size:44px;text-align:center;letter-spacing:8px;margin:8px 0}
 /* 컨페티 */
 .confetti{position:fixed;top:-40px;font-size:26px;animation:fall linear forwards;pointer-events:none;z-index:99}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
@@ -111,26 +135,22 @@ code{background:#f3efe6;padding:2px 6px;border-radius:6px;font-size:13px}
 <body>
 <div class="wrap">
 
-  <!-- ⚙️ 설정 안내 (Firebase 미설정 시) -->
   <div id="scr-setup" class="screen">
     <h1 class="title">⚙️ 설정 필요</h1>
     <div class="setupWarn">
-      아직 Firebase 설정이 비어 있어요.<br>
-      이 파일 아래쪽 <code>FIREBASE_CONFIG</code>에 기존 도구(vote 등)에서 쓰던
-      firebaseConfig를 그대로 붙여넣으면 바로 동작합니다.<br><br>
-      호스트 PIN은 <code>HOST_PIN</code>에서 변경하세요.
+      <code>FIREBASE_CONFIG</code>의 apiKey에 기존 도구에서 쓰던 값을 붙여넣어 주세요.
     </div>
   </div>
 
   <!-- 🏠 시작 -->
   <div id="scr-home" class="screen">
-    <h1 class="title">🎪 우리 퀴즈쇼</h1>
-    <p class="subtitle">문제 내고 · 맞히고 · 1등 하자!</p>
+    <h1 class="title">🎪 우리 게임랜드</h1>
+    <p class="subtitle">퀴즈 · 그림 맞추기 · 초성 퀴즈</p>
     <div class="card">
       <input type="text" id="joinName" placeholder="이름을 써 줘요 ✏️" maxlength="10" style="margin-bottom:12px">
       <button class="btn sun" onclick="joinGame()">🙋 참가하기</button>
     </div>
-    <button class="btn sm" onclick="openHostLogin()">🎩 호스트 (문제 내는 사람)</button>
+    <button class="btn sm" onclick="openHostLogin()">🎩 호스트 (진행하는 사람)</button>
   </div>
 
   <!-- 🎩 호스트 로그인 -->
@@ -147,12 +167,12 @@ code{background:#f3efe6;padding:2px 6px;border-radius:6px;font-size:13px}
   <div id="scr-host" class="screen">
     <h2 class="title" style="font-size:26px;margin-bottom:14px">🎩 호스트 콘솔</h2>
     <div class="tabBtns">
-      <button class="tb on" id="tabQ" onclick="hostTab('q')">📝 문제</button>
-      <button class="tb" id="tabP" onclick="hostTab('p')">▶️ 진행</button>
+      <button class="tb on" id="tabP" onclick="hostTab('p')">▶️ 진행</button>
+      <button class="tb" id="tabQ" onclick="hostTab('q')">📝 퀴즈 문제</button>
     </div>
 
-    <!-- 문제 관리 -->
-    <div id="host-q">
+    <!-- 퀴즈 문제 관리 -->
+    <div id="host-q" style="display:none">
       <div class="card">
         <div class="pill" style="margin-bottom:12px">
           <div class="p on" id="typeMc" onclick="setQType('mc')">🔢 선택형</div>
@@ -181,20 +201,13 @@ code{background:#f3efe6;padding:2px 6px;border-radius:6px;font-size:13px}
     </div>
 
     <!-- 진행 -->
-    <div id="host-p" style="display:none">
+    <div id="host-p">
       <div class="card">
         <h2 style="font-size:18px;margin-bottom:8px">참가자 <span class="badge" id="pCount">0명</span></h2>
         <div id="pList"><p class="muted">아직 아무도 안 왔어요</p></div>
       </div>
-      <div class="card">
-        <div class="row" style="margin-bottom:12px">
-          <label style="display:flex;align-items:center;gap:8px;font-size:15px">
-            ⏱️ 제한시간 <input type="number" id="qSeconds" value="20" min="5" max="120" style="width:80px">초
-          </label>
-        </div>
-        <div id="hostStage"></div>
-      </div>
-      <button class="btn sm" onclick="resetGame()" style="background:#fff">🧹 게임 초기화 (점수·참가자 리셋)</button>
+      <div id="hostStage"></div>
+      <button class="btn sm" onclick="resetGame()" style="background:#fff;margin-top:4px">🧹 게임 초기화 (점수·참가자 리셋)</button>
     </div>
     <button class="btn sm" onclick="show('home')" style="margin-top:10px">← 나가기</button>
   </div>
@@ -211,8 +224,7 @@ code{background:#f3efe6;padding:2px 6px;border-radius:6px;font-size:13px}
 
 <script>
 /* ═══════════════════════════════════════════════
-   ⚙️ 여기만 수정하면 됩니다
-   기존 도구(vote/index.html 등)의 firebaseConfig를 그대로 붙여넣기
+   ⚙️ 설정 — apiKey만 기존 값으로 교체하면 됩니다
 ═══════════════════════════════════════════════ */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDUFwsNEBzTZxr8EJuY2BZkYTEBadQoMk8",
@@ -223,15 +235,22 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "301755569133",
   appId: "1:301755569133:web:9bd85133d084c041368de4"
 };
-const HOST_PIN = "1234";   // 호스트 PIN — 꼭 바꿔서 쓰세요
-const ROOM = "quizshow";   // DB 경로 (다른 도구와 안 겹치게)
+const HOST_PIN = "1234";   // 꼭 바꿔서 쓰세요
+const ROOM = "quizshow";
 /* ═══════════════════════════════════════════════ */
 
 const SHAPES = ["🔴","🔺","🟩","⭐"];
 const OX_SHAPES = ["⭕","❌"];
+const DRAW_WORDS = ["코끼리","기린","토끼","강아지","고양이","문어","펭귄","공룡","나비","무지개","우산","아이스크림","피자","수박","바나나","김밥","라면","자전거","비행기","로켓","소방차","눈사람","축구공","안경","칫솔","시계","컴퓨터","휴대폰","냉장고","눈사람","유령","마법사","인어","용","해적","로봇","줄넘기","낚시","캠핑","놀이터","미끄럼틀","그네","케이크","햄버거","치킨","딸기","포도","거북이","상어","고래","개미","벌","달팽이","부엉이","독수리","선풍기","텐트","기차","헬리콥터","팽이"];
+const CHO_WORDS = ["떡볶이","김치찌개","놀이공원","여름방학","줄넘기","태권도","무지개","소방관","경찰관","우주비행사","아이스크림","눈싸움","물놀이","자전거","삼겹살","붕어빵","솜사탕","비빔밥","불고기","숨바꼭질","술래잡기","보드게임","수수께끼","운동회","급식시간","도서관","놀이터","문방구","젤리","초콜릿","딱지치기","공기놀이","팔씨름","끝말잇기","종이접기","물총싸움","방울토마토","계란말이","떡국","송편"];
+const PAINT_COLORS = ["#33302E","#FF6B6B","#4D96FF","#4FC978","#FFC531","#FFFFFF"];
+
 let db=null, me=null, isHost=false, qType='mc', qAnswer=-1;
-let questions={}, players={}, state=null, results={};
-let myAnswered=null, timerInt=null;
+let questions={}, players={}, state=null, results={}, winInfo=null;
+let myAnswered=null, timerInt=null, hostAutoEnded=null;
+let strokes={}, curStroke=null, curRef=null, lastSync=0;
+let paintColor=PAINT_COLORS[0], paintSize=5;
+let feedCache=[];
 
 function $(id){return document.getElementById(id)}
 function show(name){
@@ -241,6 +260,18 @@ function show(name){
 }
 function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function norm(s){return String(s).replace(/\s+/g,'').toLowerCase()}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+
+/* 초성 추출 */
+const CHO_LIST=["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+function toCho(word){
+  return [...word].map(ch=>{
+    const c=ch.charCodeAt(0)-0xAC00;
+    return (c>=0&&c<11172)?CHO_LIST[Math.floor(c/588)]:ch;
+  }).join(' ');
+}
 
 /* ── 초기화 ── */
 (function init(){
@@ -249,25 +280,32 @@ function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
   db = firebase.database();
 
   db.ref(ROOM+'/questions').on('value', s=>{ questions=s.val()||{}; renderQList(); renderHostStage(); });
-  db.ref(ROOM+'/players').on('value', s=>{ players=s.val()||{}; renderPlayers(); renderHostStage(); renderPlayStage(); });
-  db.ref(ROOM+'/results').on('value', s=>{ results=s.val()||{}; renderHostStage(); renderPlayStage(); });
+  db.ref(ROOM+'/players').on('value', s=>{ players=s.val()||{}; renderPlayers(); renderHostStage(); renderScores(); });
+  db.ref(ROOM+'/results').on('value', s=>{ results=s.val()||{}; });
+  db.ref(ROOM+'/win').on('value', s=>{ winInfo=s.val(); });
+  db.ref(ROOM+'/strokes').on('value', s=>{ strokes=s.val()||{}; redrawCanvas(); });
+  db.ref(ROOM+'/guesses').on('value', s=>{
+    const v=s.val()||{};
+    feedCache=Object.values(v).sort((a,b)=>a.at-b.at);
+    renderFeed();
+  });
   db.ref(ROOM+'/state').on('value', s=>{
     state=s.val()||{phase:'lobby'};
-    if(state.phase==='question') myAnswered=null;
+    if(['question','draw','cho'].includes(state.phase)) myAnswered=null;
+    hostAutoEnded=null;
     renderHostStage(); renderPlayStage(); syncTimer();
   });
 
-  // 이전 참가 이어하기
   const pid=load('qz_pid'), nm=load('qz_name');
   if(pid&&nm){
     db.ref(ROOM+'/players/'+pid).once('value',s=>{
-      if(s.exists()){ me={id:pid,name:nm}; $('myBadge').textContent='🙋 '+nm; show('play'); }
+      if(s.exists()){ me={id:pid,name:nm}; $('myBadge').textContent='🙋 '+nm; show('play'); renderPlayStage(); }
       else show('home');
     });
   } else show('home');
 })();
 
-/* ── 참가자 ── */
+/* ── 참가 ── */
 function joinGame(){
   const name=$('joinName').value.trim();
   if(!name){ $('joinName').classList.add('shake'); setTimeout(()=>$('joinName').classList.remove('shake'),400); return; }
@@ -276,25 +314,27 @@ function joinGame(){
   me={id:ref.key, name};
   store('qz_pid',ref.key); store('qz_name',name);
   $('myBadge').textContent='🙋 '+name;
-  show('play');
+  show('play'); renderPlayStage();
 }
+function playerArr(){ return Object.entries(players).map(([id,p])=>({id,...p})).sort((a,b)=>a.joinedAt-b.joinedAt) }
 
+/* ═════════ 참가자 화면 ═════════ */
 function renderPlayStage(){
   if(!me) return;
   const el=$('playStage'); if(!el) return;
-  const myScore=(players[me.id]||{}).score||0;
   const ph=state?state.phase:'lobby';
 
   if(ph==='lobby'){
     el.innerHTML=`<div class="card center">
       <div style="font-size:52px">🍿</div>
       <h2 style="font-size:22px;margin:8px 0">곧 시작해요!</h2>
-      <p class="muted">호스트가 문제를 준비하고 있어요</p></div>
+      <p class="muted">호스트가 게임을 고르고 있어요</p></div>
       <div class="card"><h2 style="font-size:17px;margin-bottom:8px">같이 하는 친구들</h2>
-      ${Object.values(players).map(p=>`<span class="playerChip">${esc(p.name)}</span>`).join('')||'<p class="muted">...</p>'}</div>`;
+      ${playerArr().map(p=>`<span class="playerChip">${esc(p.name)}</span>`).join('')||'<p class="muted">...</p>'}</div>`;
     return;
   }
 
+  /* ── 퀴즈쇼 ── */
   if(ph==='question'){
     const q=questions[state.qid]; if(!q){el.innerHTML='';return;}
     const shapes=q.type==='ox'?OX_SHAPES:SHAPES;
@@ -302,11 +342,10 @@ function renderPlayStage(){
     el.innerHTML=`
       <div class="card">
         <span class="badge">문제 ${state.qIndex+1} / ${state.total}</span>
-        <div class="timerBar"><div class="timerFill" id="tFill"></div></div>
-        <div class="bigTime" id="tNum"></div>
+        ${timerHtml()}
         <h2 style="font-size:22px;margin-top:8px;word-break:keep-all">${esc(q.text)}</h2>
       </div>
-      <div class="ansGrid ${q.options.length===2?'two':''}" id="ansGrid">
+      <div class="ansGrid">
         ${q.options.map((o,i)=>`
           <div class="ans c${i} ${locked?(myAnswered===i?'picked':'dim'):''}" onclick="pickAnswer(${i})">
             <div class="shape">${shapes[i]}</div>
@@ -314,14 +353,11 @@ function renderPlayStage(){
           </div>`).join('')}
       </div>
       ${locked?'<p class="center jua" style="margin-top:14px;font-size:19px">제출 완료! 두구두구... 🥁</p>':''}`;
-    syncTimer();
-    return;
+    syncTimer(); return;
   }
-
   if(ph==='reveal'){
     const q=questions[state.qid], r=results[state.qid]||{};
-    const gain=(r.gains||{})[me.id]||0;
-    const correct=gain>0;
+    const gain=(r.gains||{})[me.id]||0, correct=gain>0;
     const shapes=q&&q.type==='ox'?OX_SHAPES:SHAPES;
     el.innerHTML=`
       <div class="card center ${correct?'':'shake'}">
@@ -335,13 +371,93 @@ function renderPlayStage(){
     return;
   }
 
-  if(ph==='final'){
-    el.innerHTML=finalHtml();
-    confetti(40);
+  /* ── 그림 맞추기 ── */
+  if(ph==='draw'){
+    const iAmDrawer = state.drawerId===me.id;
+    if(iAmDrawer){
+      el.innerHTML=`
+        <div class="wordBanner">🎨 제시어: ${esc(state.word)}</div>
+        ${timerHtml()}
+        <div class="canvasBox"><canvas id="cv"></canvas></div>
+        <div class="paint" id="palette"></div>
+        <div class="row" style="margin-top:10px">
+          <button class="toolBtn" onclick="setSize(5)" id="szS">✏️ 가는 선</button>
+          <button class="toolBtn" onclick="setSize(14)" id="szL">🖍️ 굵은 선</button>
+          <button class="toolBtn" onclick="clearStrokes()">🗑️ 전부 지우기</button>
+        </div>
+        <p class="muted center" style="margin-top:8px">글자·숫자는 쓰면 안 돼요! 그림으로만!</p>`;
+      buildPalette(); setupCanvas(true);
+    } else {
+      el.innerHTML=`
+        <div class="card center" style="padding:10px">
+          <span class="jua" style="font-size:18px">🎨 <b>${esc(state.drawerName)}</b>이(가) 그리는 중!</span>
+        </div>
+        ${timerHtml()}
+        <div class="canvasBox"><canvas id="cv"></canvas></div>
+        <div class="guessRow">
+          <input type="text" id="guessIn" placeholder="정답을 써 봐요!" maxlength="20"
+            onkeydown="if(event.key==='Enter')sendGuess()">
+          <button onclick="sendGuess()">가자!</button>
+        </div>
+        <div class="feed" id="feed"></div>`;
+      setupCanvas(false); renderFeed();
+    }
+    syncTimer(); return;
+  }
+  if(ph==='drawEnd'){
+    const won=winInfo&&winInfo.pid===me.id;
+    const wasDrawer=state.drawerId===me.id;
+    el.innerHTML=`
+      <div class="card center">
+        <div style="font-size:56px">${winInfo?'🎉':'⏰'}</div>
+        <h2 style="font-size:22px;margin:6px 0">${winInfo?esc(winInfo.name)+' 정답!':'시간 종료!'}</h2>
+        <p style="font-size:17px">제시어는 <b class="jua" style="font-size:22px">${esc(state.word)}</b></p>
+        ${won?'<p class="gain" style="font-size:18px">+10점!</p>':''}
+        ${wasDrawer&&winInfo?'<p class="gain" style="font-size:16px">그린 사람 +5점!</p>':''}
+      </div>
+      <div class="canvasBox"><canvas id="cv"></canvas></div>
+      ${scoreboardHtml()}`;
+    setupCanvas(false);
+    if(won||(wasDrawer&&winInfo)) confetti();
     return;
   }
+
+  /* ── 초성 퀴즈 ── */
+  if(ph==='cho'){
+    el.innerHTML=`
+      <div class="card center">
+        <span class="badge">🔤 초성 퀴즈 ${state.round}라운드</span>
+        <div class="choBig">${esc(state.cho)}</div>
+        ${timerHtml()}
+      </div>
+      <div class="guessRow">
+        <input type="text" id="guessIn" placeholder="정답을 써 봐요!" maxlength="20"
+          onkeydown="if(event.key==='Enter')sendGuess()">
+        <button onclick="sendGuess()">가자!</button>
+      </div>
+      <div class="feed" id="feed"></div>`;
+    renderFeed(); syncTimer(); return;
+  }
+  if(ph==='choEnd'){
+    const won=winInfo&&winInfo.pid===me.id;
+    el.innerHTML=`
+      <div class="card center">
+        <div style="font-size:56px">${winInfo?'🎉':'⏰'}</div>
+        <h2 style="font-size:22px;margin:6px 0">${winInfo?esc(winInfo.name)+' 정답!':'시간 종료!'}</h2>
+        <p style="font-size:17px">정답은 <b class="jua" style="font-size:24px">${esc(state.word)}</b></p>
+        ${won?'<p class="gain" style="font-size:18px">+10점!</p>':''}
+      </div>
+      ${scoreboardHtml()}`;
+    if(won) confetti();
+    return;
+  }
+
+  if(ph==='final'){ el.innerHTML=finalHtml(); confetti(40); return; }
 }
 
+function timerHtml(){ return `<div class="timerBar"><div class="timerFill" id="tFill"></div></div><div class="bigTime" id="tNum"></div>` }
+
+/* ── 퀴즈 답 ── */
 function pickAnswer(i){
   if(myAnswered!==null||!state||state.phase!=='question') return;
   if(Date.now()>state.deadline) return;
@@ -350,10 +466,97 @@ function pickAnswer(i){
   renderPlayStage();
 }
 
+/* ── 추측 (그림·초성 공용) ── */
+function sendGuess(){
+  const inp=$('guessIn'); if(!inp)return;
+  const text=inp.value.trim(); if(!text)return;
+  inp.value='';
+  if(!state||!['draw','cho'].includes(state.phase)) return;
+  if(Date.now()>state.deadline) return;
+  if(state.phase==='draw'&&state.drawerId===me.id) return;
+  db.ref(ROOM+'/guesses').push({pid:me.id, name:me.name, text, at:Date.now()});
+  if(norm(text)===norm(state.word)){
+    const endPhase=state.phase==='draw'?'drawEnd':'choEnd';
+    const drawerId=state.drawerId;
+    db.ref(ROOM+'/win').transaction(cur=>{
+      if(cur) return;   // 이미 누가 맞힘
+      return {pid:me.id, name:me.name, at:Date.now()};
+    },(err,committed)=>{
+      if(committed){
+        const updates={};
+        updates[`players/${me.id}/score`]=((players[me.id]||{}).score||0)+10;
+        if(state.phase==='draw'&&drawerId)
+          updates[`players/${drawerId}/score`]=((players[drawerId]||{}).score||0)+5;
+        updates['state/phase']=endPhase;
+        db.ref(ROOM).update(updates);
+      }
+    });
+  }
+}
+function renderFeed(){
+  const el=$('feed'); if(!el)return;
+  el.innerHTML=feedCache.slice(-10).map(g=>
+    `<div class="feedItem"><b>${esc(g.name)}</b> ${esc(g.text)}</div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+/* ── 그림판 ── */
+function buildPalette(){
+  const el=$('palette'); if(!el)return;
+  el.innerHTML=PAINT_COLORS.map(c=>
+    `<div class="dot ${c===paintColor?'on':''}" style="background:${c}" onclick="setColor('${c}')"></div>`).join('');
+}
+function setColor(c){ paintColor=c; buildPalette(); }
+function setSize(s){ paintSize=s; }
+function canvasEl(){ return $('cv') }
+function setupCanvas(drawable){
+  const cv=canvasEl(); if(!cv)return;
+  const w=cv.parentElement.clientWidth||320;
+  cv.width=w*2; cv.height=w*1.5; cv.style.height=(w*0.75)+'px';
+  redrawCanvas();
+  if(!drawable) return;
+  const pos=e=>{
+    const r=cv.getBoundingClientRect();
+    return [ (e.clientX-r.left)/r.width, (e.clientY-r.top)/r.height ];
+  };
+  cv.onpointerdown=e=>{
+    e.preventDefault(); cv.setPointerCapture(e.pointerId);
+    curRef=db.ref(ROOM+'/strokes').push();
+    curStroke={c:paintColor, s:paintSize, p:[pos(e)]};
+    curRef.set(curStroke);
+  };
+  cv.onpointermove=e=>{
+    if(!curStroke)return; e.preventDefault();
+    curStroke.p.push(pos(e));
+    drawStroke(curStroke);
+    const now=Date.now();
+    if(now-lastSync>120){ lastSync=now; curRef.set(curStroke); }
+  };
+  const up=e=>{ if(!curStroke)return; curRef.set(curStroke); curStroke=null; curRef=null; };
+  cv.onpointerup=up; cv.onpointercancel=up;
+}
+function drawStroke(st){
+  const cv=canvasEl(); if(!cv||!st.p.length)return;
+  const ctx=cv.getContext('2d');
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle=st.c; ctx.lineWidth=st.s*2;
+  ctx.beginPath();
+  st.p.forEach(([x,y],i)=>{ i?ctx.lineTo(x*cv.width,y*cv.height):ctx.moveTo(x*cv.width,y*cv.height) });
+  if(st.p.length===1){ ctx.lineTo(st.p[0][0]*cv.width+0.1, st.p[0][1]*cv.height) }
+  ctx.stroke();
+}
+function redrawCanvas(){
+  const cv=canvasEl(); if(!cv)return;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,cv.width,cv.height);
+  Object.values(strokes).forEach(drawStroke);
+}
+function clearStrokes(){ db.ref(ROOM+'/strokes').remove(); }
+
 /* ── 타이머 ── */
 function syncTimer(){
   clearInterval(timerInt);
-  if(!state||state.phase!=='question') return;
+  if(!state||!state.deadline||!['question','draw','cho'].includes(state.phase)) return;
   const total=state.seconds*1000;
   const tick=()=>{
     const remain=Math.max(0,state.deadline-Date.now());
@@ -362,17 +565,22 @@ function syncTimer(){
     if(num) num.textContent=remain>0?Math.ceil(remain/1000)+'초':'⏰ 시간 종료!';
     if(remain<=0){
       clearInterval(timerInt);
-      if(me&&myAnswered===null){ myAnswered=-1; renderPlayStage(); }
+      // 호스트가 자동으로 라운드 종료
+      if(isHost&&hostAutoEnded!==state.phase+state.deadline){
+        hostAutoEnded=state.phase+state.deadline;
+        if(state.phase==='draw') db.ref(ROOM+'/state/phase').set('drawEnd');
+        if(state.phase==='cho') db.ref(ROOM+'/state/phase').set('choEnd');
+      }
     }
   };
   tick(); timerInt=setInterval(tick,250);
 }
 
-/* ── 호스트 ── */
+/* ═════════ 호스트 ═════════ */
 function openHostLogin(){ $('hostPin').value=''; show('hostlogin'); }
 function hostLogin(){
   if($('hostPin').value!==HOST_PIN){ $('hostPin').classList.add('shake'); setTimeout(()=>$('hostPin').classList.remove('shake'),400); return; }
-  isHost=true; show('host'); hostTab('q');
+  isHost=true; show('host'); hostTab('p');
 }
 function hostTab(t){
   $('tabQ').classList.toggle('on',t==='q'); $('tabP').classList.toggle('on',t==='p');
@@ -409,7 +617,6 @@ function addQuestion(){
 }
 function delQuestion(id){ db.ref(ROOM+'/questions/'+id).remove(); }
 function qArr(){ return Object.entries(questions).map(([id,q])=>({id,...q})).sort((a,b)=>a.order-b.order); }
-
 function renderQList(){
   const arr=qArr(); const el=$('qList'); if(!el)return;
   $('qCount').textContent=arr.length+'개';
@@ -422,64 +629,143 @@ function renderQList(){
 }
 function renderPlayers(){
   const el=$('pList'); if(!el)return;
-  const arr=Object.values(players);
+  const arr=playerArr();
   $('pCount').textContent=arr.length+'명';
   el.innerHTML=arr.length?arr.map(p=>`<span class="playerChip">${esc(p.name)} · ${p.score||0}점</span>`).join('')
     :'<p class="muted">아직 아무도 안 왔어요</p>';
 }
+function renderScores(){ /* 진행 중 화면 갱신용 */ if(state&&['reveal','drawEnd','choEnd','final'].includes(state.phase)){renderPlayStage();renderHostStage();} }
 
 function renderHostStage(){
   const el=$('hostStage'); if(!el||!isHost)return;
-  const arr=qArr(); const ph=state?state.phase:'lobby';
+  const ph=state?state.phase:'lobby';
+  const arr=qArr();
 
   if(ph==='lobby'){
-    el.innerHTML=`<button class="btn coral" onclick="startQuestion(0)" ${arr.length?'':'disabled'}>🚀 게임 시작!</button>
-      ${arr.length?'':'<p class="muted center" style="margin-top:8px">문제 탭에서 먼저 문제를 만들어 주세요</p>'}`;
+    el.innerHTML=`
+      <div class="gameSel" onclick="startQuiz()" data-off="${arr.length?0:1}">
+        <div class="ico">🎪</div><div><div class="gname">퀴즈쇼</div>
+        <div class="gdesc">${arr.length?arr.length+'문제 준비됨':'퀴즈 문제 탭에서 먼저 문제를 만들어요'}</div></div>
+      </div>
+      <div class="gameSel" onclick="startDraw()">
+        <div class="ico">🎨</div><div><div class="gname">그림 맞추기</div>
+        <div class="gdesc">돌아가며 그리고, 먼저 맞히면 +10점</div></div>
+      </div>
+      <div class="gameSel" onclick="startCho()">
+        <div class="ico">🔤</div><div><div class="gname">초성 퀴즈</div>
+        <div class="gdesc">초성 보고 먼저 맞히면 +10점</div></div>
+      </div>
+      <div class="card">
+        <div class="row">
+          <label style="display:flex;align-items:center;gap:6px;font-size:14px">
+            ⏱️ 퀴즈/초성 <input type="number" id="secShort" value="30" min="5" max="120" style="width:64px">초
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:14px">
+            🎨 그림 <input type="number" id="secDraw" value="90" min="20" max="300" style="width:64px">초
+          </label>
+        </div>
+      </div>
+      <button class="btn lilac sm" onclick="finishGame()">🏆 최종 결과 발표</button>`;
     return;
   }
+
+  /* 퀴즈 진행 */
   if(ph==='question'){
-    const answered=Object.keys((state.qid&&window._ansCache)||{}).length;
-    el.innerHTML=`<p class="jua center" style="font-size:20px;margin-bottom:6px">문제 ${state.qIndex+1} / ${state.total} 진행 중</p>
+    el.innerHTML=`<div class="card">
+      <p class="jua center" style="font-size:20px;margin-bottom:6px">🎪 문제 ${state.qIndex+1} / ${state.total}</p>
       <p class="center" style="margin-bottom:12px">답한 사람: <b id="ansCount">…</b></p>
-      <button class="btn sun" onclick="reveal()">🔔 마감하고 정답 공개</button>`;
+      <button class="btn sun" onclick="revealQuiz()">🔔 마감하고 정답 공개</button></div>`;
     db.ref(`${ROOM}/answers/${state.qid}`).on('value',s=>{
-      const c=$('ansCount'); if(c) c.textContent=Object.keys(s.val()||{}).length+' / '+Object.keys(players).length+'명';
+      const c=$('ansCount'); if(c) c.textContent=Object.keys(s.val()||{}).length+' / '+playerArr().length+'명';
     });
     return;
   }
   if(ph==='reveal'){
     const next=state.qIndex+1;
-    el.innerHTML=`${scoreboardHtml()}
+    el.innerHTML=`${scoreboardHtml()}<div class="card">
       ${next<state.total
-        ?`<button class="btn sky" onclick="startQuestion(${next})">➡️ 다음 문제 (${next+1}/${state.total})</button>`
-        :`<button class="btn lilac" onclick="finishGame()">🏆 최종 결과 발표</button>`}`;
+        ?`<button class="btn sky" onclick="startQuizQ(${next})">➡️ 다음 문제 (${next+1}/${state.total})</button>`
+        :`<button class="btn lilac" onclick="backToLobby()">✅ 퀴즈 끝! 게임 선택으로</button>`}</div>`;
     return;
   }
+
+  /* 그림 진행 */
+  if(ph==='draw'){
+    el.innerHTML=`<div class="card">
+      <p class="jua center" style="font-size:19px">🎨 ${esc(state.drawerName)} 그리는 중</p>
+      <p class="center" style="margin:6px 0">제시어: <b class="jua">${esc(state.word)}</b></p>
+      <div class="canvasBox" style="margin-bottom:10px"><canvas id="cv"></canvas></div>
+      <button class="btn sun sm" onclick="endDraw()">⏹️ 라운드 종료 (정답 공개)</button></div>
+      <div class="feed" id="feed"></div>`;
+    setupCanvas(false); renderFeed();
+    return;
+  }
+  if(ph==='drawEnd'){
+    el.innerHTML=`<div class="card center">
+      <p class="jua" style="font-size:19px">${winInfo?'🎉 '+esc(winInfo.name)+' 정답!':'⏰ 아무도 못 맞혔어요'}</p>
+      <p>제시어: <b class="jua">${esc(state.word)}</b></p></div>
+      ${scoreboardHtml()}
+      <div class="card">
+      <button class="btn sky" onclick="nextDraw()">🎨 다음 사람 차례</button>
+      <button class="btn sm" style="margin-top:8px" onclick="backToLobby()">게임 선택으로</button></div>`;
+    return;
+  }
+
+  /* 초성 진행 */
+  if(ph==='cho'){
+    el.innerHTML=`<div class="card center">
+      <p class="jua" style="font-size:19px">🔤 ${state.round}라운드</p>
+      <div class="choBig" style="font-size:34px">${esc(state.cho)}</div>
+      <p>정답: <b class="jua">${esc(state.word)}</b></p>
+      <button class="btn sun sm" style="margin-top:8px" onclick="db.ref(ROOM+'/state/phase').set('choEnd')">⏹️ 라운드 종료</button></div>
+      <div class="feed" id="feed"></div>`;
+    renderFeed(); return;
+  }
+  if(ph==='choEnd'){
+    el.innerHTML=`<div class="card center">
+      <p class="jua" style="font-size:19px">${winInfo?'🎉 '+esc(winInfo.name)+' 정답!':'⏰ 아무도 못 맞혔어요'}</p>
+      <p>정답: <b class="jua">${esc(state.word)}</b></p></div>
+      ${scoreboardHtml()}
+      <div class="card">
+      <button class="btn sky" onclick="nextCho()">🔤 다음 문제</button>
+      <button class="btn sm" style="margin-top:8px" onclick="backToLobby()">게임 선택으로</button></div>`;
+    return;
+  }
+
   if(ph==='final'){
-    el.innerHTML=finalHtml()+`<button class="btn sm" onclick="backToLobby()" style="margin-top:10px">🔄 대기 화면으로</button>`;
+    el.innerHTML=finalHtml()+`<button class="btn sm" onclick="backToLobby()" style="margin-top:10px">🔄 게임 선택으로</button>`;
     return;
   }
 }
 
-function startQuestion(idx){
+/* ── 게임 시작/진행 ── */
+function secShort(){ const e=$('secShort'); return e?Math.max(5,Math.min(120,parseInt(e.value)||30)):30 }
+function secDraw(){ const e=$('secDraw'); return e?Math.max(20,Math.min(300,parseInt(e.value)||90)):90 }
+let savedSecShort=30, savedSecDraw=90;
+
+function startQuiz(){
+  if(!qArr().length)return;
+  savedSecShort=secShort();
+  startQuizQ(0);
+}
+function startQuizQ(idx){
   const arr=qArr(); if(!arr[idx])return;
-  const secs=Math.max(5,Math.min(120,parseInt($('qSeconds').value)||20));
   db.ref(ROOM+'/state').set({
-    phase:'question', qid:arr[idx].id, qIndex:idx, total:arr.length,
-    seconds:secs, deadline:Date.now()+secs*1000
+    phase:'question', game:'quiz', qid:arr[idx].id, qIndex:idx, total:arr.length,
+    seconds:savedSecShort, deadline:Date.now()+savedSecShort*1000
   });
 }
-function reveal(){
+function revealQuiz(){
   const qid=state.qid, q=questions[qid]; if(!q)return;
   db.ref(`${ROOM}/answers/${qid}`).off();
   db.ref(`${ROOM}/answers/${qid}`).once('value',s=>{
     const answers=s.val()||{};
     const gains={}, updates={};
-    const total=state.seconds*1000, start=state.deadline-total;
+    const total=state.seconds*1000;
     Object.entries(answers).forEach(([pid,a])=>{
       if(a.choice===q.answer){
         const remain=Math.max(0,state.deadline-a.at);
-        const pts=10+Math.round(5*remain/total);   // 기본 10점 + 스피드 보너스 최대 5점
+        const pts=10+Math.round(5*remain/total);
         gains[pid]=pts;
         updates[`players/${pid}/score`]=((players[pid]||{}).score||0)+pts;
       }
@@ -489,21 +775,52 @@ function reveal(){
     db.ref(ROOM).update(updates);
   });
 }
-function finishGame(){ db.ref(ROOM+'/state/phase').set('final'); }
-function backToLobby(){ db.ref(ROOM+'/state').set({phase:'lobby'}); }
-function resetGame(){
-  if(!confirm('참가자와 점수를 모두 지울까요? (문제는 남아요)'))return;
-  db.ref(ROOM).update({players:null, answers:null, results:null, state:{phase:'lobby'}});
+
+function startDraw(){
+  savedSecDraw=secDraw();
+  launchDrawRound(0);
+}
+function nextDraw(){ launchDrawRound((state.round||0)+1) }
+function launchDrawRound(round){
+  const arr=playerArr();
+  if(!arr.length){alert('참가자가 아직 없어요');return;}
+  const drawer=arr[round%arr.length];
+  db.ref(ROOM).update({
+    strokes:null, guesses:null, win:null,
+    state:{phase:'draw', game:'draw', round,
+      drawerId:drawer.id, drawerName:drawer.name,
+      word:pick(DRAW_WORDS), seconds:savedSecDraw, deadline:Date.now()+savedSecDraw*1000}
+  });
+}
+function endDraw(){ db.ref(ROOM+'/state/phase').set('drawEnd') }
+
+function startCho(){
+  savedSecShort=secShort();
+  launchChoRound(1);
+}
+function nextCho(){ launchChoRound((state.round||0)+1) }
+function launchChoRound(round){
+  const word=pick(CHO_WORDS);
+  db.ref(ROOM).update({
+    guesses:null, win:null,
+    state:{phase:'cho', game:'cho', round, word, cho:toCho(word),
+      seconds:savedSecShort, deadline:Date.now()+savedSecShort*1000}
+  });
 }
 
-/* ── 공통 렌더 ── */
+function finishGame(){ db.ref(ROOM+'/state').set({phase:'final'}) }
+function backToLobby(){ db.ref(ROOM).update({state:{phase:'lobby'}, strokes:null, guesses:null, win:null}) }
+function resetGame(){
+  if(!confirm('참가자와 점수를 모두 지울까요? (퀴즈 문제는 남아요)'))return;
+  db.ref(ROOM).update({players:null, answers:null, results:null, strokes:null, guesses:null, win:null, state:{phase:'lobby'}});
+}
+
+/* ── 공통 ── */
 function scoreboardHtml(){
   const arr=Object.entries(players).map(([id,p])=>({id,...p})).sort((a,b)=>(b.score||0)-(a.score||0));
-  const r=results[state&&state.qid]||{};
   return `<div class="card"><h2 style="font-size:18px;margin-bottom:6px">🏅 점수판</h2>
     ${arr.map((p,i)=>`<div class="rank ${me&&p.id===me.id?'me':''}">
-      <span class="no">${i+1}</span><span class="nm">${esc(p.name)}
-      ${(r.gains||{})[p.id]?`<span class="gain">+${r.gains[p.id]}</span>`:''}</span>
+      <span class="no">${i+1}</span><span class="nm">${esc(p.name)}</span>
       <span class="sc">${p.score||0}점</span></div>`).join('')||'<p class="muted">...</p>'}</div>`;
 }
 function finalHtml(){
@@ -518,8 +835,6 @@ function finalHtml(){
     ${arr.length>3?`<div class="card">${arr.slice(3).map((p,i)=>`<div class="rank">
       <span class="no">${i+4}</span><span class="nm">${esc(p.name)}</span><span class="sc">${p.score||0}점</span></div>`).join('')}</div>`:''}`;
 }
-
-/* ── 컨페티 ── */
 function confetti(n=24){
   const em=['🎉','⭐','✨','🎈','🍬','💛'];
   for(let i=0;i<n;i++){
@@ -533,7 +848,6 @@ function confetti(n=24){
     setTimeout(()=>d.remove(),5000);
   }
 }
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 </script>
 </body>
 </html>
