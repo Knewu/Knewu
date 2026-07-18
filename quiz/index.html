@@ -423,32 +423,57 @@ function renderPlayStage(){
   }
 
   /* ── 초성 퀴즈 ── */
+  if(ph==='choSet'){
+    if(state.setterId===me.id){
+      el.innerHTML=`
+        <div class="wordBanner">✍️ 이번엔 네가 문제 낼 차례!</div>
+        <div class="card">
+          <p style="margin-bottom:10px;font-size:15px">친구들이 맞힐 단어를 써 줘요. 다른 사람한텐 초성만 보여요!</p>
+          <div class="guessRow">
+            <input type="text" id="choWordIn" placeholder="예: 떡볶이" maxlength="12"
+              onkeydown="if(event.key==='Enter')submitChoWord()">
+            <button onclick="submitChoWord()">출제!</button>
+          </div>
+        </div>`;
+    } else {
+      el.innerHTML=`<div class="card center">
+        <div style="font-size:52px">✍️</div>
+        <h2 style="font-size:20px;margin:8px 0"><b>${esc(state.setterName)}</b>이(가) 문제를 만드는 중...</h2>
+        <p class="muted">조금만 기다려요!</p></div>`;
+    }
+    return;
+  }
   if(ph==='cho'){
+    const iAmSetter=state.mode==='custom'&&state.setterId===me.id;
     el.innerHTML=`
       <div class="card center">
-        <span class="badge">🔤 초성 퀴즈 ${state.round}라운드</span>
+        <span class="badge">🔤 초성 퀴즈 ${state.round}라운드${state.mode==='custom'?' · '+esc(state.setterName)+' 출제':''}</span>
         <div class="choBig">${esc(state.cho)}</div>
         ${timerHtml()}
       </div>
-      <div class="guessRow">
-        <input type="text" id="guessIn" placeholder="정답을 써 봐요!" maxlength="20"
-          onkeydown="if(event.key==='Enter')sendGuess()">
-        <button onclick="sendGuess()">가자!</button>
-      </div>
+      ${iAmSetter
+        ?`<p class="center jua" style="font-size:18px;margin-top:6px">내가 낸 문제! 누가 맞힐까? 👀</p>`
+        :`<div class="guessRow">
+            <input type="text" id="guessIn" placeholder="정답을 써 봐요!" maxlength="20"
+              onkeydown="if(event.key==='Enter')sendGuess()">
+            <button onclick="sendGuess()">가자!</button>
+          </div>`}
       <div class="feed" id="feed"></div>`;
     renderFeed(); syncTimer(); return;
   }
   if(ph==='choEnd'){
     const won=winInfo&&winInfo.pid===me.id;
+    const wasSetter=state.mode==='custom'&&state.setterId===me.id;
     el.innerHTML=`
       <div class="card center">
         <div style="font-size:56px">${winInfo?'🎉':'⏰'}</div>
         <h2 style="font-size:22px;margin:6px 0">${winInfo?esc(winInfo.name)+' 정답!':'시간 종료!'}</h2>
         <p style="font-size:17px">정답은 <b class="jua" style="font-size:24px">${esc(state.word)}</b></p>
         ${won?'<p class="gain" style="font-size:18px">+10점!</p>':''}
+        ${wasSetter&&winInfo?'<p class="gain" style="font-size:16px">문제 낸 사람 +5점!</p>':''}
       </div>
       ${scoreboardHtml()}`;
-    if(won) confetti();
+    if(won||(wasSetter&&winInfo)) confetti();
     return;
   }
 
@@ -474,10 +499,12 @@ function sendGuess(){
   if(!state||!['draw','cho'].includes(state.phase)) return;
   if(Date.now()>state.deadline) return;
   if(state.phase==='draw'&&state.drawerId===me.id) return;
+  if(state.phase==='cho'&&state.mode==='custom'&&state.setterId===me.id) return;
   db.ref(ROOM+'/guesses').push({pid:me.id, name:me.name, text, at:Date.now()});
   if(norm(text)===norm(state.word)){
     const endPhase=state.phase==='draw'?'drawEnd':'choEnd';
     const drawerId=state.drawerId;
+    const setterId=(state.phase==='cho'&&state.mode==='custom')?state.setterId:null;
     db.ref(ROOM+'/win').transaction(cur=>{
       if(cur) return;   // 이미 누가 맞힘
       return {pid:me.id, name:me.name, at:Date.now()};
@@ -487,6 +514,8 @@ function sendGuess(){
         updates[`players/${me.id}/score`]=((players[me.id]||{}).score||0)+10;
         if(state.phase==='draw'&&drawerId)
           updates[`players/${drawerId}/score`]=((players[drawerId]||{}).score||0)+5;
+        if(setterId)
+          updates[`players/${setterId}/score`]=((players[setterId]||{}).score||0)+5;
         updates['state/phase']=endPhase;
         db.ref(ROOM).update(updates);
       }
@@ -651,9 +680,13 @@ function renderHostStage(){
         <div class="ico">🎨</div><div><div class="gname">그림 맞추기</div>
         <div class="gdesc">돌아가며 그리고, 먼저 맞히면 +10점</div></div>
       </div>
-      <div class="gameSel" onclick="startCho()">
-        <div class="ico">🔤</div><div><div class="gname">초성 퀴즈</div>
-        <div class="gdesc">초성 보고 먼저 맞히면 +10점</div></div>
+      <div class="gameSel" onclick="startCho('auto')">
+        <div class="ico">🔤</div><div><div class="gname">초성 퀴즈 · 자동 출제</div>
+        <div class="gdesc">내장 단어로 자동 출제, 먼저 맞히면 +10점</div></div>
+      </div>
+      <div class="gameSel" onclick="startCho('custom')">
+        <div class="ico">✍️</div><div><div class="gname">초성 퀴즈 · 돌아가며 출제</div>
+        <div class="gdesc">한 명씩 직접 문제를 내요 (맞히면 +10, 낸 사람 +5)</div></div>
       </div>
       <div class="card">
         <div class="row">
@@ -712,6 +745,13 @@ function renderHostStage(){
   }
 
   /* 초성 진행 */
+  if(ph==='choSet'){
+    el.innerHTML=`<div class="card center">
+      <p class="jua" style="font-size:19px">✍️ ${esc(state.setterName)}이(가) 문제 만드는 중</p>
+      <button class="btn sm" style="margin-top:10px" onclick="nextCho()">⏭️ 이 사람 건너뛰기</button>
+      <button class="btn sm" style="margin-top:8px" onclick="backToLobby()">게임 선택으로</button></div>`;
+    return;
+  }
   if(ph==='cho'){
     el.innerHTML=`<div class="card center">
       <p class="jua" style="font-size:19px">🔤 ${state.round}라운드</p>
@@ -794,18 +834,39 @@ function launchDrawRound(round){
 }
 function endDraw(){ db.ref(ROOM+'/state/phase').set('drawEnd') }
 
-function startCho(){
+function startCho(mode){
   savedSecShort=secShort();
-  launchChoRound(1);
+  mode==='custom'?launchChoSet(0):launchChoRound(1);
 }
-function nextCho(){ launchChoRound((state.round||0)+1) }
+function nextCho(){
+  state.mode==='custom'?launchChoSet((state.round||0)+1):launchChoRound((state.round||0)+1);
+}
 function launchChoRound(round){
   const word=pick(CHO_WORDS);
   db.ref(ROOM).update({
     guesses:null, win:null,
-    state:{phase:'cho', game:'cho', round, word, cho:toCho(word),
+    state:{phase:'cho', game:'cho', mode:'auto', round, word, cho:toCho(word),
       seconds:savedSecShort, deadline:Date.now()+savedSecShort*1000}
   });
+}
+function launchChoSet(round){
+  const arr=playerArr();
+  if(!arr.length){alert('참가자가 아직 없어요');return;}
+  const setter=arr[round%arr.length];
+  db.ref(ROOM).update({
+    guesses:null, win:null,
+    state:{phase:'choSet', game:'cho', mode:'custom', round,
+      setterId:setter.id, setterName:setter.name, seconds:savedSecShort}
+  });
+}
+function submitChoWord(){
+  const inp=$('choWordIn'); if(!inp)return;
+  const word=inp.value.trim();
+  if(!word){inp.classList.add('shake');setTimeout(()=>inp.classList.remove('shake'),400);return;}
+  db.ref(ROOM+'/state').set({phase:'cho', game:'cho', mode:'custom', round:state.round,
+    setterId:state.setterId, setterName:state.setterName,
+    word, cho:toCho(word), seconds:state.seconds||30,
+    deadline:Date.now()+(state.seconds||30)*1000});
 }
 
 function finishGame(){ db.ref(ROOM+'/state').set({phase:'final'}) }
