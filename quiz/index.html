@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>우리 퀴즈쇼 🎪</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{
+  --paper:#FFFDF7; --ink:#33302E; --line:3px solid var(--ink);
+  --coral:#FF6B6B; --sun:#FFC531; --mint:#4FC978; --sky:#4D96FF; --lilac:#8B7CF6;
+  --shadow:4px 4px 0 var(--ink);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;
+  background-image:radial-gradient(#efe9dc 1.5px, transparent 1.5px);background-size:22px 22px}
+.wrap{max-width:480px;margin:0 auto;padding:16px 16px 40px}
+h1,h2,.jua{font-family:'Jua',sans-serif;font-weight:400}
+.screen{display:none}.screen.on{display:block}
+.card{background:#fff;border:var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px}
+.btn{display:block;width:100%;padding:16px;border:var(--line);border-radius:16px;box-shadow:var(--shadow);
+  font-family:'Jua',sans-serif;font-size:20px;color:var(--ink);background:#fff;cursor:pointer;transition:transform .08s}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn.coral{background:var(--coral);color:#fff}.btn.sun{background:var(--sun)}
+.btn.mint{background:var(--mint);color:#fff}.btn.sky{background:var(--sky);color:#fff}
+.btn.lilac{background:var(--lilac);color:#fff}
+.btn.sm{font-size:16px;padding:11px;box-shadow:3px 3px 0 var(--ink)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+input[type=text],input[type=password],input[type=number],textarea{
+  width:100%;padding:13px;border:var(--line);border-radius:12px;font-family:'Pretendard';font-size:17px;background:#fff}
+textarea{resize:none}
+.title{font-size:38px;text-align:center;margin:26px 0 4px;letter-spacing:1px}
+.subtitle{text-align:center;font-size:15px;color:#8a8378;margin-bottom:24px}
+.badge{display:inline-block;font-family:'Jua';font-size:13px;background:var(--sun);border:2px solid var(--ink);
+  border-radius:999px;padding:3px 12px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.center{text-align:center}
+/* 답 버튼 (참가자) */
+.ansGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.ansGrid.two{grid-template-columns:1fr 1fr}
+.ans{border:var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px 10px;text-align:center;
+  cursor:pointer;color:#fff;transition:transform .08s;min-height:110px;display:flex;flex-direction:column;
+  justify-content:center;gap:6px}
+.ans:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.ans .shape{font-size:34px;line-height:1}
+.ans .txt{font-family:'Jua';font-size:18px;word-break:keep-all}
+.ans.c0{background:var(--coral)}.ans.c1{background:var(--sun);color:var(--ink)}
+.ans.c2{background:var(--mint)}.ans.c3{background:var(--sky)}
+.ans.picked{outline:5px solid var(--ink);outline-offset:-2px;transform:scale(.97)}
+.ans.dim{opacity:.35;pointer-events:none}
+.ans.correct{animation:pop .5s ease}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+/* 타이머 */
+.timerBar{height:16px;border:var(--line);border-radius:999px;background:#fff;overflow:hidden;margin:12px 0}
+.timerFill{height:100%;background:var(--mint);width:100%;transition:width .25s linear}
+.timerFill.hurry{background:var(--coral)}
+.bigTime{font-family:'Jua';font-size:26px;text-align:center}
+/* 점수판 */
+.rank{display:flex;align-items:center;gap:10px;padding:10px 6px;border-bottom:2px dashed #e5decf}
+.rank:last-child{border-bottom:none}
+.rank .no{font-family:'Jua';font-size:20px;width:34px;text-align:center}
+.rank .nm{flex:1;font-size:17px;font-weight:600}
+.rank .sc{font-family:'Jua';font-size:19px}
+.rank.me{background:#FFF6D8;border-radius:10px}
+.gain{color:var(--mint);font-weight:700;font-size:14px;margin-left:6px}
+/* 포디움 */
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:18px 0}
+.pod{flex:1;text-align:center}
+.pod .box{border:var(--line);border-radius:14px 14px 0 0;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;justify-content:flex-end;padding:8px 4px;color:#fff;font-family:'Jua'}
+.pod .who{font-size:15px;margin-bottom:8px;word-break:keep-all;color:var(--ink)}
+.pod .medal{font-size:30px}
+.pod1 .box{height:120px;background:var(--sun);color:var(--ink)}
+.pod2 .box{height:90px;background:#C9C9C9;color:var(--ink)}
+.pod3 .box{height:70px;background:#E0A96D;color:var(--ink)}
+/* 호스트 문제목록 */
+.qItem{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fff;
+  display:flex;align-items:center;gap:8px}
+.qItem .qt{flex:1;font-size:15px;word-break:keep-all}
+.qItem .del{border:2px solid var(--ink);background:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:13px}
+.optRow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.optRow input[type=text]{flex:1}
+.optRow .mark{width:44px;height:44px;border:var(--line);border-radius:10px;background:#fff;cursor:pointer;
+  font-size:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.optRow .mark.on{background:var(--mint);color:#fff}
+.tabBtns{display:flex;gap:8px;margin-bottom:14px}
+.tabBtns .tb{flex:1;padding:10px;border:var(--line);border-radius:12px;background:#fff;font-family:'Jua';
+  font-size:16px;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.tabBtns .tb.on{background:var(--ink);color:#fff}
+.pill{display:flex;gap:8px}
+.pill .p{flex:1;padding:10px;border:var(--line);border-radius:12px;text-align:center;font-family:'Jua';
+  cursor:pointer;background:#fff}
+.pill .p.on{background:var(--sky);color:#fff}
+.muted{color:#8a8378;font-size:13px}
+.playerChip{display:inline-block;border:2px solid var(--ink);background:#fff;border-radius:999px;
+  padding:5px 12px;margin:3px;font-size:14px}
+/* 컨페티 */
+.confetti{position:fixed;top:-40px;font-size:26px;animation:fall linear forwards;pointer-events:none;z-index:99}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.setupWarn{background:#FFF1F0;border:var(--line);border-radius:14px;padding:16px;font-size:14px;line-height:1.6}
+code{background:#f3efe6;padding:2px 6px;border-radius:6px;font-size:13px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ⚙️ 설정 안내 (Firebase 미설정 시) -->
+  <div id="scr-setup" class="screen">
+    <h1 class="title">⚙️ 설정 필요</h1>
+    <div class="setupWarn">
+      아직 Firebase 설정이 비어 있어요.<br>
+      이 파일 아래쪽 <code>FIREBASE_CONFIG</code>에 기존 도구(vote 등)에서 쓰던
+      firebaseConfig를 그대로 붙여넣으면 바로 동작합니다.<br><br>
+      호스트 PIN은 <code>HOST_PIN</code>에서 변경하세요.
+    </div>
+  </div>
+
+  <!-- 🏠 시작 -->
+  <div id="scr-home" class="screen">
+    <h1 class="title">🎪 우리 퀴즈쇼</h1>
+    <p class="subtitle">문제 내고 · 맞히고 · 1등 하자!</p>
+    <div class="card">
+      <input type="text" id="joinName" placeholder="이름을 써 줘요 ✏️" maxlength="10" style="margin-bottom:12px">
+      <button class="btn sun" onclick="joinGame()">🙋 참가하기</button>
+    </div>
+    <button class="btn sm" onclick="openHostLogin()">🎩 호스트 (문제 내는 사람)</button>
+  </div>
+
+  <!-- 🎩 호스트 로그인 -->
+  <div id="scr-hostlogin" class="screen">
+    <h2 class="title" style="font-size:28px">🎩 호스트 입장</h2>
+    <div class="card">
+      <input type="password" id="hostPin" placeholder="PIN 입력" inputmode="numeric" style="margin-bottom:12px">
+      <button class="btn lilac" onclick="hostLogin()">입장</button>
+    </div>
+    <button class="btn sm" onclick="show('home')">← 돌아가기</button>
+  </div>
+
+  <!-- 🎩 호스트 콘솔 -->
+  <div id="scr-host" class="screen">
+    <h2 class="title" style="font-size:26px;margin-bottom:14px">🎩 호스트 콘솔</h2>
+    <div class="tabBtns">
+      <button class="tb on" id="tabQ" onclick="hostTab('q')">📝 문제</button>
+      <button class="tb" id="tabP" onclick="hostTab('p')">▶️ 진행</button>
+    </div>
+
+    <!-- 문제 관리 -->
+    <div id="host-q">
+      <div class="card">
+        <div class="pill" style="margin-bottom:12px">
+          <div class="p on" id="typeMc" onclick="setQType('mc')">🔢 선택형</div>
+          <div class="p" id="typeOx" onclick="setQType('ox')">⭕ OX</div>
+        </div>
+        <textarea id="qText" rows="2" placeholder="문제를 써 주세요" style="margin-bottom:12px"></textarea>
+        <div id="mcOpts">
+          <div class="optRow"><button class="mark" onclick="setAns(0)">✔️</button><input type="text" id="opt0" placeholder="보기 1"></div>
+          <div class="optRow"><button class="mark" onclick="setAns(1)">✔️</button><input type="text" id="opt1" placeholder="보기 2"></div>
+          <div class="optRow"><button class="mark" onclick="setAns(2)">✔️</button><input type="text" id="opt2" placeholder="보기 3 (선택)"></div>
+          <div class="optRow"><button class="mark" onclick="setAns(3)">✔️</button><input type="text" id="opt3" placeholder="보기 4 (선택)"></div>
+        </div>
+        <div id="oxOpts" style="display:none">
+          <div class="pill">
+            <div class="p" id="oxO" onclick="setAns(0)">⭕ 맞다</div>
+            <div class="p" id="oxX" onclick="setAns(1)">❌ 아니다</div>
+          </div>
+        </div>
+        <p class="muted" style="margin:8px 0">✔️를 눌러 정답을 표시해 주세요</p>
+        <button class="btn mint sm" onclick="addQuestion()">➕ 문제 추가</button>
+      </div>
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:10px">문제 목록 <span class="badge" id="qCount">0개</span></h2>
+        <div id="qList"><p class="muted">아직 문제가 없어요</p></div>
+      </div>
+    </div>
+
+    <!-- 진행 -->
+    <div id="host-p" style="display:none">
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:8px">참가자 <span class="badge" id="pCount">0명</span></h2>
+        <div id="pList"><p class="muted">아직 아무도 안 왔어요</p></div>
+      </div>
+      <div class="card">
+        <div class="row" style="margin-bottom:12px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:15px">
+            ⏱️ 제한시간 <input type="number" id="qSeconds" value="20" min="5" max="120" style="width:80px">초
+          </label>
+        </div>
+        <div id="hostStage"></div>
+      </div>
+      <button class="btn sm" onclick="resetGame()" style="background:#fff">🧹 게임 초기화 (점수·참가자 리셋)</button>
+    </div>
+    <button class="btn sm" onclick="show('home')" style="margin-top:10px">← 나가기</button>
+  </div>
+
+  <!-- 🙋 참가자 -->
+  <div id="scr-play" class="screen">
+    <div class="center" style="margin:14px 0">
+      <span class="badge" id="myBadge">🙋</span>
+    </div>
+    <div id="playStage"></div>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   ⚙️ 여기만 수정하면 됩니다
+   기존 도구(vote/index.html 등)의 firebaseConfig를 그대로 붙여넣기
+═══════════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey: "여기에_붙여넣기",
+  authDomain: "knewu-64318.firebaseapp.com",
+  databaseURL: "https://knewu-64318-default-rtdb.firebaseio.com",
+  projectId: "knewu-64318",
+  storageBucket: "knewu-64318.appspot.com",
+  messagingSenderId: "여기에_붙여넣기",
+  appId: "여기에_붙여넣기"
+};
+const HOST_PIN = "1234";   // 호스트 PIN — 꼭 바꿔서 쓰세요
+const ROOM = "quizshow";   // DB 경로 (다른 도구와 안 겹치게)
+/* ═══════════════════════════════════════════════ */
+
+const SHAPES = ["🔴","🔺","🟩","⭐"];
+const OX_SHAPES = ["⭕","❌"];
+let db=null, me=null, isHost=false, qType='mc', qAnswer=-1;
+let questions={}, players={}, state=null, results={};
+let myAnswered=null, timerInt=null;
+
+function $(id){return document.getElementById(id)}
+function show(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  $('scr-'+name).classList.add('on');
+  window.scrollTo(0,0);
+}
+function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
+
+/* ── 초기화 ── */
+(function init(){
+  if(FIREBASE_CONFIG.apiKey.includes("붙여넣기")){ show('setup'); return; }
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.database();
+
+  db.ref(ROOM+'/questions').on('value', s=>{ questions=s.val()||{}; renderQList(); renderHostStage(); });
+  db.ref(ROOM+'/players').on('value', s=>{ players=s.val()||{}; renderPlayers(); renderHostStage(); renderPlayStage(); });
+  db.ref(ROOM+'/results').on('value', s=>{ results=s.val()||{}; renderHostStage(); renderPlayStage(); });
+  db.ref(ROOM+'/state').on('value', s=>{
+    state=s.val()||{phase:'lobby'};
+    if(state.phase==='question') myAnswered=null;
+    renderHostStage(); renderPlayStage(); syncTimer();
+  });
+
+  // 이전 참가 이어하기
+  const pid=load('qz_pid'), nm=load('qz_name');
+  if(pid&&nm){
+    db.ref(ROOM+'/players/'+pid).once('value',s=>{
+      if(s.exists()){ me={id:pid,name:nm}; $('myBadge').textContent='🙋 '+nm; show('play'); }
+      else show('home');
+    });
+  } else show('home');
+})();
+
+/* ── 참가자 ── */
+function joinGame(){
+  const name=$('joinName').value.trim();
+  if(!name){ $('joinName').classList.add('shake'); setTimeout(()=>$('joinName').classList.remove('shake'),400); return; }
+  const ref=db.ref(ROOM+'/players').push();
+  ref.set({name, score:0, joinedAt:Date.now()});
+  me={id:ref.key, name};
+  store('qz_pid',ref.key); store('qz_name',name);
+  $('myBadge').textContent='🙋 '+name;
+  show('play');
+}
+
+function renderPlayStage(){
+  if(!me) return;
+  const el=$('playStage'); if(!el) return;
+  const myScore=(players[me.id]||{}).score||0;
+  const ph=state?state.phase:'lobby';
+
+  if(ph==='lobby'){
+    el.innerHTML=`<div class="card center">
+      <div style="font-size:52px">🍿</div>
+      <h2 style="font-size:22px;margin:8px 0">곧 시작해요!</h2>
+      <p class="muted">호스트가 문제를 준비하고 있어요</p></div>
+      <div class="card"><h2 style="font-size:17px;margin-bottom:8px">같이 하는 친구들</h2>
+      ${Object.values(players).map(p=>`<span class="playerChip">${esc(p.name)}</span>`).join('')||'<p class="muted">...</p>'}</div>`;
+    return;
+  }
+
+  if(ph==='question'){
+    const q=questions[state.qid]; if(!q){el.innerHTML='';return;}
+    const shapes=q.type==='ox'?OX_SHAPES:SHAPES;
+    const locked=myAnswered!==null;
+    el.innerHTML=`
+      <div class="card">
+        <span class="badge">문제 ${state.qIndex+1} / ${state.total}</span>
+        <div class="timerBar"><div class="timerFill" id="tFill"></div></div>
+        <div class="bigTime" id="tNum"></div>
+        <h2 style="font-size:22px;margin-top:8px;word-break:keep-all">${esc(q.text)}</h2>
+      </div>
+      <div class="ansGrid ${q.options.length===2?'two':''}" id="ansGrid">
+        ${q.options.map((o,i)=>`
+          <div class="ans c${i} ${locked?(myAnswered===i?'picked':'dim'):''}" onclick="pickAnswer(${i})">
+            <div class="shape">${shapes[i]}</div>
+            ${q.type==='ox'?'':`<div class="txt">${esc(o)}</div>`}
+          </div>`).join('')}
+      </div>
+      ${locked?'<p class="center jua" style="margin-top:14px;font-size:19px">제출 완료! 두구두구... 🥁</p>':''}`;
+    syncTimer();
+    return;
+  }
+
+  if(ph==='reveal'){
+    const q=questions[state.qid], r=results[state.qid]||{};
+    const gain=(r.gains||{})[me.id]||0;
+    const correct=gain>0;
+    const shapes=q&&q.type==='ox'?OX_SHAPES:SHAPES;
+    el.innerHTML=`
+      <div class="card center ${correct?'':'shake'}">
+        <div style="font-size:56px">${correct?'🎉':'😵'}</div>
+        <h2 style="font-size:24px;margin:6px 0">${correct?'정답!':'아쉬워요!'}</h2>
+        ${q?`<p style="font-size:17px">정답은 <b class="jua" style="font-size:20px">${shapes[q.answer]} ${q.type==='ox'?'':esc(q.options[q.answer])}</b></p>`:''}
+        ${correct?`<p class="gain" style="font-size:18px">+${gain}점!</p>`:''}
+      </div>
+      ${scoreboardHtml()}`;
+    if(correct) confetti();
+    return;
+  }
+
+  if(ph==='final'){
+    el.innerHTML=finalHtml();
+    confetti(40);
+    return;
+  }
+}
+
+function pickAnswer(i){
+  if(myAnswered!==null||!state||state.phase!=='question') return;
+  if(Date.now()>state.deadline) return;
+  myAnswered=i;
+  db.ref(`${ROOM}/answers/${state.qid}/${me.id}`).set({choice:i, at:Date.now()});
+  renderPlayStage();
+}
+
+/* ── 타이머 ── */
+function syncTimer(){
+  clearInterval(timerInt);
+  if(!state||state.phase!=='question') return;
+  const total=state.seconds*1000;
+  const tick=()=>{
+    const remain=Math.max(0,state.deadline-Date.now());
+    const fill=$('tFill'), num=$('tNum');
+    if(fill){ fill.style.width=(remain/total*100)+'%'; fill.classList.toggle('hurry',remain<total*0.3); }
+    if(num) num.textContent=remain>0?Math.ceil(remain/1000)+'초':'⏰ 시간 종료!';
+    if(remain<=0){
+      clearInterval(timerInt);
+      if(me&&myAnswered===null){ myAnswered=-1; renderPlayStage(); }
+    }
+  };
+  tick(); timerInt=setInterval(tick,250);
+}
+
+/* ── 호스트 ── */
+function openHostLogin(){ $('hostPin').value=''; show('hostlogin'); }
+function hostLogin(){
+  if($('hostPin').value!==HOST_PIN){ $('hostPin').classList.add('shake'); setTimeout(()=>$('hostPin').classList.remove('shake'),400); return; }
+  isHost=true; show('host'); hostTab('q');
+}
+function hostTab(t){
+  $('tabQ').classList.toggle('on',t==='q'); $('tabP').classList.toggle('on',t==='p');
+  $('host-q').style.display=t==='q'?'block':'none';
+  $('host-p').style.display=t==='p'?'block':'none';
+  renderHostStage();
+}
+function setQType(t){
+  qType=t; qAnswer=-1;
+  $('typeMc').classList.toggle('on',t==='mc'); $('typeOx').classList.toggle('on',t==='ox');
+  $('mcOpts').style.display=t==='mc'?'block':'none';
+  $('oxOpts').style.display=t==='ox'?'block':'none';
+  refreshAnsMarks();
+}
+function setAns(i){ qAnswer=i; refreshAnsMarks(); }
+function refreshAnsMarks(){
+  document.querySelectorAll('#mcOpts .mark').forEach((m,i)=>m.classList.toggle('on',qType==='mc'&&qAnswer===i));
+  $('oxO').classList.toggle('on',qType==='ox'&&qAnswer===0);
+  $('oxX').classList.toggle('on',qType==='ox'&&qAnswer===1);
+}
+function addQuestion(){
+  const text=$('qText').value.trim();
+  if(!text){alert('문제를 입력해 주세요');return;}
+  let options;
+  if(qType==='ox'){ options=['맞다','아니다']; }
+  else{
+    options=[0,1,2,3].map(i=>$('opt'+i).value.trim()).filter(v=>v);
+    if(options.length<2){alert('보기를 2개 이상 입력해 주세요');return;}
+  }
+  if(qAnswer<0||qAnswer>=options.length){alert('✔️로 정답을 표시해 주세요');return;}
+  db.ref(ROOM+'/questions').push({text, type:qType, options, answer:qAnswer, order:Date.now()});
+  $('qText').value=''; [0,1,2,3].forEach(i=>$('opt'+i).value='');
+  qAnswer=-1; refreshAnsMarks();
+}
+function delQuestion(id){ db.ref(ROOM+'/questions/'+id).remove(); }
+function qArr(){ return Object.entries(questions).map(([id,q])=>({id,...q})).sort((a,b)=>a.order-b.order); }
+
+function renderQList(){
+  const arr=qArr(); const el=$('qList'); if(!el)return;
+  $('qCount').textContent=arr.length+'개';
+  el.innerHTML=arr.length?arr.map((q,i)=>`
+    <div class="qItem">
+      <span class="jua">${i+1}</span>
+      <span class="qt">${q.type==='ox'?'⭕':'🔢'} ${esc(q.text)}</span>
+      <button class="del" onclick="delQuestion('${q.id}')">🗑️</button>
+    </div>`).join(''):'<p class="muted">아직 문제가 없어요</p>';
+}
+function renderPlayers(){
+  const el=$('pList'); if(!el)return;
+  const arr=Object.values(players);
+  $('pCount').textContent=arr.length+'명';
+  el.innerHTML=arr.length?arr.map(p=>`<span class="playerChip">${esc(p.name)} · ${p.score||0}점</span>`).join('')
+    :'<p class="muted">아직 아무도 안 왔어요</p>';
+}
+
+function renderHostStage(){
+  const el=$('hostStage'); if(!el||!isHost)return;
+  const arr=qArr(); const ph=state?state.phase:'lobby';
+
+  if(ph==='lobby'){
+    el.innerHTML=`<button class="btn coral" onclick="startQuestion(0)" ${arr.length?'':'disabled'}>🚀 게임 시작!</button>
+      ${arr.length?'':'<p class="muted center" style="margin-top:8px">문제 탭에서 먼저 문제를 만들어 주세요</p>'}`;
+    return;
+  }
+  if(ph==='question'){
+    const answered=Object.keys((state.qid&&window._ansCache)||{}).length;
+    el.innerHTML=`<p class="jua center" style="font-size:20px;margin-bottom:6px">문제 ${state.qIndex+1} / ${state.total} 진행 중</p>
+      <p class="center" style="margin-bottom:12px">답한 사람: <b id="ansCount">…</b></p>
+      <button class="btn sun" onclick="reveal()">🔔 마감하고 정답 공개</button>`;
+    db.ref(`${ROOM}/answers/${state.qid}`).on('value',s=>{
+      const c=$('ansCount'); if(c) c.textContent=Object.keys(s.val()||{}).length+' / '+Object.keys(players).length+'명';
+    });
+    return;
+  }
+  if(ph==='reveal'){
+    const next=state.qIndex+1;
+    el.innerHTML=`${scoreboardHtml()}
+      ${next<state.total
+        ?`<button class="btn sky" onclick="startQuestion(${next})">➡️ 다음 문제 (${next+1}/${state.total})</button>`
+        :`<button class="btn lilac" onclick="finishGame()">🏆 최종 결과 발표</button>`}`;
+    return;
+  }
+  if(ph==='final'){
+    el.innerHTML=finalHtml()+`<button class="btn sm" onclick="backToLobby()" style="margin-top:10px">🔄 대기 화면으로</button>`;
+    return;
+  }
+}
+
+function startQuestion(idx){
+  const arr=qArr(); if(!arr[idx])return;
+  const secs=Math.max(5,Math.min(120,parseInt($('qSeconds').value)||20));
+  db.ref(ROOM+'/state').set({
+    phase:'question', qid:arr[idx].id, qIndex:idx, total:arr.length,
+    seconds:secs, deadline:Date.now()+secs*1000
+  });
+}
+function reveal(){
+  const qid=state.qid, q=questions[qid]; if(!q)return;
+  db.ref(`${ROOM}/answers/${qid}`).off();
+  db.ref(`${ROOM}/answers/${qid}`).once('value',s=>{
+    const answers=s.val()||{};
+    const gains={}, updates={};
+    const total=state.seconds*1000, start=state.deadline-total;
+    Object.entries(answers).forEach(([pid,a])=>{
+      if(a.choice===q.answer){
+        const remain=Math.max(0,state.deadline-a.at);
+        const pts=10+Math.round(5*remain/total);   // 기본 10점 + 스피드 보너스 최대 5점
+        gains[pid]=pts;
+        updates[`players/${pid}/score`]=((players[pid]||{}).score||0)+pts;
+      }
+    });
+    updates[`results/${qid}`]={answer:q.answer, gains};
+    updates['state/phase']='reveal';
+    db.ref(ROOM).update(updates);
+  });
+}
+function finishGame(){ db.ref(ROOM+'/state/phase').set('final'); }
+function backToLobby(){ db.ref(ROOM+'/state').set({phase:'lobby'}); }
+function resetGame(){
+  if(!confirm('참가자와 점수를 모두 지울까요? (문제는 남아요)'))return;
+  db.ref(ROOM).update({players:null, answers:null, results:null, state:{phase:'lobby'}});
+}
+
+/* ── 공통 렌더 ── */
+function scoreboardHtml(){
+  const arr=Object.entries(players).map(([id,p])=>({id,...p})).sort((a,b)=>(b.score||0)-(a.score||0));
+  const r=results[state&&state.qid]||{};
+  return `<div class="card"><h2 style="font-size:18px;margin-bottom:6px">🏅 점수판</h2>
+    ${arr.map((p,i)=>`<div class="rank ${me&&p.id===me.id?'me':''}">
+      <span class="no">${i+1}</span><span class="nm">${esc(p.name)}
+      ${(r.gains||{})[p.id]?`<span class="gain">+${r.gains[p.id]}</span>`:''}</span>
+      <span class="sc">${p.score||0}점</span></div>`).join('')||'<p class="muted">...</p>'}</div>`;
+}
+function finalHtml(){
+  const arr=Object.entries(players).map(([id,p])=>({id,...p})).sort((a,b)=>(b.score||0)-(a.score||0));
+  const [g,s,b]=[arr[0],arr[1],arr[2]];
+  return `<h2 class="title" style="font-size:28px">🏆 최종 결과</h2>
+    <div class="podium">
+      <div class="pod pod2">${s?`<div class="who">${esc(s.name)}<br>${s.score||0}점</div><div class="box"><div class="medal">🥈</div></div>`:''}</div>
+      <div class="pod pod1">${g?`<div class="who">${esc(g.name)}<br>${g.score||0}점</div><div class="box"><div class="medal">🥇</div></div>`:''}</div>
+      <div class="pod pod3">${b?`<div class="who">${esc(b.name)}<br>${b.score||0}점</div><div class="box"><div class="medal">🥉</div></div>`:''}</div>
+    </div>
+    ${arr.length>3?`<div class="card">${arr.slice(3).map((p,i)=>`<div class="rank">
+      <span class="no">${i+4}</span><span class="nm">${esc(p.name)}</span><span class="sc">${p.score||0}점</span></div>`).join('')}</div>`:''}`;
+}
+
+/* ── 컨페티 ── */
+function confetti(n=24){
+  const em=['🎉','⭐','✨','🎈','🍬','💛'];
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');
+    d.className='confetti';
+    d.textContent=em[Math.floor(Math.random()*em.length)];
+    d.style.left=Math.random()*100+'vw';
+    d.style.animationDuration=(2+Math.random()*2)+'s';
+    d.style.animationDelay=(Math.random()*0.6)+'s';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),5000);
+  }
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+</script>
+</body>
+</html>
