@@ -41,7 +41,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
     <style>
         :root {
             --accent: #1a73e8; --accent-dk: #1557b0; --accent-tint: #eef4ff;
@@ -58,10 +57,7 @@
             --leave-ink:#8a4a06; --leave-bg:#fff2e0; --leave-pill:#e07b00;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Pretendard Variable','Pretendard','Malgun Gothic',-apple-system,sans-serif; background: var(--page); color: var(--ink); padding-bottom: 70px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; letter-spacing: -.018em; word-break: keep-all; }
-        /* 숫자는 폭이 일정한 형태로 — 날짜·표가 반듯하게 정렬됨 */
-        .grid-table, .sum-table, .th-d, .news-date, .ph-date, .print-foot { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1, 'ss01' 1; }
-        h1, h2, .ph-title, .news-title, .sub-h, .sec-title h2 { letter-spacing: -.035em; font-weight: 800; }
+        body { font-family: 'Pretendard','Malgun Gothic',-apple-system,sans-serif; background: var(--page); color: var(--ink); padding-bottom: 70px; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
 
         /* ── 앱 크롬 ── */
         .topbar { background: var(--paper); border-bottom: 1px solid var(--line); padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 2px rgba(16,24,40,.03); }
@@ -174,6 +170,14 @@
         .sum-table tbody tr:nth-child(even) td.dept { background:#e4e9f3; }
         .sum-table td .celltext { white-space:pre-wrap; line-height:1.6; color:#33404f; }
         .sum-table td .none { color:var(--ink-faint); }
+        /* 부서별 활동 — 실국별 이미지 제외 체크 */
+        .sum-table td.dept .dept-chk { display:block; margin:0 auto 5px; line-height:0; }
+        .sum-table td.dept .dept-chk input { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+        .sum-table td.dept .dept-name { display:block; }
+        .sum-table tr.excluded { opacity:.4; }
+        .sum-table tr.excluded td .celltext { text-decoration:line-through; }
+        .capture-target .sum-table td.dept .dept-chk { display:none !important; }
+        .capture-target .sum-hint { display:none !important; }
         .sub-h { font-size:13.5px; font-weight:800; color:var(--ink); margin:20px 0 10px; }
 
         /* ── 근태표 ── */
@@ -187,24 +191,6 @@
         .grid-table th:first-child { width:60px !important; }
         .grid-table th[data-w] { width: 20% !important; }
         .grid-table td.wknd { background:#f5f7fb; }
-
-        /* ── 공휴일 표기 ── */
-        .grid-table th.holi { background:#7c2420; }
-        .grid-table th.holi .th-w { color:#ffd9d5; }
-        .grid-table th.holi .th-d { color:#f0b4ae; }
-        .grid-table th .th-h {
-            display:block; font-size:9px; font-weight:800; color:#ffe3e0;
-            background:rgba(255,255,255,.16); border-radius:4px;
-            margin:3px 2px 0; padding:1px 3px; line-height:1.35;
-            letter-spacing:-.04em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-        }
-        .grid-table td.holi { background:#fdf4f3; }
-        .grid-table td.holi:empty::after {
-            content:'휴일'; display:block; font-size:10.5px; font-weight:800;
-            color:#c0413a; letter-spacing:-.03em; opacity:.75;
-        }
-        .capture-target .grid-table th .th-h { font-size:11.5px; margin-top:4px; padding:2px 5px; }
-        .capture-target .grid-table td.holi:empty::after { font-size:13px; }
 
         /* 인쇄 전용 레터헤드 / 푸터 */
         .print-head, .print-foot { display:none; }
@@ -335,7 +321,8 @@
         @media print {
             @page { size: A4 portrait; margin: 0; }
             body { background:#fff; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-            .topbar, header, .editor, .sec-bar, .no-print, .btn-print-xs, .btn-reload, .sub-bar { display:none !important; }
+            .topbar, header, .editor, .sec-bar, .no-print, .btn-print-xs, .btn-reload, .sub-bar, .sum-hint, .sum-table td.dept .dept-chk { display:none !important; }
+            .sum-table tr.excluded { display:none !important; }
             .wrap { max-width:none; width:100%; padding:0; margin:0; }
             section.block, .final-section { display:none !important; box-shadow:none; border:none; border-radius:0; margin:0; padding:0; }
             .sub-block { margin:0 !important; }
@@ -453,6 +440,7 @@
                         이미지 저장
                     </button>
                 </div>
+                <div class="sum-hint fin-note" style="margin:2px 0 9px;">※ 업무가 없는 실국은 부서명 위 체크를 끄면 이미지 저장 시 제외됩니다.</div>
                 <table class="sum-table">
                     <thead><tr><th style="width:64px;">부서</th><th>이번 주 활동</th></tr></thead>
                     <tbody id="summaryBody"></tbody>
@@ -561,20 +549,6 @@
         const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·손課·김次·이課은 출장근태만)
         const WEEKS = ["월","화","수","목","금","토","일"];
         const ATT_DAYS = ["월","화","수","목","금"]; // 출장·근태는 월~금 (주말 제외)
-
-        // ── 공휴일 (필요할 때 여기에 날짜만 추가하면 됩니다) ──
-        const HOLIDAYS = {
-            "2026-01-01":"신정",   "2026-02-16":"설날", "2026-02-17":"설날", "2026-02-18":"설날",
-            "2026-03-01":"삼일절", "2026-03-02":"대체휴일",
-            "2026-05-05":"어린이날","2026-05-24":"석가탄신일","2026-05-25":"대체휴일",
-            "2026-06-06":"현충일", "2026-08-15":"광복절", "2026-08-17":"대체휴일",
-            "2026-09-24":"추석",   "2026-09-25":"추석",  "2026-09-26":"추석",
-            "2026-10-03":"개천절", "2026-10-05":"대체휴일",
-            "2026-10-09":"한글날", "2026-12-25":"성탄절",
-            "2027-01-01":"신정"
-        };
-        function holidayName(d) { return HOLIDAYS[isoDate(d)] || null; }
-        let holidayFlags = {}; // { 월:"광복절", ... }
         let dayLabels = {}; // 요일→날짜 라벨 (예: 월→6/22)
         const WKND = { "토":true, "일":true };
 
@@ -587,6 +561,7 @@
         let activeDays = [];
         let serverLoaded = false;
         let finalRendered = false;
+        let excludedDepts = new Set(); // 부서별 활동 이미지에서 제외할 실국(부서)
         let weekMonday = null; // 기준 주차의 월요일 (Date) — weekRef에서 로드
 
         function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -633,26 +608,12 @@
             document.getElementById('phWorkFoot').innerText = today;
             document.getElementById('phAttFoot').innerText = today;
 
-            holidayFlags = {};
             ATT_DAYS.forEach((w, i) => {
                 const t = new Date(mon); t.setDate(mon.getDate() + i);
                 const lbl = `${t.getMonth()+1}/${t.getDate()}`;
                 dayLabels[w] = lbl;
                 const cd = document.getElementById(`cd-${w}`); if (cd) cd.innerText = lbl;
                 const thd = document.getElementById(`thd-${w}`); if (thd) thd.innerText = lbl;
-
-                // 공휴일이면 해당 요일 열을 붉게 + 휴일명 표기
-                const hn = holidayName(t);
-                const th = document.querySelector(`.grid-table th[data-w="${w}"]`);
-                if (th) {
-                    th.classList.toggle('holi', !!hn);
-                    let hEl = th.querySelector('.th-h');
-                    if (hn) {
-                        if (!hEl) { hEl = document.createElement('span'); hEl.className = 'th-h'; th.appendChild(hEl); }
-                        hEl.innerText = hn;
-                    } else if (hEl) { hEl.remove(); }
-                }
-                if (hn) holidayFlags[w] = hn;
             });
         }
 
@@ -815,7 +776,13 @@
                 const d = serverCache[m] || {};
                 const tw = (d.thisWeek ?? d.work ?? '').trim();
                 const cell = (t) => t ? `<div class="celltext">${escapeHtml(t)}</div>` : `<div class="celltext none">—</div>`;
-                rows += `<tr><td class="dept">${m}</td><td>${cell(tw)}</td></tr>`;
+                const off = excludedDepts.has(m);
+                rows += `<tr class="${off ? 'excluded' : ''}">` +
+                    `<td class="dept">` +
+                        `<label class="dept-chk"><input type="checkbox" ${off ? '' : 'checked'} onchange="toggleDeptInc('${m}',this.checked)"></label>` +
+                        `<span class="dept-name">${m}</span>` +
+                    `</td>` +
+                    `<td>${cell(tw)}</td></tr>`;
             });
             document.getElementById('summaryBody').innerHTML = rows;
 
@@ -823,15 +790,20 @@
             MEMBERS.forEach(m => {
                 let row = `<tr><td class="dept">${m}</td>`;
                 ATT_DAYS.forEach(w => {
-                    const hol = holidayFlags[w] ? ' holi' : '';
                     const sc = serverCache[m]?.days?.[w];
-                    if (sc) row += `<td class="badge-cell ${sc.type}${hol}" title="더블클릭 삭제" ondblclick="removeDayLive('${m}','${w}')"><div class="att-fit"><span class="b-tag">${sc.type}</span><span class="b-txt">${escapeHtml(sc.text)}</span></div></td>`;
-                    else row += `<td class="${hol.trim()}"></td>`;
+                    if (sc) row += `<td class="badge-cell ${sc.type}" title="더블클릭 삭제" ondblclick="removeDayLive('${m}','${w}')"><div class="att-fit"><span class="b-tag">${sc.type}</span><span class="b-txt">${escapeHtml(sc.text)}</span></div></td>`;
+                    else row += `<td></td>`;
                 });
                 grid += row + `</tr>`;
             });
             document.getElementById('attBody').innerHTML = grid;
             requestAnimationFrame(fitAttCells);
+        }
+
+        // 부서별 활동 이미지에서 실국(부서) 제외/포함 토글
+        function toggleDeptInc(m, checked) {
+            if (checked) excludedDepts.delete(m); else excludedDepts.add(m);
+            renderSummary();
         }
 
         // 근태 셀: 글씨가 칸보다 길면 폰트를 줄여 칸 안에 맞춤 (엑셀 '축소하여 맞춤')
@@ -992,6 +964,7 @@
                 const src = document.getElementById(areaId);
                 const clone = src.cloneNode(true);
                 clone.classList.add('capture-target');
+                if (areaId === 'workArea') clone.querySelectorAll('tr.excluded').forEach(r => r.remove());
                 const holder = document.createElement('div');
                 holder.style.cssText = 'position:fixed; left:-12000px; top:0;';
                 holder.appendChild(clone);
