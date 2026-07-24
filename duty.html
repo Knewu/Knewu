@@ -54,7 +54,7 @@
             --cur-bd: #8fb4f3; --cur-bg: #eef4ff; --cur-ink: #1557b0;
             --prev-bd: #d8b65a; --prev-bg: #fbf4e2; --prev-ink: #8a6a12;
             --trip-ink:#15406f; --trip-bg:#e8f1fd; --trip-pill:#1a73e8;
-            --leave-ink:#8a4a06; --leave-bg:#fff2e0; --leave-pill:#e07b00;
+            --leave-ink:#6b6459; --leave-bg:#f7f5f0; --leave-pill:#9b9284;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Pretendard','Malgun Gothic',-apple-system,sans-serif; background: var(--page); color: var(--ink); padding-bottom: 70px; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
@@ -170,14 +170,6 @@
         .sum-table tbody tr:nth-child(even) td.dept { background:#e4e9f3; }
         .sum-table td .celltext { white-space:pre-wrap; line-height:1.6; color:#33404f; }
         .sum-table td .none { color:var(--ink-faint); }
-        /* 부서별 활동 — 실국별 이미지 제외 체크 */
-        .sum-table td.dept .dept-chk { display:block; margin:0 auto 5px; line-height:0; }
-        .sum-table td.dept .dept-chk input { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
-        .sum-table td.dept .dept-name { display:block; }
-        .sum-table tr.excluded { opacity:.4; }
-        .sum-table tr.excluded td .celltext { text-decoration:line-through; }
-        .capture-target .sum-table td.dept .dept-chk { display:none !important; }
-        .capture-target .sum-hint { display:none !important; }
         .sub-h { font-size:13.5px; font-weight:800; color:var(--ink); margin:20px 0 10px; }
 
         /* ── 근태표 ── */
@@ -321,8 +313,7 @@
         @media print {
             @page { size: A4 portrait; margin: 0; }
             body { background:#fff; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-            .topbar, header, .editor, .sec-bar, .no-print, .btn-print-xs, .btn-reload, .sub-bar, .sum-hint, .sum-table td.dept .dept-chk { display:none !important; }
-            .sum-table tr.excluded { display:none !important; }
+            .topbar, header, .editor, .sec-bar, .no-print, .btn-print-xs, .btn-reload, .sub-bar { display:none !important; }
             .wrap { max-width:none; width:100%; padding:0; margin:0; }
             section.block, .final-section { display:none !important; box-shadow:none; border:none; border-radius:0; margin:0; padding:0; }
             .sub-block { margin:0 !important; }
@@ -440,7 +431,6 @@
                         이미지 저장
                     </button>
                 </div>
-                <div class="sum-hint fin-note" style="margin:2px 0 9px;">※ 부서명 위 체크를 끄면 이미지 저장 시 제외됩니다.</div>
                 <table class="sum-table">
                     <thead><tr><th style="width:64px;">부서</th><th>이번 주 활동</th></tr></thead>
                     <tbody id="summaryBody"></tbody>
@@ -561,7 +551,6 @@
         let activeDays = [];
         let serverLoaded = false;
         let finalRendered = false;
-        let excludedDepts = new Set(); // 부서별 활동 이미지에서 제외할 실국(부서)
         let weekMonday = null; // 기준 주차의 월요일 (Date) — weekRef에서 로드
 
         function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -776,13 +765,7 @@
                 const d = serverCache[m] || {};
                 const tw = (d.thisWeek ?? d.work ?? '').trim();
                 const cell = (t) => t ? `<div class="celltext">${escapeHtml(t)}</div>` : `<div class="celltext none">—</div>`;
-                const off = excludedDepts.has(m);
-                rows += `<tr class="${off ? 'excluded' : ''}">` +
-                    `<td class="dept">` +
-                        `<label class="dept-chk"><input type="checkbox" ${off ? '' : 'checked'} onchange="toggleDeptInc('${m}',this.checked)"></label>` +
-                        `<span class="dept-name">${m}</span>` +
-                    `</td>` +
-                    `<td>${cell(tw)}</td></tr>`;
+                rows += `<tr><td class="dept">${m}</td><td>${cell(tw)}</td></tr>`;
             });
             document.getElementById('summaryBody').innerHTML = rows;
 
@@ -798,12 +781,6 @@
             });
             document.getElementById('attBody').innerHTML = grid;
             requestAnimationFrame(fitAttCells);
-        }
-
-        // 부서별 활동 이미지에서 실국(부서) 제외/포함 토글
-        function toggleDeptInc(m, checked) {
-            if (checked) excludedDepts.delete(m); else excludedDepts.add(m);
-            renderSummary();
         }
 
         // 근태 셀: 글씨가 칸보다 길면 폰트를 줄여 칸 안에 맞춤 (엑셀 '축소하여 맞춤')
@@ -964,7 +941,6 @@
                 const src = document.getElementById(areaId);
                 const clone = src.cloneNode(true);
                 clone.classList.add('capture-target');
-                if (areaId === 'workArea') clone.querySelectorAll('tr.excluded').forEach(r => r.remove());
                 const holder = document.createElement('div');
                 holder.style.cssText = 'position:fixed; left:-12000px; top:0;';
                 holder.appendChild(clone);
@@ -1126,5 +1102,3 @@
     </script>
 </body>
 </html>
-
-
