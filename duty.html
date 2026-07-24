@@ -204,7 +204,7 @@
         .capture-target .grid-table td.dept { font-size:19px; letter-spacing:.05em; width:60px !important; }
         .capture-target .grid-table th[data-w] { width:20% !important; }
         .capture-target .att-fit { height:54px; }
-        .capture-target .badge-cell .b-tag { font-size:11px; padding:2px 9px; }
+        .capture-target .badge-cell .b-tag { font-size:10px; padding:2px 8px; }
         .capture-target .sum-table thead th { font-size:15px; padding:15px 16px; }
         .capture-target .sum-table tbody td { font-size:15px; padding:15px 17px; line-height:1.65; }
         .capture-target .sum-table td.dept { font-size:17px; }
@@ -786,7 +786,7 @@
         // 근태 셀: 글씨가 칸보다 길면 폰트를 줄여 칸 안에 맞춤 (엑셀 '축소하여 맞춤')
         function fitAttCells(root, startSize) {
             if (!root || typeof root.querySelectorAll !== 'function') root = document;
-            startSize = startSize || 13;
+            startSize = startSize || 11.5;
             root.querySelectorAll('.att-fit').forEach(box => {
                 const txt = box.querySelector('.b-txt');
                 if (!txt) return;
@@ -945,7 +945,7 @@
                 holder.style.cssText = 'position:fixed; left:-12000px; top:0;';
                 holder.appendChild(clone);
                 document.body.appendChild(holder);
-                if (areaId === 'attArea') fitAttCells(clone, 19); // 넓은 캡처 폭에 맞게 글씨 키움
+                if (areaId === 'attArea') fitAttCells(clone, 15); // 넓은 캡처 폭에 맞게 글씨 키움
                 await new Promise(r => setTimeout(r, 60));
                 const canvas = await html2canvas(clone, { scale: 2.5, backgroundColor: '#ffffff', useCORS: true, logging: false });
                 document.body.removeChild(holder);
