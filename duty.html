@@ -531,10 +531,17 @@
         };
         firebase.initializeApp(firebaseConfig);
 
-        // 🔐 익명 인증: 로그인 화면 없이 백그라운드에서 자동으로 인증 처리
-        firebase.auth().signInAnonymously().catch((error) => {
-            console.error("익명 로그인 실패:", error.code, error.message);
-        });
+        // 🔐 로그인 확인: 로그인 안 되어 있으면 로그인 페이지로 이동
+        function onAuthReady(callback) {
+            firebase.auth().onAuthStateChanged(function (user) {
+                if (!user) {
+                    try { sessionStorage.setItem('knewu_redirect', window.location.href); } catch (e) {}
+                    window.location.href = 'login.html';
+                    return;
+                }
+                callback(user);
+            });
+        }
 
         const database = firebase.database();
         const dbRef = database.ref('perfect_clean_report_2026');
@@ -1067,44 +1074,47 @@
             }
         }
 
-        dbRef.on('value', (snap) => {
-            serverCache = snap.val() || {};
-            serverLoaded = true;
-            renderSummary();
-            maybeRenderFinal();
-            if (selectedUser) {
-                const d = serverCache[selectedUser] || {};
-                const editing = document.activeElement && document.activeElement.classList.contains('mbox-ta');
-                if (!editing) renderTwBoxes(splitActivityItems(d.thisWeek ?? d.work ?? ''));
-                renderMyAtt();
-            }
-        });
+        // 로그인 확인 후 실시간 구독 + 초기화 실행
+        onAuthReady(function () {
+            dbRef.on('value', (snap) => {
+                serverCache = snap.val() || {};
+                serverLoaded = true;
+                renderSummary();
+                maybeRenderFinal();
+                if (selectedUser) {
+                    const d = serverCache[selectedUser] || {};
+                    const editing = document.activeElement && document.activeElement.classList.contains('mbox-ta');
+                    if (!editing) renderTwBoxes(splitActivityItems(d.thisWeek ?? d.work ?? ''));
+                    renderMyAtt();
+                }
+            });
 
-        finalRef.on('value', (snap) => {
-            const v = snap.val() || {};
-            finalItems = { thisWeek: Array.isArray(v.thisWeek) ? v.thisWeek : [], lastWeek: Array.isArray(v.lastWeek) ? v.lastWeek : [] };
-            if (!editingWeek) maybeRenderFinal(); // 과거 주 편집 중이면 현재 주 변경으로 화면 안 건드림
-        });
+            finalRef.on('value', (snap) => {
+                const v = snap.val() || {};
+                finalItems = { thisWeek: Array.isArray(v.thisWeek) ? v.thisWeek : [], lastWeek: Array.isArray(v.lastWeek) ? v.lastWeek : [] };
+                if (!editingWeek) maybeRenderFinal(); // 과거 주 편집 중이면 현재 주 변경으로 화면 안 건드림
+            });
 
-        archiveRef.on('value', (snap) => {
-            archiveList = snap.val() || {};
-            renderWeekPicker();
-        });
+            archiveRef.on('value', (snap) => {
+                archiveList = snap.val() || {};
+                renderWeekPicker();
+            });
 
-        weekRef.on('value', (snap) => {
-            const v = snap.val();
-            if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
-                const p = v.split('-').map(Number);
-                weekMonday = new Date(p[0], p[1] - 1, p[2]);
-            } else {
-                weekMonday = autoNextMonday();
-                weekRef.set(isoDate(weekMonday)); // 최초 1회 저장
-            }
-            if (!editingWeek) calcDates();
-            renderWeekPicker();
-        });
+            weekRef.on('value', (snap) => {
+                const v = snap.val();
+                if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+                    const p = v.split('-').map(Number);
+                    weekMonday = new Date(p[0], p[1] - 1, p[2]);
+                } else {
+                    weekMonday = autoNextMonday();
+                    weekRef.set(isoDate(weekMonday)); // 최초 1회 저장
+                }
+                if (!editingWeek) calcDates();
+                renderWeekPicker();
+            });
 
-        initApp();
+            initApp();
+        });
         window.addEventListener('resize', () => requestAnimationFrame(fitAttCells));
     </script>
 </body>
