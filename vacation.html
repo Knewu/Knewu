@@ -554,6 +554,10 @@
         };
 
         firebase.initializeApp(firebaseConfig);
+        firebase.auth().signInAnonymously().catch((error) => {
+        console.error("익명 로그인 실패:", error);
+        });
+        
         const database = firebase.database();
         const dbRef = database.ref('vacations_2026');
 
