@@ -171,10 +171,17 @@
         };
         firebase.initializeApp(firebaseConfig);
 
-        // 🔐 익명 인증: 로그인 화면 없이 백그라운드에서 자동으로 인증 처리
-        firebase.auth().signInAnonymously().catch((error) => {
-            console.error("익명 로그인 실패:", error.code, error.message);
-        });
+        // 🔐 로그인 확인: 로그인 안 되어 있으면 로그인 페이지로 이동
+        function onAuthReady(callback) {
+            firebase.auth().onAuthStateChanged(function (user) {
+                if (!user) {
+                    try { sessionStorage.setItem('knewu_redirect', window.location.href); } catch (e) {}
+                    window.location.href = 'login.html';
+                    return;
+                }
+                callback(user);
+            });
+        }
 
         const db = firebase.database();
         const ref = db.ref('meal_order');
@@ -319,7 +326,9 @@
             document.getElementById('totalLine').innerText = totalChosen ? `총 ${totalChosen}명 선택` : '';
         }
 
-        ref.on('value', snap => { state = snap.val() || {}; renderAll(); });
+        onAuthReady(function () {
+            ref.on('value', snap => { state = snap.val() || {}; renderAll(); });
+        });
     </script>
 </body>
 </html>
