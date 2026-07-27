@@ -96,6 +96,7 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 <script>
 /* ===== Firebase (듀티/만찬게임과 동일 프로젝트) ===== */
@@ -109,6 +110,12 @@ const firebaseConfig = {
   appId: "1:301755569133:web:9bd85133d084c041368de4"
 };
 firebase.initializeApp(firebaseConfig);
+
+// 🔐 익명 인증: 로그인 화면 없이 백그라운드에서 자동으로 인증 처리
+firebase.auth().signInAnonymously().catch((error) => {
+  console.error("익명 로그인 실패:", error.code, error.message);
+});
+
 const db = firebase.database();
 const voteRef = db.ref('vote_session_v1'); // 한 번에 하나 — 새로 만들면 덮어쓰기
 
