@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>메뉴 고르기 · 전력노조 집행부</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <style>
@@ -169,6 +170,12 @@
             appId: "1:301755569133:web:9bd85133d084c041368de4"
         };
         firebase.initializeApp(firebaseConfig);
+
+        // 🔐 익명 인증: 로그인 화면 없이 백그라운드에서 자동으로 인증 처리
+        firebase.auth().signInAnonymously().catch((error) => {
+            console.error("익명 로그인 실패:", error.code, error.message);
+        });
+
         const db = firebase.database();
         const ref = db.ref('meal_order');
 
