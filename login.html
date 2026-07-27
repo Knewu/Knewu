@@ -43,7 +43,27 @@
     h1 { font-size: 18px; font-weight: 800; text-align: center; letter-spacing: -0.3px; }
     .sub { font-size: 13px; color: var(--ink2); text-align: center; margin-top: 6px; margin-bottom: 24px; line-height: 1.5; }
     label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink2); margin-bottom: 6px; }
-    input[type=email], input[type=password] {
+    select#email {
+      width: 100%;
+      padding: 13px 14px;
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: 600;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--white);
+      color: var(--ink);
+      margin-bottom: 14px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+    select#email:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,115,232,.15); }
+    input[type=password] {
       width: 100%;
       padding: 13px 14px;
       font-size: 15px;
@@ -86,10 +106,12 @@
   <div class="card">
     <div class="logo-icon"><img src="https://knewu.netlify.app/icon-192.png" alt="로고"></div>
     <h1>전국전력노동조합 <br> 집행부 업무포털</h1>
-    <div class="sub">등록된 이메일과 비밀번호로 로그인하세요</div>
+    <div class="sub">본인 직책을 선택하고 비밀번호를 입력하세요</div>
 
-    <label for="email">이메일</label>
-    <input type="email" id="email" placeholder="이름@회사도메인" autocomplete="username">
+    <label for="email">직책 선택</label>
+    <select id="email">
+      <option value="">직책을 선택하세요</option>
+    </select>
 
     <label for="pw">비밀번호</label>
     <input type="password" id="pw" placeholder="비밀번호" autocomplete="current-password">
@@ -101,6 +123,35 @@
   </div>
 
   <script>
+    // 🔧 등록된 계정 목록
+    const ACCOUNTS = [
+      { label: '위원장',       email: 'jcy00700@kepco.co.kr' },
+      { label: '수석부위원장', email: 'lee.cy@kepco.co.kr' },
+      { label: '사무처장',     email: 'cay0415@kepco.co.kr' },
+      { label: '기획처장',     email: 'attraction@kepco.co.kr' },
+      { label: '대외협력본부장', email: 'ksh7207@kepco.co.kr' },
+      { label: '총무국장',     email: 'choihosang@kepco.co.kr' },
+      { label: '조직쟁의실장', email: 'superboy@kepco.co.kr' },
+      { label: '기획국장',     email: 'yesiwill@kepco.co.kr' },
+      { label: '정책국장',     email: 'by.seo@kepco.co.kr' },
+      { label: '복지국장',     email: 'yuri.kang@kepco.co.kr' },
+      { label: '산업안전국장', email: 'heedo.hwang@kepco.co.kr' },
+      { label: '교육문화국장', email: 'ppp@kepco.co.kr' },
+      { label: '손혜석과장',   email: 'son0901@kepco.co.kr' },
+      { label: '홍수정부장',   email: 'nojohq04@kepco.co.kr' },
+      { label: '이종찬차장',   email: 'nojohq01@kepco.co.kr' },
+      { label: '이경현과장',   email: 'nojohq02@kepco.co.kr' }
+    ];
+    (function initEmailSelect() {
+      const sel = document.getElementById('email');
+      ACCOUNTS.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.email;
+        opt.textContent = a.label;
+        sel.appendChild(opt);
+      });
+    })();
+
     const firebaseConfig = {
         apiKey: "AIzaSyDUFwsNEBzTZxr8EJuY2BZkYTEBadQoMk8",
         authDomain: "knewu-64318.firebaseapp.com",
@@ -133,7 +184,7 @@
       err.textContent = '';
 
       if (!email || !pw) {
-        err.textContent = '이메일과 비밀번호를 입력해 주세요.';
+        err.textContent = '직책을 선택하고 비밀번호를 입력해 주세요.';
         return;
       }
 
