@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -39,6 +38,7 @@
     })();
     </script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
@@ -530,6 +530,12 @@
             appId: "1:301755569133:web:9bd85133d084c041368de4"
         };
         firebase.initializeApp(firebaseConfig);
+
+        // 🔐 익명 인증: 로그인 화면 없이 백그라운드에서 자동으로 인증 처리
+        firebase.auth().signInAnonymously().catch((error) => {
+            console.error("익명 로그인 실패:", error.code, error.message);
+        });
+
         const database = firebase.database();
         const dbRef = database.ref('perfect_clean_report_2026');
         const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 업무 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
