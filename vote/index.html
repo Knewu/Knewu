@@ -111,10 +111,17 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 
-// 🔐 익명 인증: 로그인 화면 없이 백그라운드에서 자동으로 인증 처리
-firebase.auth().signInAnonymously().catch((error) => {
-  console.error("익명 로그인 실패:", error.code, error.message);
-});
+// 🔐 로그인 확인: 로그인 안 되어 있으면 로그인 페이지로 이동 (vote/ 하위 폴더이므로 ../login.html)
+function onAuthReady(callback) {
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (!user) {
+      try { sessionStorage.setItem('knewu_redirect', window.location.href); } catch (e) {}
+      window.location.href = '../login.html';
+      return;
+    }
+    callback(user);
+  });
+}
 
 const db = firebase.database();
 const voteRef = db.ref('vote_session_v1'); // 한 번에 하나 — 새로 만들면 덮어쓰기
@@ -146,8 +153,10 @@ function isOwner(){ try{ return !!localStorage.getItem(LS_OWNER); }catch(e){ ret
 function ownerPin(){ try{ return JSON.parse(localStorage.getItem(LS_OWNER)||'{}').pin || ''; }catch(e){ return ''; } }
 function shareUrl(){ const u=location.href; return u.substring(0, u.lastIndexOf('/')+1) + 'index.html'; }
 
-/* ===== 실시간 구독 ===== */
-voteRef.on('value', (snap)=>{ session = snap.val(); render(); });
+/* ===== 실시간 구독 (로그인 확인 후) ===== */
+onAuthReady(function () {
+  voteRef.on('value', (snap)=>{ session = snap.val(); render(); });
+});
 
 /* ====== 렌더 진입 ====== */
 function render(){
