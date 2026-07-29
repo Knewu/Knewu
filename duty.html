@@ -232,7 +232,7 @@
         .cap-spin { position:fixed; inset:0; background:rgba(255,255,255,.65); z-index:9998; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--ink-soft); }
         /* 근태 셀: 하루에 여러 건을 한 줄씩 쌓아 표시 */
         .att-stack { display:flex; flex-direction:column; gap:3px; justify-content:center; min-height:42px; padding:2px 0; }
-        .att-item { border-radius:5px; padding:2px 3px; line-height:1.2; display:flex; flex-direction:column; align-items:center; gap:1px; }
+        .att-item { border-radius:5px; padding:3px; line-height:1.25; display:flex; flex-direction:column; align-items:center; gap:2px; }
         .att-item.출장 { background:var(--trip-bg); color:var(--trip-ink); }
         .att-item.근태 { background:var(--leave-bg); color:var(--leave-ink); }
         .att-item .b-tag { display:inline-block; font-size:8.5px; font-weight:800; color:#fff; padding:1px 6px; border-radius:999px; letter-spacing:.04em; line-height:1.4; }
@@ -854,9 +854,19 @@
                 ATT_DAYS.forEach(w => {
                     const list = normDay(serverCache[m]?.days?.[w]);
                     if (list.length) {
-                        const items = list.map((sc, idx) =>
-                            `<div class="att-item ${sc.type}" title="더블클릭 삭제" ondblclick="removeAttLive('${m}','${w}',${idx})">` +
-                            `<span class="b-tag">${sc.type}</span><span class="b-txt">${escapeHtml(sc.text || '')}</span></div>`
+                        // 같은 종류(출장/근태)끼리 묶어서 태그는 한 번만, 내용은 한 줄씩
+                        const groups = [];
+                        list.forEach((sc, idx) => {
+                            let g = groups.find(x => x.type === sc.type);
+                            if (!g) { g = { type: sc.type, entries: [] }; groups.push(g); }
+                            g.entries.push({ text: sc.text || '', idx: idx });
+                        });
+                        const items = groups.map(g =>
+                            `<div class="att-item ${g.type}"><span class="b-tag">${g.type}</span>` +
+                            g.entries.map(e =>
+                                `<span class="b-txt" title="더블클릭 삭제" ondblclick="removeAttLive('${m}','${w}',${e.idx})">${escapeHtml(e.text)}</span>`
+                            ).join('') +
+                            `</div>`
                         ).join('');
                         row += `<td><div class="att-stack">${items}</div></td>`;
                     } else row += `<td></td>`;
@@ -871,9 +881,7 @@
         function fitAttCells(root, startSize) {
             if (!root || typeof root.querySelectorAll !== 'function') root = document;
             startSize = startSize || 10.5;
-            root.querySelectorAll('.att-item').forEach(box => {
-                const txt = box.querySelector('.b-txt');
-                if (!txt) return;
+            root.querySelectorAll('.att-item .b-txt').forEach(txt => {
                 let size = startSize;
                 txt.style.fontSize = size + 'px';
                 let guard = 0;
