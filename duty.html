@@ -201,20 +201,21 @@
         /* 이미지 캡처용 (화면 밖에서 A4 비율로 렌더) */
         .capture-target { width:760px !important; max-width:760px !important; margin:0; background:#fff; padding:30px 34px; box-sizing:border-box; display:block !important; }
         /* 캡처본은 화면보다 넓으니 글씨·여백을 시원하게 키움 */
-        .capture-target .grid-table thead th { font-size:13.5px; padding:12px 4px; }
-        .capture-target .grid-table th .th-w { font-size:18px; }
-        .capture-target .grid-table th .th-d { font-size:12px; margin-top:3px; }
-        .capture-target .grid-table tbody td { height:62px; font-size:14px; }
-        .capture-target .grid-table td.dept { font-size:19px; letter-spacing:.05em; width:60px !important; }
-        .capture-target .grid-table th[data-w] { width:20% !important; }
-        .capture-target .att-stack { min-height:54px; gap:4px; }
-        .capture-target .att-item .b-tag { font-size:10px; padding:2px 8px; }
-        .capture-target .att-item .b-txt { font-size:13px; }
-        .capture-target .sum-table thead th { font-size:15px; padding:15px 16px; }
-        .capture-target .sum-table tbody td { font-size:15px; padding:15px 17px; line-height:1.65; }
-        .capture-target .sum-table td.dept { font-size:17px; }
+        .capture-target .grid-table thead th { font-size:12px; padding:9px 4px; }
+        .capture-target .grid-table th .th-w { font-size:15px; }
+        .capture-target .grid-table th .th-d { font-size:10.5px; margin-top:2px; }
+        .capture-target .grid-table tbody td { height:54px; font-size:13px; }
+        .capture-target .grid-table th:first-child { width:74px !important; }
+        .capture-target .grid-table td.dept { font-size:14.5px; letter-spacing:.02em; width:74px !important; }
+        .capture-target .grid-table th[data-w] { width:19.3% !important; }
+        .capture-target .att-stack { min-height:46px; gap:4px; }
+        .capture-target .att-item .b-tag { font-size:9.5px; padding:1.5px 7px; }
+        .capture-target .att-item .b-txt { font-size:12.5px; }
+        .capture-target .sum-table thead th { font-size:13.5px; padding:12px 15px; }
+        .capture-target .sum-table tbody td { font-size:13.5px; padding:13px 16px; line-height:1.6; }
+        .capture-target .sum-table td.dept { font-size:15px; }
         .capture-target .print-head .ph-org { font-size:14px; }
-        .capture-target .print-head .ph-title { font-size:30px; }
+        .capture-target .print-head .ph-title { font-size:26px; }
         .capture-target .print-head .ph-date { font-size:13.5px; }
         .capture-target .print-foot { font-size:12.5px; }
         .capture-target .sub-bar { display:none !important; }
@@ -1037,7 +1038,7 @@
                 holder.style.cssText = 'position:fixed; left:-12000px; top:0;';
                 holder.appendChild(clone);
                 document.body.appendChild(holder);
-                if (areaId === 'attArea') fitAttCells(clone, 15); // 넓은 캡처 폭에 맞게 글씨 키움
+                if (areaId === 'attArea') fitAttCells(clone, 12.5); // 캡처 폭에 맞춘 시작 크기
                 await new Promise(r => setTimeout(r, 60));
                 const canvas = await html2canvas(clone, { scale: 2.5, backgroundColor: '#ffffff', useCORS: true, logging: false });
                 document.body.removeChild(holder);
