@@ -530,7 +530,7 @@
                 <option value="교육문화국장">교육문화국장</option>
                 <option value="손혜석과장">손혜석과장</option>
                 <option value="홍수정부장">홍수정부장</option>
-                <option value="이종찬차장">이종찬차장</option>
+                <option value="김종찬차장">김종찬차장</option>
                 <option value="이경현과장">이경현과장</option>
             </select>
             <span class="hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11.5" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"></circle></svg><span id="guideText">달력에서 시작일과 종료일을 차례로 누르세요</span></span>
@@ -585,7 +585,7 @@
             "위원장", "수석부위원장", "사무처장", "기획처장",
             "대외협력본부장", "총무국장", "조직쟁의실장", "기획국장",
             "정책국장", "복지국장", "산업안전국장", "교육문화국장",
-            "손혜석과장", "홍수정부장", "이종찬차장", "이경현과장"
+            "손혜석과장", "홍수정부장", "김종찬차장", "이경현과장"
         ];
         const PALETTE = [
             "#1967d2", "#c5221f", "#188038", "#976900",
@@ -602,7 +602,7 @@
             "기획처장": "기획長", "대외협력본부장": "대협長", "총무국장": "총무",
             "조직쟁의실장": "조직", "기획국장": "기획", "정책국장": "정책",
             "복지국장": "복지", "산업안전국장": "산안", "교육문화국장": "교문",
-            "손혜석과장": "혜석", "홍수정부장": "수정", "이종찬차장": "종찬",
+            "손혜석과장": "혜석", "홍수정부장": "수정", "김종찬차장": "종찬",
             "이경현과장": "경현"
         };
         function shortName(name) { return SHORT_NAME[name] || name; }
@@ -930,10 +930,38 @@
             }
         }
 
+        // 🔗 로그인 계정 → 직책 자동 연동
+        const EMAIL_TO_MEMBER = {
+            'jcy00700@kepco.co.kr':    '위원장',
+            'lee.cy@kepco.co.kr':      '수석부위원장',
+            'cay0415@kepco.co.kr':     '사무처장',
+            'attraction@kepco.co.kr':  '기획처장',
+            'ksh7207@kepco.co.kr':     '대외협력본부장',
+            'choihosang@kepco.co.kr':  '총무국장',
+            'superboy@kepco.co.kr':    '조직쟁의실장',
+            'yesiwill@kepco.co.kr':    '기획국장',
+            'by.seo@kepco.co.kr':      '정책국장',
+            'yuri.kang@kepco.co.kr':   '복지국장',
+            'heedo.hwang@kepco.co.kr': '산업안전국장',
+            'ppp@kepco.co.kr':         '교육문화국장',
+            'son0901@kepco.co.kr':     '손혜석과장',
+            'nojohq04@kepco.co.kr':    '홍수정부장',
+            'nojohq01@kepco.co.kr':    '김종찬차장',
+            'nojohq02@kepco.co.kr':    '이경현과장'
+        };
+
         // 초기 실행 (로그인 확인 후)
-        onAuthReady(function () {
+        onAuthReady(function (user) {
             renderCalendars();
             initFirebaseRealtime();
+
+            // 로그인한 계정에 해당하는 직책을 자동으로 선택
+            const me = EMAIL_TO_MEMBER[(user.email || '').toLowerCase()];
+            if (me) {
+                const sel = document.getElementById('userName');
+                sel.value = me;
+                onUserChange();
+            }
         });
     </script>
 </body>
