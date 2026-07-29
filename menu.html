@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>메뉴 고르기 · 전력노조 집행부</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <style>
@@ -70,6 +69,14 @@
         .ci-tally .cnt { color: var(--blue); font-weight: 700; }
         .pick-btn { flex-shrink: 0; padding: 8px 14px; font-size: 13px; font-weight: 700; border-radius: 999px; border: 1px solid var(--line); background: var(--white); color: var(--ink2); cursor: pointer; white-space: nowrap; }
         .pick-btn.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+        /* 기타(직접 입력) 행 */
+        .etc-row { margin-top: 10px; border-style: dashed; }
+        .etc-row.mine { border-style: solid; }
+        .etc-row .ci-info { flex: 1; }
+        .etc-input-wrap { display: none; gap: 7px; margin-top: 9px; }
+        .etc-input-wrap input { flex: 1; padding: 9px 11px; font-size: 13.5px; }
+        .etc-input-wrap .btn { padding: 9px 14px; font-size: 13px; flex-shrink: 0; }
 
         .total-line { margin-top: 14px; font-size: 13px; font-weight: 700; color: var(--ink); text-align: right; }
         .foot-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
@@ -150,6 +157,20 @@
                 <label class="fl">내 직책 선택</label>
                 <select id="memberSelect" onchange="renderChoose()" style="margin-bottom:14px;"></select>
                 <div class="choose-list" id="chooseList"></div>
+
+                <!-- 기타 : 직접 입력 -->
+                <div class="choose-row etc-row" id="etcRow">
+                    <div class="ci-info">
+                        <div class="ci-name" id="etcName">🖊️ 기타 (직접 입력)</div>
+                        <div class="ci-tally" id="etcTally">아직 없음</div>
+                        <div class="etc-input-wrap" id="etcInputWrap">
+                            <input type="text" id="inEtc" maxlength="30" placeholder="드실 메뉴를 직접 입력 (예: 된장찌개)" onkeydown="if(event.key==='Enter')saveEtc()">
+                            <button class="btn btn-pri" onclick="saveEtc()">저장</button>
+                        </div>
+                    </div>
+                    <button class="pick-btn" id="etcPick" onclick="selectEtc()">선택</button>
+                </div>
+
                 <div class="total-line" id="totalLine"></div>
                 <div class="foot-actions">
                     <button class="btn btn-reset" onclick="resetAll()">전체 초기화 (다음 끼)</button>
@@ -170,19 +191,6 @@
             appId: "1:301755569133:web:9bd85133d084c041368de4"
         };
         firebase.initializeApp(firebaseConfig);
-
-        // 🔐 로그인 확인: 로그인 안 되어 있으면 로그인 페이지로 이동
-        function onAuthReady(callback) {
-            firebase.auth().onAuthStateChanged(function (user) {
-                if (!user) {
-                    try { sessionStorage.setItem('knewu_redirect', window.location.href); } catch (e) {}
-                    window.location.href = 'login.html';
-                    return;
-                }
-                callback(user);
-            });
-        }
-
         const db = firebase.database();
         const ref = db.ref('meal_order');
 
@@ -204,6 +212,24 @@
 
         function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+        // ── 기타(직접 입력) 처리 ──
+        // 메뉴 항목 중 이름이 '기타'로 시작하는 게 있으면 그 항목을 직접입력 칸으로 사용하고,
+        // 없으면 아래 고정 ID로 항상 '기타' 칸을 하나 띄운다.
+        const ETC_FALLBACK_ID = 'etc_custom';
+        function findEtcItemId(){
+            const items = state.items || {};
+            const hit = Object.keys(items).find(id => {
+                const n = String((items[id] || {}).name || '').replace(/\s/g, '');
+                return n === '기타' || /^기타[(·\-]/.test(n);
+            });
+            return hit || null;
+        }
+        function etcId(){ return findEtcItemId() || ETC_FALLBACK_ID; }
+        function etcLabel(){
+            const id = findEtcItemId();
+            return id ? `🖊️ ${state.items[id].name} · 직접 입력` : '🖊️ 기타 (직접 입력)';
+        }
+
         // ── 저장/조작 ──
         function saveRestaurant(){
             ref.child('restaurant').set({
@@ -224,15 +250,50 @@
             const updates = {};
             updates[`/items/${id}`] = null;
             const choices = state.choices || {};
-            Object.keys(choices).forEach(m => { if(choices[m] === id) updates[`/choices/${m}`] = null; });
+            Object.keys(choices).forEach(m => {
+                if(choices[m] === id){ updates[`/choices/${m}`] = null; updates[`/etcText/${m}`] = null; }
+            });
             ref.update(updates);
         }
         function selectItem(id){
             const member = document.getElementById('memberSelect').value;
             if(!member){ alert('내 직책을 먼저 선택해 주세요.'); return; }
             const cur = (state.choices || {})[member];
-            if(cur === id) ref.child('choices').child(member).remove();
-            else ref.child('choices').child(member).set(id);
+            const updates = {};
+            updates[`/choices/${member}`] = (cur === id) ? null : id;
+            updates[`/etcText/${member}`] = null;   // 일반 메뉴 고르면 직접입력 내용은 정리
+            ref.update(updates);
+        }
+        function selectEtc(){
+            const member = document.getElementById('memberSelect').value;
+            if(!member){ alert('내 직책을 먼저 선택해 주세요.'); return; }
+            const eId = etcId();
+            const cur = (state.choices || {})[member];
+            const updates = {};
+            if(cur === eId){                      // 이미 선택 → 해제
+                updates[`/choices/${member}`] = null;
+                updates[`/etcText/${member}`] = null;
+                ref.update(updates);
+                return;
+            }
+            updates[`/choices/${member}`] = eId;
+            ref.update(updates);
+            setTimeout(() => {
+                const inp = document.getElementById('inEtc');
+                if(document.getElementById('etcInputWrap').style.display !== 'none') inp.focus();
+            }, 150);
+        }
+        function saveEtc(){
+            const member = document.getElementById('memberSelect').value;
+            if(!member){ alert('내 직책을 먼저 선택해 주세요.'); return; }
+            const inp = document.getElementById('inEtc');
+            const txt = inp.value.trim();
+            if(!txt){ alert('드실 메뉴를 입력해 주세요.'); inp.focus(); return; }
+            const updates = {};
+            updates[`/choices/${member}`] = etcId();
+            updates[`/etcText/${member}`] = txt;
+            ref.update(updates);
+            inp.blur();
         }
         function resetAll(){
             if(!confirm('식당·메뉴·선택을 모두 지우고 새로 시작할까요?')) return;
@@ -297,7 +358,8 @@
         function renderChoose(){
             const items = state.items || {};
             const choices = state.choices || {};
-            const ids = Object.keys(items);
+            const eId = etcId();
+            const ids = Object.keys(items).filter(id => id !== eId);   // 기타 항목은 아래 전용 칸에서 렌더
             const member = document.getElementById('memberSelect').value;
 
             // 항목별 선택자 모으기
@@ -305,7 +367,13 @@
             Object.keys(choices).forEach(m => { const it = choices[m]; (byItem[it] = byItem[it] || []).push(m); });
 
             const list = document.getElementById('chooseList');
-            if(ids.length === 0){ list.innerHTML = '<div class="empty">메뉴 항목을 먼저 추가해 주세요.</div>'; document.getElementById('totalLine').innerText=''; return; }
+            if(ids.length === 0){
+                list.innerHTML = '<div class="empty">등록된 메뉴 항목이 없습니다. 아래 “기타”에 직접 입력하거나, 상단에서 메뉴를 추가하세요.</div>';
+                renderEtcRow(member, choices, byItem);
+                const n0 = Object.keys(choices).length;
+                document.getElementById('totalLine').innerText = n0 ? `총 ${n0}명 선택` : '';
+                return;
+            }
 
             list.innerHTML = ids.map(id => {
                 const names = byItem[id] || [];
@@ -322,13 +390,38 @@
                 </div>`;
             }).join('');
 
+            renderEtcRow(member, choices, byItem);
+
             const totalChosen = Object.keys(choices).length;
             document.getElementById('totalLine').innerText = totalChosen ? `총 ${totalChosen}명 선택` : '';
         }
 
-        onAuthReady(function () {
-            ref.on('value', snap => { state = snap.val() || {}; renderAll(); });
-        });
+        function renderEtcRow(member, choices, byItem){
+            const eId = etcId();
+            const etcText = state.etcText || {};
+            const picks = byItem[eId] || [];
+            const mine = !!(member && choices[member] === eId);
+
+            document.getElementById('etcName').innerText = etcLabel();
+            document.getElementById('etcRow').classList.toggle('mine', mine);
+
+            document.getElementById('etcTally').innerHTML = picks.length
+                ? `<span class="cnt">${picks.length}명</span> · ` +
+                  picks.map(m => `${esc(m)} (${etcText[m] ? esc(etcText[m]) : '미입력'})`).join(', ')
+                : '아직 없음';
+
+            const pick = document.getElementById('etcPick');
+            pick.classList.toggle('on', mine);
+            pick.innerText = mine ? '✓ 선택됨' : '선택';
+
+            document.getElementById('etcInputWrap').style.display = mine ? 'flex' : 'none';
+
+            // 입력 중일 때는 값을 덮어쓰지 않음 (다른 사람 변경으로 재렌더돼도 타이핑 유지)
+            const inp = document.getElementById('inEtc');
+            if(document.activeElement !== inp) inp.value = mine ? (etcText[member] || '') : '';
+        }
+
+        ref.on('value', snap => { state = snap.val() || {}; renderAll(); });
     </script>
 </body>
 </html>
