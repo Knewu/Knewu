@@ -179,11 +179,11 @@
         /* ── 근태표 ── */
         .grid-table { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; text-align:center; border:1px solid #dde3ec; border-radius:11px; overflow:hidden; }
         .grid-table thead th { background:#26344f; color:#fff; font-weight:700; font-size:11.5px; padding:8px 3px; }
-        .grid-table tbody td { border-top:1px solid #e2e6ee; padding:4px 3px; font-size:12.5px; height:50px; vertical-align:middle; color:#1f2329; }
+        .grid-table tbody td { border-top:1px solid #e2e6ee; padding:4px 3px; font-size:12.5px; height:50px; vertical-align:top; color:#1f2329; }
         .grid-table th[data-w="토"] .th-w{color:#9fc3ff;} .grid-table th[data-w="일"] .th-w{color:#ffb0aa;}
         .grid-table th .th-w { display:block; font-size:12.5px; font-weight:800; line-height:1.2; }
         .grid-table th .th-d { display:block; font-size:9.5px; font-weight:600; color:#aeb9d0; line-height:1.2; margin-top:2px; }
-        .grid-table td.dept { font-weight:800; background:#eaeef6; color:#26344f; font-size:13px; letter-spacing:.02em; white-space:nowrap; width:60px !important; flex-shrink:0; }
+        .grid-table td.dept { font-weight:800; background:#eaeef6; color:#26344f; font-size:13px; letter-spacing:.02em; white-space:nowrap; width:60px !important; flex-shrink:0; vertical-align:middle; }
         .grid-table th:first-child { width:60px !important; }
         .grid-table th[data-w] { width: 20% !important; }
         .grid-table td.wknd { background:#f5f7fb; }
@@ -231,7 +231,7 @@
         .img-overlay .img-close { background:rgba(255,255,255,.18); color:#fff; }
         .cap-spin { position:fixed; inset:0; background:rgba(255,255,255,.65); z-index:9998; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--ink-soft); }
         /* 근태 셀: 하루에 여러 건을 한 줄씩 쌓아 표시 */
-        .att-stack { display:flex; flex-direction:column; gap:3px; justify-content:center; min-height:42px; padding:2px 0; }
+        .att-stack { display:flex; flex-direction:column; gap:3px; justify-content:flex-start; min-height:42px; padding:1px 0; }
         .att-item { border-radius:5px; padding:3px; line-height:1.25; display:flex; flex-direction:column; align-items:center; gap:2px; }
         .att-item.출장 { background:var(--trip-bg); color:var(--trip-ink); }
         .att-item.근태 { background:var(--leave-bg); color:var(--leave-ink); }
