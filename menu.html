@@ -76,6 +76,28 @@
 
         /* 기타 (직접 입력) */
         .etc-box { margin-top: 12px; padding: 13px 14px; border: 1px dashed #a9c6f5; border-radius: 12px; background: #f8fbff; }
+
+        /* 내 선택 배지 */
+        .my-pick {
+            display: flex; align-items: center; gap: 9px;
+            background: #e8f0fe; border: 1px solid #c2dbff; border-radius: 11px;
+            padding: 12px 14px; margin-bottom: 14px;
+        }
+        .my-pick .mp-lbl { font-size: 12px; font-weight: 700; color: var(--blue); flex-shrink: 0; }
+        .my-pick .mp-name { font-size: 15px; font-weight: 800; color: var(--ink); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .my-pick.none { background: #f8f9fa; border-color: var(--line2); }
+        .my-pick.none .mp-lbl { color: var(--ink2); }
+        .my-pick.none .mp-name { color: var(--faint); font-weight: 600; font-size: 14px; }
+
+        /* 저장 완료 토스트 */
+        #toast {
+            position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(10px);
+            background: #202124; color: #fff; font-size: 14px; font-weight: 700;
+            padding: 13px 22px; border-radius: 999px; z-index: 999;
+            box-shadow: 0 8px 26px rgba(0,0,0,.28); max-width: 88%; text-align: center;
+            opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
         .etc-head { font-size: 13px; font-weight: 700; color: var(--blue); margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
         .etc-row { display: flex; gap: 8px; }
         .etc-row input { flex: 1; }
@@ -156,6 +178,7 @@
                 <div class="panel-h"><span class="ico">✅</span>메뉴 고르기 &amp; 현황</div>
                 <label class="fl">내 직책 선택</label>
                 <select id="memberSelect" onchange="renderChoose()" style="margin-bottom:14px;"></select>
+                <div id="myPick"></div>
                 <div class="choose-list" id="chooseList"></div>
 
                 <div class="etc-box">
@@ -175,6 +198,8 @@
         </div>
 
     </div>
+
+    <div id="toast"></div>
 
     <script>
         const firebaseConfig = {
@@ -244,12 +269,32 @@
             Object.keys(choices).forEach(m => { if(choices[m] === id) updates[`/choices/${m}`] = null; });
             ref.update(updates);
         }
+        // 저장 완료 토스트
+        let toastTimer = null;
+        function showToast(msg){
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+        }
+
         function selectItem(id){
             const member = document.getElementById('memberSelect').value;
             if(!member){ alert('내 직책을 먼저 선택해 주세요.'); return; }
             const cur = (state.choices || {})[member];
-            if(cur === id) ref.child('choices').child(member).remove();
-            else ref.child('choices').child(member).set(id);
+            const items = state.items || {};
+            const name = (items[id] && items[id].name) || '';
+
+            if(cur === id){
+                ref.child('choices').child(member).remove()
+                    .then(() => showToast('선택을 취소했습니다'))
+                    .catch(err => showToast('저장 실패: ' + err.message));
+            } else {
+                ref.child('choices').child(member).set(id)
+                    .then(() => showToast('✓ ' + name + ' · 저장되었습니다'))
+                    .catch(err => showToast('저장 실패: ' + err.message));
+            }
         }
         // 기타: 직접 입력한 메뉴를 목록에 추가하고 바로 내 선택으로 등록
         function addCustomAndSelect(){
@@ -266,7 +311,9 @@
             const existingId = Object.keys(items).find(id => norm(items[id].name) === norm(name));
 
             if(existingId){
-                ref.child('choices').child(member).set(existingId);
+                ref.child('choices').child(member).set(existingId)
+                    .then(() => showToast('✓ ' + items[existingId].name + ' · 저장되었습니다'))
+                    .catch(err => showToast('저장 실패: ' + err.message));
                 inp.value = '';
                 return;
             }
@@ -276,8 +323,9 @@
             newRef.then(() => {
                 ref.child('choices').child(member).set(newRef.key);
                 inp.value = '';
+                showToast('✓ ' + name + ' · 추가하고 저장했습니다');
             }).catch(err => {
-                alert('메뉴 추가에 실패했습니다: ' + err.message);
+                showToast('메뉴 추가 실패: ' + err.message);
             });
         }
 
@@ -350,6 +398,18 @@
             // 항목별 선택자 모으기
             const byItem = {};
             Object.keys(choices).forEach(m => { const it = choices[m]; (byItem[it] = byItem[it] || []).push(m); });
+
+            // 내 선택 배지 (상단 상시 표시)
+            const myBox = document.getElementById('myPick');
+            if(!member){
+                myBox.innerHTML = '';
+            } else {
+                const myId = choices[member];
+                const myName = myId && items[myId] ? items[myId].name : null;
+                myBox.innerHTML = myName
+                    ? `<div class="my-pick"><span class="mp-lbl">내 선택</span><span class="mp-name">${esc(myName)}</span></div>`
+                    : `<div class="my-pick none"><span class="mp-lbl">내 선택</span><span class="mp-name">아직 고르지 않았어요</span></div>`;
+            }
 
             const list = document.getElementById('chooseList');
             if(ids.length === 0){ list.innerHTML = '<div class="empty">등록된 메뉴가 없습니다. 아래 「기타 · 직접 입력」으로 추가할 수 있어요.</div>'; document.getElementById('totalLine').innerText=''; return; }
