@@ -206,7 +206,7 @@
         const MEMBERS = [
             "위원장","수석부위원장","사무처장","기획처장","대외협력본부장","총무국장",
             "조직쟁의실장","기획국장","정책국장","복지국장","산업안전국장","교육문화국장",
-            "손혜석과장","홍수정부장","이종찬차장","이경현과장"
+            "손혜석과장","홍수정부장","김종찬차장","이경현과장"
         ];
 
         let state = {};
@@ -373,7 +373,31 @@
             document.getElementById('totalLine').innerText = totalChosen ? `총 ${totalChosen}명 선택` : '';
         }
 
-        onAuthReady(function () {
+        // 🔗 로그인 계정 → 직책 자동 연동
+        const EMAIL_TO_MEMBER = {
+            'jcy00700@kepco.co.kr':    '위원장',
+            'lee.cy@kepco.co.kr':      '수석부위원장',
+            'cay0415@kepco.co.kr':     '사무처장',
+            'attraction@kepco.co.kr':  '기획처장',
+            'ksh7207@kepco.co.kr':     '대외협력본부장',
+            'choihosang@kepco.co.kr':  '총무국장',
+            'superboy@kepco.co.kr':    '조직쟁의실장',
+            'yesiwill@kepco.co.kr':    '기획국장',
+            'by.seo@kepco.co.kr':      '정책국장',
+            'yuri.kang@kepco.co.kr':   '복지국장',
+            'heedo.hwang@kepco.co.kr': '산업안전국장',
+            'ppp@kepco.co.kr':         '교육문화국장',
+            'son0901@kepco.co.kr':     '손혜석과장',
+            'nojohq04@kepco.co.kr':    '홍수정부장',
+            'nojohq01@kepco.co.kr':    '김종찬차장',
+            'nojohq02@kepco.co.kr':    '이경현과장'
+        };
+
+        onAuthReady(function (user) {
+            // 로그인한 계정에 해당하는 직책을 자동으로 선택
+            const me = EMAIL_TO_MEMBER[(user.email || '').toLowerCase()];
+            if (me) document.getElementById('memberSelect').value = me;
+
             ref.on('value', snap => { state = snap.val() || {}; renderAll(); });
         });
     </script>
