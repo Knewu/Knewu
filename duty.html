@@ -141,6 +141,9 @@
         .myatt-e { flex:none; width:26px; height:26px; border:none; background:#eef4ff; border-radius:7px; font-size:13px; cursor:pointer; line-height:1; }
         .myatt-e:active { background:#dce8fd; }
         .myatt-empty { font-size:12px; color:var(--ink-faint); padding:2px 0; }
+        /* 출장·근태 수정 모드 안내 */
+        .att-mode { font-size:12px; font-weight:700; color:#8a5a00; background:#fff4dd; border:1px solid #f3dca0; border-radius:9px; padding:9px 11px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .att-mode button { font-family:inherit; font-size:11.5px; font-weight:800; color:var(--accent); background:#fff; border:1px solid #f3dca0; border-radius:7px; padding:5px 9px; cursor:pointer; }
 
         /* ── 섹션 공통 ── */
         section.block { margin-bottom: 18px; padding: 20px; }
@@ -204,8 +207,9 @@
         .capture-target .grid-table tbody td { height:62px; font-size:14px; }
         .capture-target .grid-table td.dept { font-size:19px; letter-spacing:.05em; width:60px !important; }
         .capture-target .grid-table th[data-w] { width:20% !important; }
-        .capture-target .att-fit { height:54px; }
-        .capture-target .badge-cell .b-tag { font-size:10px; padding:2px 8px; }
+        .capture-target .att-stack { min-height:54px; gap:4px; }
+        .capture-target .att-item .b-tag { font-size:10px; padding:2px 8px; }
+        .capture-target .att-item .b-txt { font-size:13px; }
         .capture-target .sum-table thead th { font-size:15px; padding:15px 16px; }
         .capture-target .sum-table tbody td { font-size:15px; padding:15px 17px; line-height:1.65; }
         .capture-target .sum-table td.dept { font-size:17px; }
@@ -226,14 +230,15 @@
         .img-overlay .img-dl { background:var(--accent); color:#fff; }
         .img-overlay .img-close { background:rgba(255,255,255,.18); color:#fff; }
         .cap-spin { position:fixed; inset:0; background:rgba(255,255,255,.65); z-index:9998; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--ink-soft); }
-        .badge-cell { font-size:11px; font-weight:700; line-height:1.3; }
-        .badge-cell.출장 { background:var(--trip-bg); color:var(--trip-ink); }
-        .badge-cell.근태 { background:var(--leave-bg); color:var(--leave-ink); }
-        .badge-cell .b-tag { display:inline-block; font-size:8.5px; font-weight:800; color:#fff; padding:1px 6px; border-radius:999px; letter-spacing:.04em; line-height:1.4; }
-        .badge-cell.출장 .b-tag { background:var(--trip-pill); }
-        .badge-cell.근태 .b-tag { background:var(--leave-pill); }
-        .badge-cell .b-txt { display:block; font-weight:700; font-size:10.5px; }
-        .att-fit { height:42px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; line-height:1.2; }
+        /* 근태 셀: 하루에 여러 건을 한 줄씩 쌓아 표시 */
+        .att-stack { display:flex; flex-direction:column; gap:3px; justify-content:center; min-height:42px; padding:2px 0; }
+        .att-item { border-radius:5px; padding:2px 3px; line-height:1.2; display:flex; flex-direction:column; align-items:center; gap:1px; }
+        .att-item.출장 { background:var(--trip-bg); color:var(--trip-ink); }
+        .att-item.근태 { background:var(--leave-bg); color:var(--leave-ink); }
+        .att-item .b-tag { display:inline-block; font-size:8.5px; font-weight:800; color:#fff; padding:1px 6px; border-radius:999px; letter-spacing:.04em; line-height:1.4; }
+        .att-item.출장 .b-tag { background:var(--trip-pill); }
+        .att-item.근태 .b-tag { background:var(--leave-pill); }
+        .att-item .b-txt { display:block; width:100%; text-align:center; font-weight:700; font-size:10.5px; white-space:nowrap; overflow:hidden; }
 
         /* ── 최종본(뉴스레터) ── */
         .final-section { margin-bottom: 18px; }
@@ -307,7 +312,7 @@
             .sum-table th, .sum-table td { padding: 7px 8px; font-size: 13px; }
             .grid-table th, .grid-table td { font-size: 11px; height: 44px; padding: 3px 2px; }
             .grid-table td.dept { font-size: 12.5px; }
-            .att-fit { height: 40px; }
+            .att-stack { min-height: 40px; }
         }
 
         /* ═════ 인쇄 ═════ */
@@ -336,8 +341,8 @@
             body.print-final #finalPrint .news-pad { padding:16mm 16mm 12mm; }
 
             .news-topbar, .dept-tag.cur, .dept-tag.prev, .dept-tag.common,
-            .badge-cell.출장, .badge-cell.근태,
-            .badge-cell .b-tag, .badge-cell.출장 .b-tag, .badge-cell.근태 .b-tag,
+            .att-item.출장, .att-item.근태,
+            .att-item .b-tag, .att-item.출장 .b-tag, .att-item.근태 .b-tag,
             .grid-table thead th, .sum-table thead th,
             .sum-table td.dept, .grid-table td.dept,
             .sum-table tbody tr:nth-child(even) td, .grid-table td.wknd,
@@ -398,6 +403,7 @@
                             <div class="day-node" data-w="금" onclick="toggleDayNode('금')"><div class="n-w">금</div><div class="n-d" id="cd-금"></div></div>
                         </div>
                         <input type="text" id="txScDetail" class="detail-input" placeholder="상세내용">
+                        <div id="attModeBar" class="att-mode" style="display:none;"></div>
                     </div>
                     <div class="myatt-wrap" id="myAttWrap" style="display:none;">
                         <div class="myatt-h"><span>등록된 출장·근태</span><span class="myatt-edit">✏️ 항목 눌러 수정</span></div>
@@ -638,44 +644,82 @@
             const d = serverCache[m] || {};
             renderTwBoxes(splitActivityItems(d.thisWeek ?? d.work ?? ''));
             document.getElementById('txScDetail').value = '';
+            editingAtt = null; updateAttModeUI();
             activeDays = []; refreshDayNodesUI();
             document.getElementById('btnClearWork').style.display = isDept ? '' : 'none';
             renderMyAtt();
         }
 
-        // 선택 부서의 등록된 출장·근태를 하루씩 삭제할 수 있는 목록
+        // 출장·근태 데이터 정규화 — 구버전({type,text} 단일 객체)과 신버전(배열) 모두 배열로 반환
+        function normDay(v) {
+            if (!v) return [];
+            if (Array.isArray(v)) return v.filter(Boolean);
+            if (v.type || v.text) return [v];                    // 구버전 단일 객체
+            return Object.keys(v).sort((a, b) => a - b).map(k => v[k]).filter(Boolean); // Firebase가 배열을 객체로 반환한 경우
+        }
+        function attListOf(member, day) {
+            return normDay(((serverCache[member] || {}).days || {})[day]);
+        }
+
+        // 선택 부서의 등록된 출장·근태 (한 건씩 수정·삭제)
         function renderMyAtt() {
             const wrap = document.getElementById('myAttWrap');
             const list = document.getElementById('myAttList');
             if (!selectedUser) { wrap.style.display = 'none'; return; }
-            const days = (serverCache[selectedUser] || {}).days || {};
-            const rows = ATT_DAYS.filter(w => days[w]).map(w => {
-                const sc = days[w];
-                return `<div class="myatt-item" onclick="editAtt('${w}')">` +
-                    `<span class="myatt-day">${w} ${dayLabels[w] || ''}</span>` +
-                    `<span class="myatt-pill ${sc.type}">${sc.type}</span>` +
-                    `<span class="myatt-txt">${escapeHtml(sc.text || '')}</span>` +
-                    `<button class="myatt-x" onclick="event.stopPropagation();removeDayLive('${selectedUser}','${w}')" title="삭제">✕</button>` +
-                    `</div>`;
+            const rows = [];
+            ATT_DAYS.forEach(w => {
+                attListOf(selectedUser, w).forEach((sc, idx) => {
+                    rows.push(
+                        `<div class="myatt-item" onclick="editAtt('${w}',${idx})">` +
+                        `<span class="myatt-day">${w} ${dayLabels[w] || ''}</span>` +
+                        `<span class="myatt-pill ${sc.type}">${sc.type}</span>` +
+                        `<span class="myatt-txt">${escapeHtml(sc.text || '')}</span>` +
+                        `<button class="myatt-x" onclick="event.stopPropagation();removeAttLive('${selectedUser}','${w}',${idx})" title="삭제">✕</button>` +
+                        `</div>`
+                    );
+                });
             });
             wrap.style.display = '';
             list.innerHTML = rows.length ? rows.join('') : '<div class="myatt-empty">등록된 출장·근태가 없습니다.</div>';
         }
 
-        // 등록된 출장·근태 항목을 입력칸으로 불러와 수정 (저장하면 그 요일 덮어쓰기)
-        function editAtt(day) {
+        // 등록된 항목을 입력칸으로 불러와 수정 (저장하면 그 항목만 교체)
+        let editingAtt = null; // {day, idx} — 설정되면 새로 추가하지 않고 해당 항목을 수정
+        function editAtt(day, idx) {
             if (!selectedUser) return;
-            const sc = ((serverCache[selectedUser] || {}).days || {})[day];
+            const sc = attListOf(selectedUser, day)[idx];
             if (!sc) return;
+            editingAtt = { day: day, idx: idx };
             document.getElementById(sc.type === '근태' ? 'sc-leave' : 'sc-trip').checked = true;
             activeDays = [day]; refreshDayNodesUI();
             const inp = document.getElementById('txScDetail');
             inp.value = sc.text || '';
+            updateAttModeUI();
             inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
             inp.focus();
         }
+        function cancelEditAtt() {
+            editingAtt = null;
+            activeDays = []; refreshDayNodesUI();
+            document.getElementById('txScDetail').value = '';
+            updateAttModeUI();
+        }
+        // 수정 모드일 때 안내 표시
+        function updateAttModeUI() {
+            const el = document.getElementById('attModeBar');
+            if (!el) return;
+            if (editingAtt) {
+                el.style.display = '';
+                el.innerHTML = `✏️ <b>${editingAtt.day}요일</b> 항목을 수정 중입니다 (저장하면 이 항목만 교체돼요) ` +
+                               `<button type="button" onclick="cancelEditAtt()">취소하고 새로 추가</button>`;
+            } else {
+                el.style.display = 'none';
+                el.innerHTML = '';
+            }
+        }
 
         function toggleDayNode(day) {
+            if (editingAtt) { editingAtt = null; updateAttModeUI(); } // 요일을 바꾸면 새로 추가 모드로 전환
             const i = activeDays.indexOf(day);
             if (i > -1) activeDays.splice(i, 1); else activeDays.push(day);
             refreshDayNodesUI();
@@ -698,13 +742,26 @@
             const scDetail = document.getElementById('txScDetail').value.trim();
             if (activeDays.length > 0 && scDetail) {
                 const daysObj = Object.assign({}, serverCache[selectedUser]?.days || {});
-                activeDays.forEach(w => { daysObj[w] = { type: scType, text: scDetail }; });
+                if (editingAtt) {
+                    // 수정 모드: 해당 요일의 그 항목만 교체
+                    const arr = normDay(daysObj[editingAtt.day]).slice();
+                    arr[editingAtt.idx] = { type: scType, text: scDetail };
+                    daysObj[editingAtt.day] = arr;
+                } else {
+                    // 추가 모드: 선택한 각 요일 뒤에 한 건씩 덧붙임
+                    activeDays.forEach(w => {
+                        const arr = normDay(daysObj[w]).slice();
+                        arr.push({ type: scType, text: scDetail });
+                        daysObj[w] = arr;
+                    });
+                }
                 upd.days = daysObj;
             }
             if (Object.keys(upd).length === 0) { alert('입력된 내용이 없습니다.'); return; }
             // 이번주·지난주·근태를 한 번에 저장 (분할 저장 시 발생하던 누락 방지)
             dbRef.child(selectedUser).update(upd);
             alert(`${selectedUser} 저장되었습니다.`);
+            editingAtt = null; updateAttModeUI();
             activeDays = []; document.getElementById('txScDetail').value = ''; refreshDayNodesUI();
         }
 
@@ -722,13 +779,21 @@
             if (confirm(`[${selectedUser}]의 출장·근태를 전부 지울까요? (주간업무는 유지)`)) {
                 dbRef.child(selectedUser).child('days').remove().then(() => {
                     document.getElementById('txScDetail').value = '';
+                    editingAtt = null; updateAttModeUI();
                     activeDays = []; refreshDayNodesUI();
                 });
             }
         }
-        function removeDayLive(user, day) {
-            if (confirm(`[${user}] ${day}요일 출장·근태 항목을 삭제할까요?`))
-                dbRef.child(user).child('days').child(day).remove();
+        // 특정 요일의 한 건만 삭제 (남은 건이 없으면 그 요일 자체를 제거)
+        function removeAttLive(user, day, idx) {
+            const arr = normDay(((serverCache[user] || {}).days || {})[day]).slice();
+            const target = arr[idx];
+            if (!target) return;
+            const label = `[${user}] ${day}요일 · ${target.type} ${target.text || ''}`;
+            if (!confirm(`${label}\n이 항목을 삭제할까요?`)) return;
+            arr.splice(idx, 1);
+            if (arr.length === 0) dbRef.child(user).child('days').child(day).remove();
+            else dbRef.child(user).child('days').child(day).set(arr);
         }
 
         // 활동 텍스트 → 업무(항목) 배열. 빈 줄로 업무 구분. 한 업무 안에서는 줄을 그대로 표시
@@ -787,9 +852,14 @@
             MEMBERS.forEach(m => {
                 let row = `<tr><td class="dept">${m}</td>`;
                 ATT_DAYS.forEach(w => {
-                    const sc = serverCache[m]?.days?.[w];
-                    if (sc) row += `<td class="badge-cell ${sc.type}" title="더블클릭 삭제" ondblclick="removeDayLive('${m}','${w}')"><div class="att-fit"><span class="b-tag">${sc.type}</span><span class="b-txt">${escapeHtml(sc.text)}</span></div></td>`;
-                    else row += `<td></td>`;
+                    const list = normDay(serverCache[m]?.days?.[w]);
+                    if (list.length) {
+                        const items = list.map((sc, idx) =>
+                            `<div class="att-item ${sc.type}" title="더블클릭 삭제" ondblclick="removeAttLive('${m}','${w}',${idx})">` +
+                            `<span class="b-tag">${sc.type}</span><span class="b-txt">${escapeHtml(sc.text || '')}</span></div>`
+                        ).join('');
+                        row += `<td><div class="att-stack">${items}</div></td>`;
+                    } else row += `<td></td>`;
                 });
                 grid += row + `</tr>`;
             });
@@ -800,14 +870,14 @@
         // 근태 셀: 글씨가 칸보다 길면 폰트를 줄여 칸 안에 맞춤 (엑셀 '축소하여 맞춤')
         function fitAttCells(root, startSize) {
             if (!root || typeof root.querySelectorAll !== 'function') root = document;
-            startSize = startSize || 11.5;
-            root.querySelectorAll('.att-fit').forEach(box => {
+            startSize = startSize || 10.5;
+            root.querySelectorAll('.att-item').forEach(box => {
                 const txt = box.querySelector('.b-txt');
                 if (!txt) return;
                 let size = startSize;
                 txt.style.fontSize = size + 'px';
                 let guard = 0;
-                while ((box.scrollHeight > box.clientHeight + 0.5 || box.scrollWidth > box.clientWidth + 0.5) && size > 6.5 && guard < 40) {
+                while (txt.scrollWidth > txt.clientWidth + 0.5 && size > 6.5 && guard < 40) {
                     size -= 0.5; txt.style.fontSize = size + 'px'; guard++;
                 }
             });
@@ -1074,8 +1144,28 @@
             }
         }
 
+        // 🔗 로그인 계정 → 직책 자동 연동 (duty는 약칭 사용)
+        const EMAIL_TO_MEMBER = {
+            'jcy00700@kepco.co.kr':    '위원장',
+            'lee.cy@kepco.co.kr':      '수석',
+            'cay0415@kepco.co.kr':     '사무長',
+            'attraction@kepco.co.kr':  '기획長',
+            'ksh7207@kepco.co.kr':     '대협長',
+            'choihosang@kepco.co.kr':  '총무',
+            'superboy@kepco.co.kr':    '조직',
+            'yesiwill@kepco.co.kr':    '기획',
+            'by.seo@kepco.co.kr':      '정책',
+            'yuri.kang@kepco.co.kr':   '복지',
+            'heedo.hwang@kepco.co.kr': '산안',
+            'ppp@kepco.co.kr':         '교문',
+            'son0901@kepco.co.kr':     '손課',
+            'nojohq04@kepco.co.kr':    '홍部',
+            'nojohq01@kepco.co.kr':    '김次',
+            'nojohq02@kepco.co.kr':    '이課'
+        };
+
         // 로그인 확인 후 실시간 구독 + 초기화 실행
-        onAuthReady(function () {
+        onAuthReady(function (user) {
             dbRef.on('value', (snap) => {
                 serverCache = snap.val() || {};
                 serverLoaded = true;
@@ -1114,6 +1204,10 @@
             });
 
             initApp();
+
+            // 로그인한 계정에 해당하는 직책을 자동으로 선택
+            const me = EMAIL_TO_MEMBER[(user.email || '').toLowerCase()];
+            if (me) clickMemberBtn(me);
         });
         window.addEventListener('resize', () => requestAnimationFrame(fitAttCells));
     </script>
