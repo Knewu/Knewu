@@ -175,6 +175,7 @@
         .sub-block + .sub-block { margin-top:26px; }
         .sub-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:11px; }
         .sub-bar .sub-h { margin:0; }
+        .sub-acts { display:flex; align-items:center; gap:6px; flex-shrink:0; }
         .hint-mini { font-size:11.5px; font-weight:600; color:var(--ink-faint); }
         .btn-reload { background:var(--paper); color:var(--ink-soft); border:1px solid var(--line); padding:8px 12px; border-radius:9px; font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer; }
         .btn-reload:hover { border-color:var(--accent); color:var(--accent); }
@@ -189,6 +190,18 @@
         .sum-table td .celltext { white-space:pre-wrap; line-height:1.6; color:#33404f; }
         .sum-table td .none { color:var(--ink-faint); }
         .sub-h { font-size:13.5px; font-weight:800; color:var(--ink); margin:20px 0 10px; }
+
+        /* 부서별 활동: 이미지 저장 포함/제외 체크박스 */
+        .sum-table thead th.ck { width:38px; padding:13px 4px; }
+        .sum-table thead th.ck input { width:16px; height:16px; accent-color:#7fb0ff; cursor:pointer; vertical-align:middle; }
+        .sum-table tbody td.ck { width:38px; text-align:center; vertical-align:middle; padding:6px 4px; background:#f6f8fc; border-top-color:#dde3ec; }
+        .sum-table tbody tr:nth-child(even) td.ck { background:#eff2f8; }
+        .sum-table tbody td.ck input { width:17px; height:17px; accent-color:var(--accent); cursor:pointer; }
+        .sum-table tbody tr.row-off td { opacity:.4; }
+        .sum-table tbody tr.row-off td.ck { opacity:1; }
+        .sum-table tbody tr.row-off td.dept { text-decoration:line-through; }
+        .ck-hint { font-size:11.5px; font-weight:600; color:var(--ink-faint); line-height:1.5; margin:9px 2px 0; }
+        .ck-hint b { color:var(--accent); font-weight:800; }
 
         /* ── 근태표 ── */
         .grid-table { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; text-align:center; border:1px solid #dde3ec; border-radius:11px; overflow:hidden; }
@@ -233,6 +246,7 @@
         .capture-target .print-head .ph-date { font-size:13.5px; }
         .capture-target .print-foot { font-size:12.5px; }
         .capture-target .sub-bar { display:none !important; }
+        .capture-target .ck-hint { display:none !important; }
         .capture-target .print-head { display:block !important; }
         .capture-target .print-foot { display:flex !important; }
         /* 이미지 결과 오버레이 */
@@ -327,6 +341,8 @@
             .news-pad { padding: 22px 18px 20px; }
             .news-title { font-size: 23px; }
             .sum-table th, .sum-table td { padding: 7px 8px; font-size: 13px; }
+            .sum-table thead th.ck, .sum-table tbody td.ck { width:32px; padding:4px 2px; }
+            .sub-bar { flex-wrap:wrap; }
             .grid-table th, .grid-table td { font-size: 11px; height: 44px; padding: 3px 2px; }
             .grid-table td.dept { font-size: 12.5px; }
             .att-stack { min-height: 40px; }
@@ -336,7 +352,7 @@
         @media print {
             @page { size: A4 portrait; margin: 0; }
             body { background:#fff; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-            .topbar, header, .editor, .sec-bar, .no-print, .btn-print-xs, .btn-reload, .sub-bar { display:none !important; }
+            .topbar, header, .editor, .sec-bar, .no-print, .btn-print-xs, .btn-reload, .sub-bar, .ck-hint { display:none !important; }
             .wrap { max-width:none; width:100%; padding:0; margin:0; }
             section.block, .final-section { display:none !important; box-shadow:none; border:none; border-radius:0; margin:0; padding:0; }
             .sub-block { margin:0 !important; }
@@ -346,6 +362,8 @@
             /* 주간업무(부서별 활동) 인쇄 */
             body.print-work section.block { display:block !important; padding:13mm; }
             body.print-work #attArea { display:none !important; }
+            body.print-work .sum-table .ck { display:none !important; }
+            body.print-work .sum-table tbody tr.row-off { display:none !important; }
 
             /* 출장근태 인쇄 */
             body.print-att section.block { display:block !important; padding:13mm; }
@@ -480,15 +498,23 @@
                 </div>
                 <div class="sub-bar">
                     <div class="sub-h">부서별 활동</div>
-                    <button class="btn-print-xs" onclick="printWork()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                        이미지 저장
-                    </button>
+                    <div class="sub-acts">
+                        <button class="btn-print-xs" onclick="uncheckEmptyDepts()" title="활동 내용이 비어 있는 부서를 한 번에 해제">미입력 부서 해제</button>
+                        <button class="btn-print-xs" onclick="printWork()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            이미지 저장
+                        </button>
+                    </div>
                 </div>
                 <table class="sum-table">
-                    <thead><tr><th style="width:64px;">부서</th><th>이번 주 활동</th></tr></thead>
+                    <thead><tr>
+                        <th class="ck"><input type="checkbox" id="ckAll" checked onchange="toggleAllDeptRows(this.checked)" title="전체 선택 / 해제"></th>
+                        <th style="width:64px;">부서</th>
+                        <th>이번 주 활동</th>
+                    </tr></thead>
                     <tbody id="summaryBody"></tbody>
                 </table>
+                <div class="ck-hint" id="ckHint"></div>
                 <div class="print-foot"><span>발행 | 전국전력노동조합 복지국</span><span id="phWorkFoot"></span></div>
             </div>
 
@@ -619,6 +645,8 @@
         let serverLoaded = false;
         let finalRendered = false;
         let weekMonday = null; // 기준 주차의 월요일 (Date) — weekRef에서 로드
+        // 부서별 활동 표에서 "이미지 저장 시 제외"할 부서 (화면 표시·Firebase 데이터에는 영향 없음, 브라우저 메모리에만 유지)
+        let deptOff = {};
 
         function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
         function pad(n){ return String(n).padStart(2,'0'); }
@@ -887,16 +915,57 @@
             renderTwBoxes(cur);
         }
 
+        // ── 부서별 활동 표: 이미지 저장 포함/제외 토글 ──
+        function deptText(m) {
+            const d = serverCache[m] || {};
+            return (d.thisWeek ?? d.work ?? '').trim();
+        }
+        function toggleDeptRow(m, checked) {
+            if (checked) delete deptOff[m]; else deptOff[m] = true;
+            const tr = document.querySelector(`#summaryBody tr[data-dept="${m}"]`);
+            if (tr) tr.classList.toggle('row-off', !checked);
+            syncCkAll();
+            updateCkHint();
+        }
+        function toggleAllDeptRows(checked) {
+            if (checked) deptOff = {};
+            else ACT_MEMBERS.forEach(m => { deptOff[m] = true; });
+            renderSummary();
+        }
+        // 활동 내용이 비어 있는 부서를 한 번에 해제
+        function uncheckEmptyDepts() {
+            let n = 0;
+            ACT_MEMBERS.forEach(m => { if (!deptText(m)) { deptOff[m] = true; n++; } });
+            renderSummary();
+            if (!n) alert('활동 내용이 비어 있는 부서가 없습니다.');
+        }
+        function syncCkAll() {
+            const all = document.getElementById('ckAll');
+            if (all) all.checked = ACT_MEMBERS.every(m => !deptOff[m]);
+        }
+        function updateCkHint() {
+            const el = document.getElementById('ckHint');
+            if (!el) return;
+            const off = ACT_MEMBERS.filter(m => deptOff[m]);
+            el.innerHTML = off.length
+                ? `체크를 끈 <b>${off.length}개 부서</b>(${off.map(escapeHtml).join(', ')})는 <b>이미지 저장</b> 시 표에서 빠집니다. 화면 표시와 저장된 데이터는 그대로예요.`
+                : '왼쪽 체크를 끄면 그 부서는 <b>이미지 저장</b> 시 표에서 빠집니다. (화면·데이터는 그대로)';
+        }
+
         // ── 부서별 간략표 + 근태 (읽기 전용, 실시간) ──
         function renderSummary() {
             let rows = '';
             ACT_MEMBERS.forEach(m => {
-                const d = serverCache[m] || {};
-                const tw = (d.thisWeek ?? d.work ?? '').trim();
+                const tw = deptText(m);
+                const off = !!deptOff[m];
                 const cell = (t) => t ? `<div class="celltext">${escapeHtml(t)}</div>` : `<div class="celltext none">—</div>`;
-                rows += `<tr><td class="dept">${m}</td><td>${cell(tw)}</td></tr>`;
+                rows += `<tr data-dept="${m}"${off ? ' class="row-off"' : ''}>` +
+                        `<td class="ck"><input type="checkbox" ${off ? '' : 'checked'} onchange="toggleDeptRow('${m}',this.checked)" title="이미지 저장에 포함"></td>` +
+                        `<td class="dept">${m}</td><td>${cell(tw)}</td></tr>`;
             });
             document.getElementById('summaryBody').innerHTML = rows;
+            syncCkAll();
+            updateCkHint();
 
             let grid = '';
             MEMBERS.forEach(m => {
@@ -1040,6 +1109,7 @@
             dbRef.update(upd);
             const nm = new Date(weekMonday || autoNextMonday()); nm.setDate(nm.getDate() + 7);
             weekRef.set(isoDate(nm));
+            deptOff = {}; // 새 주가 시작되면 부서 체크는 전부 켠 상태로 초기화
             if (selectedUser) {
                 renderTwBoxes(['']);
                 document.getElementById('txScDetail').value = '';
@@ -1083,6 +1153,11 @@
                 const src = document.getElementById(areaId);
                 const clone = src.cloneNode(true);
                 clone.classList.add('capture-target');
+                // 부서별 활동: 체크 해제한 행과 체크박스 열을 캡처본에서만 제거 (원본 화면·데이터는 그대로)
+                if (areaId === 'workArea') {
+                    clone.querySelectorAll('tr.row-off').forEach(tr => tr.remove());
+                    clone.querySelectorAll('th.ck, td.ck').forEach(cel => cel.remove());
+                }
                 const holder = document.createElement('div');
                 holder.style.cssText = 'position:fixed; left:-12000px; top:0;';
                 holder.appendChild(clone);
@@ -1138,7 +1213,11 @@
             }
         }
 
-        function printWork() { captureArea('workArea', '주간업무 보고', '주간업무보고.png'); }
+        function printWork() {
+            const on = ACT_MEMBERS.filter(m => !deptOff[m]);
+            if (!on.length) { alert('표시할 부서가 없습니다.\n표 왼쪽 체크박스를 하나 이상 켜주세요.'); return; }
+            captureArea('workArea', '주간업무 보고', '주간업무보고.png');
+        }
         function printAtt() { captureArea('attArea', '출장·근태 현황', '출장근태현황.png'); }
         function printFinal() { buildFinalPrint(); captureArea('finalPrint', '전국전력노동조합 주간업무', '주간업무_최종본.png'); }
         window.onafterprint = () => document.body.classList.remove('print-work', 'print-att', 'print-final');
@@ -1262,6 +1341,7 @@
             });
 
             initApp();
+            updateCkHint();
 
             // 로그인한 계정에 해당하는 직책을 자동으로 선택
             const me = EMAIL_TO_MEMBER[(user.email || '').toLowerCase()];
