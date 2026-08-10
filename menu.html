@@ -60,6 +60,26 @@
         .item-x:hover { background: #f7c9c3; }
         .empty { color: var(--faint); font-size: 13px; padding: 6px 2px; }
 
+        /* ⭐ 즐겨찾기 */
+        .fav-list { display: flex; flex-direction: column; gap: 9px; }
+        .fav-card { border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+        .fav-card.editing { border-color: var(--blue); }
+        .fav-main { display: flex; align-items: center; gap: 8px; padding: 12px 13px; }
+        .fav-info { flex: 1; min-width: 0; }
+        .fav-name { font-size: 15px; font-weight: 800; letter-spacing: -.2px; }
+        .fav-sub { font-size: 12px; color: var(--ink2); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .fav-load { flex-shrink: 0; padding: 8px 13px; font-size: 12.5px; font-weight: 700; border-radius: 999px; border: 1px solid var(--blue); background: var(--blue); color: #fff; cursor: pointer; font-family: inherit; white-space: nowrap; }
+        .fav-load:hover { background: var(--blue-dk); }
+        .fav-btn { flex-shrink: 0; width: 32px; height: 32px; border: 1px solid var(--line); background: var(--white); border-radius: 8px; cursor: pointer; font-size: 13px; font-family: inherit; line-height: 1; }
+        .fav-btn:hover { background: #f5f9ff; border-color: var(--blue); }
+        .fav-btn.del:hover { background: #fdf1ef; border-color: #f0c8c3; }
+        .fav-edit { border-top: 1px solid var(--line2); background: #f8fafc; padding: 14px 13px; }
+        .fav-edit .fe-row { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+        .fav-edit .fe-row input { flex: 1; }
+        .fav-edit .fe-actions { display: flex; gap: 8px; margin-top: 13px; }
+        .fav-hint { font-size: 12.5px; color: var(--ink2); line-height: 1.6; padding: 2px 1px; }
+        .fav-hint b { color: var(--blue); font-weight: 800; }
+
         /* 메뉴 고르기 & 현황 */
         .choose-list { display: flex; flex-direction: column; gap: 10px; }
         .choose-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px; transition: border-color .15s, background .15s; }
@@ -134,6 +154,12 @@
                 <div class="rloc" id="rLoc" style="display:none;"></div>
             </div>
 
+            <!-- 0. 즐겨찾기 -->
+            <div class="panel">
+                <div class="panel-h"><span class="ico">⭐</span>즐겨찾기 &middot; 자주 가는 식당</div>
+                <div class="fav-list" id="favList"></div>
+            </div>
+
             <!-- 1. 식당 정보 -->
             <div class="panel">
                 <div class="panel-h"><span class="ico">🍽️</span>식당 정보</div>
@@ -160,7 +186,7 @@
                 <div class="item-list" id="itemManage"></div>
             </div>
 
-            <button class="btn btn-pri btn-go" onclick="setView('choose')">✅ 입력 완료 · 고르기 화면으로</button>
+            <button class="btn btn-pri btn-go" onclick="finishSetup()">✅ 입력 완료 · 고르기 화면으로</button>
         </div>
 
         <!-- ===== 고르기 화면 : 메뉴 고르는 사람용 ===== -->
@@ -227,6 +253,8 @@
 
         const db = firebase.database();
         const ref = db.ref('meal_order');
+        // ⭐ 즐겨찾기는 별도 경로 — 「전체 초기화」가 meal_order를 통째로 지워도 살아남습니다
+        const favRef = db.ref('meal_order_favorites');
 
         const MEMBERS = [
             "위원장","수석부위원장","사무처장","기획처장","대외협력본부장","총무국장",
@@ -236,6 +264,9 @@
 
         let state = {};
         let viewMode = null; // 'setup' | 'choose' (첫 로딩 시 데이터 보고 자동 결정)
+        let favs = {};          // 즐겨찾기 목록 {키: {name, location, items:[이름...]}}
+        let favEditKey = null;  // 인라인 편집 중인 즐겨찾기 키
+        let favDraft = null;    // 편집 중인 값 버퍼 {name, location, items:[]}
 
         // 직책 드롭다운 채우기
         (function initMembers(){
@@ -245,6 +276,7 @@
         })();
 
         function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        function normName(s){ return String(s || '').replace(/\s+/g, '').toLowerCase(); }
 
         // ── 저장/조작 ──
         function saveRestaurant(){
@@ -307,8 +339,7 @@
 
             // 이미 같은 메뉴가 목록에 있으면 새로 만들지 않고 그 항목을 선택
             const items = state.items || {};
-            const norm = s => String(s).replace(/\s+/g, '').toLowerCase();
-            const existingId = Object.keys(items).find(id => norm(items[id].name) === norm(name));
+            const existingId = Object.keys(items).find(id => normName(items[id].name) === normName(name));
 
             if(existingId){
                 ref.child('choices').child(member).set(existingId)
@@ -330,10 +361,149 @@
         }
 
         function resetAll(){
-            if(!confirm('식당·메뉴·선택을 모두 지우고 새로 시작할까요?')) return;
+            if(!confirm('식당·메뉴·선택을 모두 지우고 새로 시작할까요?\n(⭐ 즐겨찾기는 지워지지 않습니다)')) return;
             ref.remove();
             document.getElementById('memberSelect').value = '';
             setView('setup');
+        }
+
+        // ══════ ⭐ 즐겨찾기 ══════
+        function favItemNames(f){
+            return Array.isArray((f || {}).items) ? f.items.filter(n => String(n || '').trim()) : [];
+        }
+
+        // 즐겨찾기 불러오기 → 식당+메뉴 세팅 후 고르기 화면으로
+        function loadFavorite(k){
+            const f = favs[k] || {};
+            const names = favItemNames(f);
+            if(!names.length){ alert('이 즐겨찾기에는 저장된 메뉴가 없습니다.\n✏️ 를 눌러 메뉴를 먼저 넣어주세요.'); return; }
+            if(!confirm(`「${f.name || ''}」 + 메뉴 ${names.length}개를 불러올까요?\n\n지금 등록된 메뉴와 모두의 선택은 지워집니다.`)) return;
+
+            const items = {};
+            names.forEach(n => { items[ref.child('items').push().key] = { name: String(n).trim() }; });
+            ref.set({ restaurant: { name: f.name || '', location: f.location || '' }, items })
+                .then(() => { showToast('⭐ ' + (f.name || '') + ' · 불러왔습니다'); setView('choose'); })
+                .catch(err => showToast('불러오기 실패: ' + err.message));
+        }
+
+        function deleteFavorite(k){
+            const f = favs[k] || {};
+            if(!confirm(`즐겨찾기 「${f.name || ''}」을(를) 삭제할까요?`)) return;
+            if(favEditKey === k){ favEditKey = null; favDraft = null; }
+            favRef.child(k).remove()
+                .then(() => showToast('즐겨찾기를 삭제했습니다'))
+                .catch(err => showToast('삭제 실패: ' + err.message));
+        }
+
+        // 인라인 편집 열기/닫기
+        function toggleFavEdit(k){
+            if(favEditKey === k){ cancelFavEdit(); return; }
+            const f = favs[k] || {};
+            favEditKey = k;
+            favDraft = { name: f.name || '', location: f.location || '', items: favItemNames(f).slice() };
+            renderFavs();
+        }
+        function cancelFavEdit(){ favEditKey = null; favDraft = null; renderFavs(); }
+        function favDraftSet(field, v){ if(favDraft) favDraft[field] = v; }          // 재렌더 없음 (입력 중 커서 유지)
+        function favDraftItem(i, v){ if(favDraft) favDraft.items[i] = v; }
+        function favDraftAdd(){ if(!favDraft) return; favDraft.items.push(''); renderFavs(); }
+        function favDraftRemove(i){ if(!favDraft) return; favDraft.items.splice(i, 1); renderFavs(); }
+
+        function saveFavEdit(k){
+            if(!favDraft) return;
+            const name = String(favDraft.name || '').trim();
+            if(!name){ alert('식당 이름을 입력해 주세요.'); return; }
+            const items = favDraft.items.map(s => String(s || '').trim()).filter(Boolean);
+            favRef.child(k).set({ name, location: String(favDraft.location || '').trim(), items, savedAt: Date.now() })
+                .then(() => { favEditKey = null; favDraft = null; showToast('⭐ 즐겨찾기를 저장했습니다'); renderFavs(); })
+                .catch(err => showToast('저장 실패: ' + err.message));
+        }
+
+        function favEditHtml(k){
+            const d = favDraft || { name: '', location: '', items: [] };
+            const rows = d.items.map((n, i) =>
+                `<div class="fe-row"><input type="text" value="${esc(n)}" placeholder="메뉴 이름" oninput="favDraftItem(${i}, this.value)">` +
+                `<button class="item-x" onclick="favDraftRemove(${i})" title="이 메뉴 삭제">✕</button></div>`
+            ).join('');
+            return `<div class="fav-edit">
+                <label class="fl">식당 이름</label>
+                <input type="text" value="${esc(d.name)}" oninput="favDraftSet('name', this.value)" style="margin-bottom:11px;">
+                <label class="fl">위치 (선택)</label>
+                <input type="text" value="${esc(d.location)}" oninput="favDraftSet('location', this.value)" style="margin-bottom:13px;">
+                <label class="fl">메뉴 (${d.items.length}개)</label>
+                ${rows || '<div class="empty">메뉴가 없습니다. 아래에서 추가하세요.</div>'}
+                <button class="btn btn-line" style="width:100%;margin-top:5px;" onclick="favDraftAdd()">+ 메뉴 추가</button>
+                <div class="fe-actions">
+                    <button class="btn btn-pri" style="flex:1;" onclick="saveFavEdit('${k}')">저장</button>
+                    <button class="btn btn-line" style="flex:1;" onclick="cancelFavEdit()">취소</button>
+                </div>
+            </div>`;
+        }
+
+        function renderFavs(){
+            const box = document.getElementById('favList');
+            if(!box) return;
+            const keys = Object.keys(favs).sort((a, b) =>
+                String((favs[a] || {}).name || '').localeCompare(String((favs[b] || {}).name || ''), 'ko'));
+
+            if(!keys.length){
+                box.innerHTML = '<div class="fav-hint">아직 저장된 즐겨찾기가 없습니다.<br>아래에 식당과 메뉴를 넣고 <b>「입력 완료」</b>를 누르면 즐겨찾기에 저장할지 물어봐요. 저장해두면 <b>전체 초기화 후에도</b> 한 번에 불러올 수 있습니다.</div>';
+                return;
+            }
+
+            box.innerHTML = keys.map(k => {
+                const f = favs[k] || {};
+                const names = favItemNames(f);
+                const sub = names.length ? `메뉴 ${names.length}개 · ${names.join(', ')}` : '저장된 메뉴 없음';
+                const editing = favEditKey === k;
+                return `<div class="fav-card${editing ? ' editing' : ''}">
+                    <div class="fav-main">
+                        <div class="fav-info">
+                            <div class="fav-name">⭐ ${esc(f.name || '(이름 없음)')}</div>
+                            <div class="fav-sub">${esc(sub)}</div>
+                        </div>
+                        <button class="fav-load" onclick="loadFavorite('${k}')">불러오기</button>
+                        <button class="fav-btn" onclick="toggleFavEdit('${k}')" title="즐겨찾기 수정">✏️</button>
+                        <button class="fav-btn del" onclick="deleteFavorite('${k}')" title="즐겨찾기 삭제">🗑</button>
+                    </div>
+                    ${editing ? favEditHtml(k) : ''}
+                </div>`;
+            }).join('');
+        }
+
+        // 「입력 완료」: 즐겨찾기에 저장/갱신할지 물어본 뒤 고르기 화면으로
+        function finishSetup(){
+            const nameIn = document.getElementById('inName').value.trim();
+            const locIn  = document.getElementById('inLoc').value.trim();
+            const saved  = state.restaurant || {};
+
+            // 입력칸 내용이 아직 저장 안 됐으면 먼저 반영
+            if(nameIn && (nameIn !== (saved.name || '') || locIn !== (saved.location || ''))) saveRestaurant();
+
+            const rname = nameIn || saved.name || '';
+            const rloc  = nameIn ? locIn : (saved.location || '');
+            const items = state.items || {};
+            const names = Object.keys(items).map(id => String((items[id] || {}).name || '').trim()).filter(Boolean);
+
+            if(rname && names.length){
+                const key = Object.keys(favs).find(k => normName((favs[k] || {}).name) === normName(rname));
+                if(!key){
+                    if(confirm(`「${rname}」과(와) 메뉴 ${names.length}개를 ⭐ 즐겨찾기에 저장할까요?\n\n다음에 초기화한 뒤 클릭 한 번으로 불러올 수 있어요.`)){
+                        favRef.push({ name: rname, location: rloc, items: names, savedAt: Date.now() })
+                            .then(() => showToast('⭐ 즐겨찾기에 저장했습니다'))
+                            .catch(err => showToast('저장 실패: ' + err.message));
+                    }
+                } else {
+                    const old = favItemNames(favs[key]);
+                    const changed = old.length !== names.length || old.some((n, i) => normName(n) !== normName(names[i]));
+                    if(changed && confirm(`⭐ 즐겨찾기 「${rname}」에 저장된 메뉴가 지금과 달라요.\n(저장됨 ${old.length}개 → 지금 ${names.length}개)\n\n지금 메뉴로 갱신할까요?`)){
+                        favRef.child(key).update({ name: rname, location: rloc, items: names, savedAt: Date.now() })
+                            .then(() => showToast('⭐ 즐겨찾기를 갱신했습니다'))
+                            .catch(err => showToast('갱신 실패: ' + err.message));
+                    }
+                }
+            }
+            setView('choose');
         }
 
         // ── 화면 전환 ──
@@ -382,7 +552,7 @@
             const items = state.items || {};
             const ids = Object.keys(items);
             const box = document.getElementById('itemManage');
-            if(ids.length === 0){ box.innerHTML = '<div class="empty">아직 등록된 메뉴가 없습니다. 위에서 추가하세요.</div>'; return; }
+            if(ids.length === 0){ box.innerHTML = '<div class="empty">아직 등록된 메뉴가 없습니다. 위에서 추가하거나 ⭐ 즐겨찾기에서 불러오세요.</div>'; return; }
             box.innerHTML = ids.map(id =>
                 `<div class="item-row"><span>${esc(items[id].name)}</span>` +
                 `<button class="item-x" onclick="deleteItem('${id}')">✕</button></div>`
@@ -459,6 +629,7 @@
             if (me) document.getElementById('memberSelect').value = me;
 
             ref.on('value', snap => { state = snap.val() || {}; renderAll(); });
+            favRef.on('value', snap => { favs = snap.val() || {}; renderFavs(); });
         });
     </script>
 </body>
