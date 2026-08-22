@@ -104,7 +104,10 @@
             padding: 12px 14px; margin-bottom: 14px;
         }
         .my-pick .mp-lbl { font-size: 12px; font-weight: 700; color: var(--blue); flex-shrink: 0; }
-        .my-pick .mp-name { font-size: 15px; font-weight: 800; color: var(--ink); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .my-pick { align-items: flex-start; }
+        .my-pick .mp-lbl { padding-top: 2px; }
+        .my-pick .mp-name { font-size: 15px; font-weight: 800; color: var(--ink); flex: 1; min-width: 0; white-space: normal; word-break: keep-all; line-height: 1.5; }
+        .my-pick .mp-cnt { flex-shrink: 0; font-size: 11.5px; font-weight: 800; color: #fff; background: var(--blue); border-radius: 999px; padding: 3px 8px; margin-top: 1px; }
         .my-pick.none { background: #f8f9fa; border-color: var(--line2); }
         .my-pick.none .mp-lbl { color: var(--ink2); }
         .my-pick.none .mp-name { color: var(--faint); font-weight: 600; font-size: 14px; }
@@ -213,7 +216,7 @@
                         <input type="text" id="etcItem" placeholder="먹고 싶은 메뉴 입력" onkeydown="if(event.key==='Enter')addCustomAndSelect()">
                         <button class="btn btn-pri" onclick="addCustomAndSelect()">추가 · 선택</button>
                     </div>
-                    <div class="etc-hint">목록에 없는 메뉴는 여기 입력하면 바로 추가되고 내 선택으로 등록돼요.</div>
+                    <div class="etc-hint">목록에 없는 메뉴는 여기 입력하면 바로 추가되고 내 선택에 등록돼요.<br>메뉴는 <b>여러 개 선택할 수 있습니다</b>. 선택된 항목을 한 번 더 누르면 취소돼요.</div>
                 </div>
 
                 <div class="total-line" id="totalLine"></div>
@@ -298,7 +301,15 @@
             const updates = {};
             updates[`/items/${id}`] = null;
             const choices = state.choices || {};
-            Object.keys(choices).forEach(m => { if(choices[m] === id) updates[`/choices/${m}`] = null; });
+            Object.keys(choices).forEach(m => {
+                const ids = choiceIdsOf(choices, m);
+                if(ids.indexOf(id) === -1) return;
+                const rest = ids.filter(x => x !== id);
+                if(!rest.length){ updates[`/choices/${m}`] = null; return; }
+                const obj = {};
+                rest.forEach(i => obj[i] = true);
+                updates[`/choices/${m}`] = obj;
+            });
             ref.update(updates);
         }
         // 저장 완료 토스트
@@ -311,20 +322,38 @@
             toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
         }
 
+        // ── 다중 선택 지원 ──
+        // choices/{직책} 은 { itemId: true, ... } 객체로 저장합니다.
+        // 예전 데이터(문자열 1개)도 그대로 읽히도록 정규화합니다.
+        function choiceIdsOf(choices, member){
+            const v = (choices || {})[member];
+            if(!v) return [];
+            if(typeof v === 'string') return [v];
+            return Object.keys(v).filter(k => v[k]);
+        }
+        function writeChoices(member, ids){
+            if(!ids.length) return ref.child('choices').child(member).remove();
+            const obj = {};
+            ids.forEach(i => obj[i] = true);
+            return ref.child('choices').child(member).set(obj);
+        }
+
         function selectItem(id){
             const member = document.getElementById('memberSelect').value;
             if(!member){ alert('내 직책을 먼저 선택해 주세요.'); return; }
-            const cur = (state.choices || {})[member];
+            const cur = choiceIdsOf(state.choices, member);
             const items = state.items || {};
             const name = (items[id] && items[id].name) || '';
 
-            if(cur === id){
-                ref.child('choices').child(member).remove()
-                    .then(() => showToast('선택을 취소했습니다'))
+            if(cur.indexOf(id) !== -1){
+                const rest = cur.filter(x => x !== id);
+                writeChoices(member, rest)
+                    .then(() => showToast(name ? name + ' 선택을 취소했습니다' : '선택을 취소했습니다'))
                     .catch(err => showToast('저장 실패: ' + err.message));
             } else {
-                ref.child('choices').child(member).set(id)
-                    .then(() => showToast('✓ ' + name + ' · 저장되었습니다'))
+                const next = cur.concat(id);
+                writeChoices(member, next)
+                    .then(() => showToast('✓ ' + name + ' · 저장되었습니다 (총 ' + next.length + '개)'))
                     .catch(err => showToast('저장 실패: ' + err.message));
             }
         }
@@ -341,18 +370,25 @@
             const items = state.items || {};
             const existingId = Object.keys(items).find(id => normName(items[id].name) === normName(name));
 
+            const cur = choiceIdsOf(state.choices, member);
+
             if(existingId){
-                ref.child('choices').child(member).set(existingId)
+                if(cur.indexOf(existingId) !== -1){
+                    showToast('이미 선택한 메뉴예요');
+                    inp.value = '';
+                    return;
+                }
+                writeChoices(member, cur.concat(existingId))
                     .then(() => showToast('✓ ' + items[existingId].name + ' · 저장되었습니다'))
                     .catch(err => showToast('저장 실패: ' + err.message));
                 inp.value = '';
                 return;
             }
 
-            // 새 메뉴 항목 추가 후 내 선택으로 지정
+            // 새 메뉴 항목 추가 후 내 선택에 추가
             const newRef = ref.child('items').push({ name });
             newRef.then(() => {
-                ref.child('choices').child(member).set(newRef.key);
+                writeChoices(member, cur.concat(newRef.key));
                 inp.value = '';
                 showToast('✓ ' + name + ' · 추가하고 저장했습니다');
             }).catch(err => {
@@ -565,19 +601,21 @@
             const ids = Object.keys(items);
             const member = document.getElementById('memberSelect').value;
 
-            // 항목별 선택자 모으기
+            // 항목별 선택자 모으기 (한 사람이 여러 개 고를 수 있음)
             const byItem = {};
-            Object.keys(choices).forEach(m => { const it = choices[m]; (byItem[it] = byItem[it] || []).push(m); });
+            Object.keys(choices).forEach(m => {
+                choiceIdsOf(choices, m).forEach(it => { (byItem[it] = byItem[it] || []).push(m); });
+            });
 
             // 내 선택 배지 (상단 상시 표시)
+            const myIds = member ? choiceIdsOf(choices, member) : [];
             const myBox = document.getElementById('myPick');
             if(!member){
                 myBox.innerHTML = '';
             } else {
-                const myId = choices[member];
-                const myName = myId && items[myId] ? items[myId].name : null;
-                myBox.innerHTML = myName
-                    ? `<div class="my-pick"><span class="mp-lbl">내 선택</span><span class="mp-name">${esc(myName)}</span></div>`
+                const myNames = myIds.filter(i => items[i]).map(i => items[i].name);
+                myBox.innerHTML = myNames.length
+                    ? `<div class="my-pick"><span class="mp-lbl">내 선택</span><span class="mp-name">${myNames.map(esc).join(', ')}</span><span class="mp-cnt">${myNames.length}개</span></div>`
                     : `<div class="my-pick none"><span class="mp-lbl">내 선택</span><span class="mp-name">아직 고르지 않았어요</span></div>`;
             }
 
@@ -586,7 +624,7 @@
 
             list.innerHTML = ids.map(id => {
                 const names = byItem[id] || [];
-                const mine = member && choices[member] === id;
+                const mine = member && myIds.indexOf(id) !== -1;
                 const tally = names.length
                     ? `<span class="cnt">${names.length}명</span> · ${names.map(esc).join(', ')}`
                     : '아직 없음';
@@ -599,8 +637,12 @@
                 </div>`;
             }).join('');
 
-            const totalChosen = Object.keys(choices).length;
-            document.getElementById('totalLine').innerText = totalChosen ? `총 ${totalChosen}명 선택` : '';
+            const people = Object.keys(choices).filter(m => choiceIdsOf(choices, m).length).length;
+            let picks = 0;
+            Object.keys(choices).forEach(m => { picks += choiceIdsOf(choices, m).length; });
+            document.getElementById('totalLine').innerText = people
+                ? (picks > people ? `총 ${people}명 · ${picks}개 선택` : `총 ${people}명 선택`)
+                : '';
         }
 
         // 🔗 로그인 계정 → 직책 자동 연동
