@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대체휴무 · 전력노조 집행부</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="대체휴무">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1f2d4d">
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+    <style>
+        :root {
+            --accent: #1a73e8; --accent-dk: #1557b0; --accent-tint: #eef4ff;
+            --ink: #1f2329; --ink-soft: #646b76; --ink-faint: #9aa3ad;
+            --line: #e7e9ed; --line-soft: #eef0f3;
+            --page: #f4f6f8; --paper: #ffffff;
+            --radius: 14px;
+            --shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.04);
+            --grant: #1e7a4d; --grant-bg: #e7f5ec;
+            --use: #8a5a00; --use-bg: #fff4dd;
+            --danger: #c5221f;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Pretendard Variable','Pretendard','Malgun Gothic',-apple-system,sans-serif; background: var(--page); color: var(--ink); padding-bottom: 70px; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+
+        .topbar { background: var(--paper); border-bottom: 1px solid var(--line); padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 2px rgba(16,24,40,.03); }
+        .back-btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none; color: var(--ink-soft); font-size:15px; font-weight:600; padding:7px 12px; border-radius:8px; transition:background .15s; }
+        .back-btn:hover { background: var(--line-soft); color: var(--accent); }
+        .crumb { font-size:15px; font-weight:800; color: var(--ink); letter-spacing:-.3px; }
+
+        .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px; }
+        header { margin-bottom: 16px; }
+        header h1 { font-size: 25px; font-weight: 800; letter-spacing: -.5px; color: #1a1d21; }
+        header .sub { margin-top: 4px; font-size: 14px; color: var(--ink-soft); letter-spacing: -.2px; }
+
+        .card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+        /* 탭 */
+        .tabs { display:flex; background:#eef0f3; border-radius:10px; padding:3px; margin-bottom:14px; }
+        .tabs button { flex:1; font-family:inherit; font-size:13.5px; font-weight:700; color:var(--ink-soft); background:none; border:none; border-radius:8px; padding:9px 4px; cursor:pointer; }
+        .tabs button.on { background:#fff; color:var(--accent); box-shadow:0 1px 2px rgba(0,0,0,.1); }
+        .tabs button.admin-tab { display:none; }
+        body.is-admin .tabs button.admin-tab { display:block; }
+        .pane { display:none; } .pane.on { display:block; }
+
+        /* 상단 작성자 바 */
+        .ed-top { display:flex; align-items:center; gap:11px; padding:13px 18px; border-bottom:1px solid var(--line); }
+        .ed-top-lbl { font-size:13px; font-weight:700; color:var(--ink-soft); flex:none; }
+        .member-select { flex:1; min-width:150px; font-family:inherit; font-size:15px; font-weight:700; color:#26344f; padding:10px 13px; border:1px solid var(--line); border-radius:10px; background:#fcfdfe; cursor:pointer; }
+        .member-select:focus, .detail-input:focus, .num-input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(26,115,232,.12); }
+
+        /* 잔여 배너 */
+        .balance { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; padding:16px 18px; }
+        .bal-box { border-radius:11px; padding:12px 10px; text-align:center; background:var(--page); }
+        .bal-box .v { font-size:24px; font-weight:800; letter-spacing:-.5px; line-height:1.1; }
+        .bal-box .k { font-size:11.5px; font-weight:700; color:var(--ink-soft); margin-top:4px; }
+        .bal-box.g { background:var(--grant-bg); } .bal-box.g .v { color:var(--grant); }
+        .bal-box.u { background:var(--use-bg); } .bal-box.u .v { color:var(--use); }
+        .bal-box.r { background:var(--accent-tint); } .bal-box.r .v { color:var(--accent-dk); }
+        .bal-box.r.neg .v { color:var(--danger); }
+
+        .ed-sec { padding:16px 18px; }
+        .sec-gap { height:8px; background:var(--page); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+        .sec-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+        .sec-no { width:22px; height:22px; border-radius:7px; background:#26344f; color:#fff; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none; }
+        .sec-name { font-size:16px; font-weight:800; letter-spacing:-.3px; }
+        .sec-opt { font-size:11.5px; color:var(--ink-faint); margin-left:auto; }
+        .guide { display:flex; gap:8px; align-items:flex-start; background:var(--accent-tint); border-radius:9px; padding:10px 12px; margin-bottom:13px; font-size:13px; line-height:1.6; color:#1a4d8f; }
+        .guide b { font-weight:800; }
+        .guide-ico { flex:none; width:16px; height:16px; border-radius:50%; background:var(--accent); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; margin-top:2px; font-style:italic; }
+
+        .form { display:flex; flex-direction:column; gap:12px; }
+        .fld { display:flex; flex-direction:column; gap:6px; }
+        .fld-lbl { font-size:12px; font-weight:700; color:var(--ink-soft); }
+        .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .detail-input, .num-input { width:100%; padding:10px 12px; font-size:14px; font-family:inherit; border:1px solid var(--line); border-radius:9px; color:var(--ink); background:#fcfdfe; }
+        .seg { display:flex; background:#eef0f3; border-radius:8px; padding:3px; }
+        .seg input { position:absolute; opacity:0; pointer-events:none; }
+        .seg label { flex:1; text-align:center; padding:8px 6px; font-size:13px; font-weight:700; color:var(--ink-soft); border-radius:6px; cursor:pointer; }
+        .seg input:checked + label { background:#fff; color:var(--accent); box-shadow:0 1px 2px rgba(0,0,0,.1); }
+        .seg.grant input:checked + label { color:var(--grant); }
+        .btn { font-family:inherit; cursor:pointer; border-radius:9px; font-weight:700; }
+        .btn-submit { width:100%; background:var(--accent); color:#fff; border:none; font-size:15px; font-weight:800; padding:14px; border-radius:11px; }
+        .btn-submit:hover { background:var(--accent-dk); }
+        .btn-submit:disabled { opacity:.4; cursor:not-allowed; }
+        .btn-submit.grant { background:var(--grant); }
+        .disabled-content { opacity:.25; pointer-events:none; }
+
+        /* 이력 목록 */
+        .hist { display:flex; flex-direction:column; gap:6px; }
+        .h-item { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:7px 8px 7px 10px; }
+        .h-date { font-size:12.5px; font-weight:800; color:#1f2329; min-width:70px; }
+        .h-pill { font-size:9.5px; font-weight:800; color:#fff; padding:2px 7px; border-radius:999px; letter-spacing:.04em; flex:none; }
+        .h-pill.grant { background:var(--grant); } .h-pill.use { background:#c98a1a; }
+        .h-days { font-size:12.5px; font-weight:800; min-width:34px; text-align:right; }
+        .h-days.grant { color:var(--grant); } .h-days.use { color:var(--use); }
+        .h-txt { flex:1; font-size:12.5px; color:#33404f; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .h-by { font-size:10.5px; color:var(--ink-faint); flex:none; }
+        .h-x { flex:none; width:26px; height:26px; border:none; background:#f1f3f6; border-radius:7px; color:#8a94a6; font-size:15px; font-weight:700; cursor:pointer; line-height:1; }
+        .h-x:active { background:#e2e6ec; }
+        .h-empty { font-size:12.5px; color:var(--ink-faint); padding:6px 2px; }
+
+        /* 현황 표 */
+        .sum-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .sum-table th { background:var(--page); font-size:11.5px; font-weight:700; color:var(--ink-soft); padding:9px 8px; text-align:center; border-bottom:1px solid var(--line); }
+        .sum-table td { padding:9px 8px; text-align:center; border-bottom:1px solid var(--line-soft); font-weight:600; }
+        .sum-table td.dept { text-align:left; font-weight:800; }
+        .sum-table tr.click { cursor:pointer; } .sum-table tr.click:active { background:#f6f8fb; }
+        .sum-table td.g { color:var(--grant); } .sum-table td.u { color:var(--use); } .sum-table td.r { color:var(--accent-dk); font-weight:800; }
+        .sum-table td.r.neg { color:var(--danger); }
+        .sum-table tr.zero td { color:var(--ink-faint); font-weight:500; }
+        .sum-table tr.detail td { background:#fafbfc; padding:6px 10px 10px; text-align:left; }
+        .upcoming { display:flex; flex-wrap:wrap; gap:6px; }
+        .up-chip { font-size:12px; font-weight:700; background:var(--use-bg); color:var(--use); border-radius:999px; padding:4px 10px; }
+        .up-chip b { font-weight:800; }
+
+        .foot-note { font-size:11.5px; color:var(--ink-faint); margin-top:12px; line-height:1.6; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a class="back-btn" href="index.html">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            업무포털
+        </a>
+        <span class="crumb">대체휴무</span>
+    </div>
+
+    <div class="wrap">
+        <header>
+            <h1>대체휴무</h1>
+            <div class="sub">휴일 근무 등에 대한 대체휴무 부여 · 사용 관리</div>
+        </header>
+
+        <div class="tabs">
+            <button class="on" onclick="showTab('my')">내 대체휴무</button>
+            <button onclick="showTab('all')">전체 현황</button>
+            <button class="admin-tab" onclick="showTab('admin')">부여 관리</button>
+        </div>
+
+        <!-- ── 내 대체휴무 ── -->
+        <div class="pane on card" id="pane-my">
+            <div class="ed-top">
+                <label class="ed-top-lbl" for="memberSelect">직책</label>
+                <select class="member-select" id="memberSelect" onchange="onMemberChange(this.value)"></select>
+            </div>
+
+            <div id="myBlock" class="disabled-content">
+                <div class="balance">
+                    <div class="bal-box g"><div class="v" id="balGrant">0</div><div class="k">부여</div></div>
+                    <div class="bal-box u"><div class="v" id="balUse">0</div><div class="k">사용</div></div>
+                    <div class="bal-box r" id="balRemBox"><div class="v" id="balRem">0</div><div class="k">잔여</div></div>
+                </div>
+
+                <div class="sec-gap"></div>
+
+                <section class="ed-sec">
+                    <div class="sec-head"><span class="sec-no">1</span><span class="sec-name">사용 신청</span><span class="sec-opt">승인 절차 없음 · 신청 즉시 차감</span></div>
+                    <div class="guide"><span class="guide-ico">i</span><div>날짜와 <b>전일 / 오전반차 / 오후반차</b>를 선택해 신청하세요. 신청하면 주간업무 근태 현황에도 자동 표시됩니다.</div></div>
+                    <div class="form">
+                        <div class="row2">
+                            <div class="fld"><label class="fld-lbl">사용 날짜</label><input type="date" class="detail-input" id="useDate"></div>
+                            <div class="fld"><label class="fld-lbl">구분</label>
+                                <div class="seg">
+                                    <input type="radio" name="useHalf" id="h-full" value="전일" checked><label for="h-full">전일</label>
+                                    <input type="radio" name="useHalf" id="h-am" value="오전"><label for="h-am">오전반차</label>
+                                    <input type="radio" name="useHalf" id="h-pm" value="오후"><label for="h-pm">오후반차</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fld"><label class="fld-lbl">비고 <span style="font-weight:600;color:var(--ink-faint)">(선택)</span></label><input type="text" class="detail-input" id="useMemo" placeholder="예: 개인 사정" maxlength="40"></div>
+                        <button class="btn btn-submit" id="btnUse" onclick="submitUse()">대체휴무 신청</button>
+                    </div>
+                </section>
+
+                <div class="sec-gap"></div>
+
+                <section class="ed-sec">
+                    <div class="sec-head"><span class="sec-no">2</span><span class="sec-name">내 이력</span><span class="sec-opt" id="myHistCnt"></span></div>
+                    <div class="hist" id="myHist"></div>
+                    <div class="foot-note">사용 건은 ✕로 취소할 수 있습니다(잔여 복구). 부여 내역은 총무국장만 수정할 수 있습니다.</div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ── 전체 현황 ── -->
+        <div class="pane card" id="pane-all">
+            <section class="ed-sec">
+                <div class="sec-head"><span class="sec-no">·</span><span class="sec-name">사용 예정 (오늘 이후)</span></div>
+                <div class="upcoming" id="upcoming"></div>
+            </section>
+            <div class="sec-gap"></div>
+            <section class="ed-sec" style="padding:0;">
+                <table class="sum-table">
+                    <thead><tr><th style="text-align:left;">직책</th><th>부여</th><th>사용</th><th>잔여</th></tr></thead>
+                    <tbody id="allBody"></tbody>
+                </table>
+                <div class="foot-note" style="padding:0 18px 14px;">행을 누르면 상세 이력이 펼쳐집니다.</div>
+            </section>
+        </div>
+
+        <!-- ── 부여 관리 (총무국장) ── -->
+        <div class="pane card" id="pane-admin">
+            <section class="ed-sec">
+                <div class="sec-head"><span class="sec-no">+</span><span class="sec-name">대체휴무 부여</span><span class="sec-opt">총무국장 전용</span></div>
+                <div class="form">
+                    <div class="fld"><label class="fld-lbl">대상</label>
+                        <div class="seg grant" style="margin-bottom:6px;">
+                            <input type="radio" name="grantMode" id="gm-one" value="one" checked onchange="onGrantMode()"><label for="gm-one">개별</label>
+                            <input type="radio" name="grantMode" id="gm-all" value="all" onchange="onGrantMode()"><label for="gm-all">전원</label>
+                        </div>
+                        <select class="member-select" id="grantMember" style="width:100%;"></select>
+                    </div>
+                    <div class="row2">
+                        <div class="fld"><label class="fld-lbl">일수</label>
+                            <div class="seg grant">
+                                <input type="radio" name="grantDays" id="gd-05" value="0.5"><label for="gd-05">0.5일</label>
+                                <input type="radio" name="grantDays" id="gd-1" value="1" checked><label for="gd-1">1일</label>
+                                <input type="radio" name="grantDays" id="gd-etc" value="etc"><label for="gd-etc">직접</label>
+                            </div>
+                            <input type="number" class="num-input" id="grantDaysEtc" step="0.5" min="0.5" max="10" placeholder="예: 1.5" style="display:none;">
+                        </div>
+                        <div class="fld"><label class="fld-lbl">근무일 (근거)</label><input type="date" class="detail-input" id="grantDate"></div>
+                    </div>
+                    <div class="fld"><label class="fld-lbl">사유</label><input type="text" class="detail-input" id="grantReason" placeholder="예: 9/5(토) 체육대회 근무" maxlength="40"></div>
+                    <button class="btn btn-submit grant" onclick="submitGrant()">부여</button>
+                </div>
+            </section>
+            <div class="sec-gap"></div>
+            <section class="ed-sec">
+                <div class="sec-head"><span class="sec-no">·</span><span class="sec-name">최근 부여 내역</span><span class="sec-opt" id="grantHistCnt"></span></div>
+                <div class="hist" id="grantHist"></div>
+                <div class="foot-note">✕로 부여를 취소하면 해당 직책 잔여에서 즉시 빠집니다.</div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUFwsNEBzTZxr8EJuY2BZkYTEBadQoMk8",
+            authDomain: "knewu-64318.firebaseapp.com",
+            databaseURL: "https://knewu-64318-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "knewu-64318",
+            storageBucket: "knewu-64318.firebasestorage.app",
+            messagingSenderId: "301755569133",
+            appId: "1:301755569133:web:9bd85133d084c041368de4"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        function onAuthReady(callback) {
+            firebase.auth().onAuthStateChanged(function (user) {
+                if (!user) {
+                    try { sessionStorage.setItem('knewu_redirect', window.location.href); } catch (e) {}
+                    window.location.href = 'login.html';
+                    return;
+                }
+                callback(user);
+            });
+        }
+
+        const database = firebase.database();
+        // 구조: comp_leave_2026/{직책}/grant/{id} = {days, date, reason, by, at}
+        //       comp_leave_2026/{직책}/use/{id}   = {date, half:'전일'|'오전'|'오후', days, memo, at}
+        const dbRef = database.ref('comp_leave_2026');
+
+        const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","손課","홍部","김次","이課"];
+        const ADMIN_EMAILS = ['choihosang@kepco.co.kr']; // 총무국장
+        const EMAIL_TO_MEMBER = {
+            'jcy00700@kepco.co.kr':    '위원장',
+            'lee.cy@kepco.co.kr':      '수석',
+            'cay0415@kepco.co.kr':     '사무長',
+            'attraction@kepco.co.kr':  '기획長',
+            'ksh7207@kepco.co.kr':     '대협長',
+            'choihosang@kepco.co.kr':  '총무',
+            'superboy@kepco.co.kr':    '조직',
+            'yesiwill@kepco.co.kr':    '기획',
+            'by.seo@kepco.co.kr':      '정책',
+            'yuri.kang@kepco.co.kr':   '복지',
+            'heedo.hwang@kepco.co.kr': '산안',
+            'ppp@kepco.co.kr':         '교문',
+            'son0901@kepco.co.kr':     '손課',
+            'nojohq04@kepco.co.kr':    '홍部',
+            'nojohq01@kepco.co.kr':    '김次',
+            'nojohq02@kepco.co.kr':    '이課'
+        };
+
+        let cache = {};
+        let selected = '';
+        let isAdmin = false;
+        let myMember = '';
+        let openRow = null;
+
+        function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        function pad(n){ return String(n).padStart(2,'0'); }
+        function todayISO(){ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+        function fmtDate(iso){ if(!iso) return ''; const p=iso.split('-'); const d=new Date(p[0],p[1]-1,p[2]); return `${+p[1]}/${+p[2]}(${'일월화수목금토'[d.getDay()]})`; }
+        function fmtDays(n){ n=Number(n)||0; return (Number.isInteger(n)?n:n.toFixed(1))+'일'; }
+        function objList(o){ return Object.keys(o||{}).map(k=>Object.assign({id:k},o[k])); }
+        function halfDays(h){ return h==='전일'?1:0.5; }
+        function halfLabel(h){ return h==='전일'?'전일':(h+'반차'); }
+
+        function statOf(m){
+            const d = cache[m]||{};
+            const g = objList(d.grant).reduce((s,x)=>s+(Number(x.days)||0),0);
+            const u = objList(d.use).reduce((s,x)=>s+(Number(x.days)||halfDays(x.half)),0);
+            return { grant:g, use:u, rem:Math.round((g-u)*2)/2 };
+        }
+
+        /* ── 탭 ── */
+        function showTab(id){
+            document.querySelectorAll('.tabs button').forEach((b,i)=>b.classList.toggle('on', ['my','all','admin'][i]===id));
+            document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on', p.id==='pane-'+id));
+        }
+
+        /* ── 내 대체휴무 ── */
+        function onMemberChange(v){
+            selected = v;
+            document.getElementById('myBlock').classList.toggle('disabled-content', !v);
+            renderMy();
+        }
+        function renderMy(){
+            if(!selected) return;
+            const s = statOf(selected);
+            document.getElementById('balGrant').innerText = fmtDays(s.grant).replace('일','');
+            document.getElementById('balUse').innerText = fmtDays(s.use).replace('일','');
+            document.getElementById('balRem').innerText = fmtDays(s.rem).replace('일','');
+            document.getElementById('balRemBox').classList.toggle('neg', s.rem<0);
+            document.getElementById('btnUse').disabled = s.rem<=0;
+            document.getElementById('myHist').innerHTML = histHtml(selected, true);
+            const n = objList(cache[selected]?.grant).length + objList(cache[selected]?.use).length;
+            document.getElementById('myHistCnt').innerText = n?n+'건':'';
+        }
+        function histHtml(m, allowUseDelete){
+            const d = cache[m]||{};
+            const rows = [];
+            objList(d.grant).forEach(x=>rows.push({t:'grant', sort:x.date||'', ...x}));
+            objList(d.use).forEach(x=>rows.push({t:'use', sort:x.date||'', ...x}));
+            rows.sort((a,b)=> (b.sort>a.sort?1:b.sort<a.sort?-1:0) || ((b.at||0)-(a.at||0)));
+            if(!rows.length) return `<div class="h-empty">아직 내역이 없습니다.</div>`;
+            return rows.map(x=>{
+                const isG = x.t==='grant';
+                const days = isG ? Number(x.days) : (Number(x.days)||halfDays(x.half));
+                const txt = isG ? escapeHtml(x.reason||'') : (halfLabel(x.half||'전일') + (x.memo?' · '+escapeHtml(x.memo):''));
+                const canX = isG ? isAdmin : (allowUseDelete || isAdmin);
+                return `<div class="h-item">` +
+                    `<span class="h-date">${fmtDate(x.date)}</span>` +
+                    `<span class="h-pill ${x.t}">${isG?'부여':'사용'}</span>` +
+                    `<span class="h-txt">${txt}</span>` +
+                    (isG && x.by ? `<span class="h-by">${escapeHtml(x.by)}</span>` : '') +
+                    `<span class="h-days ${x.t}">${isG?'+':'−'}${fmtDays(days)}</span>` +
+                    (canX ? `<button class="h-x" onclick="removeItem('${m}','${x.t}','${x.id}')" title="취소">✕</button>` : '') +
+                    `</div>`;
+            }).join('');
+        }
+        function submitUse(){
+            if(!selected){ alert('직책을 먼저 선택해 주세요.'); return; }
+            const date = document.getElementById('useDate').value;
+            const half = document.querySelector('input[name="useHalf"]:checked').value;
+            const memo = document.getElementById('useMemo').value.trim();
+            if(!date){ alert('사용 날짜를 선택해 주세요.'); return; }
+            const days = halfDays(half);
+            const s = statOf(selected);
+            if(s.rem < days){ alert(`잔여 대체휴무가 부족합니다. (잔여 ${fmtDays(s.rem)})`); return; }
+            const dup = objList(cache[selected]?.use).find(x=>x.date===date && (x.half==='전일'||half==='전일'||x.half===half));
+            if(dup){ alert('같은 날짜에 이미 신청된 건이 있습니다.'); return; }
+            dbRef.child(selected).child('use').push({ date, half, days, memo, at: Date.now() })
+                .then(()=>{ document.getElementById('useMemo').value=''; })
+                .catch(e=>alert('저장 실패: '+e.message));
+        }
+        function removeItem(m, t, id){
+            if(t==='grant' && !isAdmin){ alert('부여 내역은 총무국장만 취소할 수 있습니다.'); return; }
+            if(!confirm(t==='grant'?'이 부여 내역을 취소할까요?':'이 사용 신청을 취소할까요? (잔여 복구)')) return;
+            dbRef.child(m).child(t).child(id).remove().catch(e=>alert('삭제 실패: '+e.message));
+        }
+
+        /* ── 전체 현황 ── */
+        function renderAll(){
+            let html = '';
+            MEMBERS.forEach(m=>{
+                const s = statOf(m);
+                const zero = !s.grant && !s.use;
+                html += `<tr class="click${zero?' zero':''}" onclick="toggleRow('${m}')"><td class="dept">${m}</td>` +
+                    `<td class="g">${zero?'—':fmtDays(s.grant)}</td><td class="u">${zero?'—':fmtDays(s.use)}</td><td class="r${s.rem<0?' neg':''}">${zero?'—':fmtDays(s.rem)}</td></tr>`;
+                if(openRow===m) html += `<tr class="detail"><td colspan="4"><div class="hist">${histHtml(m,false)}</div></td></tr>`;
+            });
+            document.getElementById('allBody').innerHTML = html;
+
+            const today = todayISO();
+            const ups = [];
+            MEMBERS.forEach(m=>objList(cache[m]?.use).forEach(x=>{ if(x.date>=today) ups.push({m, ...x}); }));
+            ups.sort((a,b)=>a.date>b.date?1:-1);
+            document.getElementById('upcoming').innerHTML = ups.length
+                ? ups.map(x=>`<span class="up-chip"><b>${x.m}</b> ${fmtDate(x.date)} ${halfLabel(x.half||'전일')}</span>`).join('')
+                : `<div class="h-empty">예정된 사용 건이 없습니다.</div>`;
+        }
+        function toggleRow(m){ openRow = openRow===m?null:m; renderAll(); }
+
+        /* ── 부여 관리 ── */
+        function onGrantMode(){
+            const all = document.getElementById('gm-all').checked;
+            document.getElementById('grantMember').style.display = all?'none':'';
+        }
+        function submitGrant(){
+            if(!isAdmin){ alert('총무국장만 부여할 수 있습니다.'); return; }
+            const all = document.getElementById('gm-all').checked;
+            const member = document.getElementById('grantMember').value;
+            let dv = document.querySelector('input[name="grantDays"]:checked').value;
+            if(dv==='etc') dv = document.getElementById('grantDaysEtc').value;
+            const days = Math.round(Number(dv)*2)/2;
+            const date = document.getElementById('grantDate').value;
+            const reason = document.getElementById('grantReason').value.trim();
+            if(!all && !member){ alert('대상 직책을 선택해 주세요.'); return; }
+            if(!days || days<=0){ alert('일수를 확인해 주세요. (0.5일 단위)'); return; }
+            if(!reason){ alert('사유를 입력해 주세요.'); return; }
+            const targets = all ? MEMBERS : [member];
+            if(!confirm(`${all?'전원('+MEMBERS.length+'명)':member}에게 ${fmtDays(days)} 부여할까요?\n사유: ${reason}`)) return;
+            const upd = {};
+            const at = Date.now();
+            targets.forEach(m=>{ const k = dbRef.child(m).child('grant').push().key; upd[`${m}/grant/${k}`] = { days, date: date||todayISO(), reason, by: myMember||'총무', at }; });
+            dbRef.update(upd)
+                .then(()=>{ document.getElementById('grantReason').value=''; })
+                .catch(e=>alert('저장 실패: '+e.message));
+        }
+        function renderGrantHist(){
+            const rows = [];
+            MEMBERS.forEach(m=>objList(cache[m]?.grant).forEach(x=>rows.push({m, ...x})));
+            rows.sort((a,b)=>(b.at||0)-(a.at||0));
+            document.getElementById('grantHistCnt').innerText = rows.length?rows.length+'건':'';
+            document.getElementById('grantHist').innerHTML = rows.length ? rows.slice(0,60).map(x=>
+                `<div class="h-item"><span class="h-date">${fmtDate(x.date)}</span><span class="h-pill grant">${x.m}</span>` +
+                `<span class="h-txt">${escapeHtml(x.reason||'')}</span><span class="h-days grant">+${fmtDays(x.days)}</span>` +
+                `<button class="h-x" onclick="removeItem('${x.m}','grant','${x.id}')" title="취소">✕</button></div>`
+            ).join('') : `<div class="h-empty">부여 내역이 없습니다.</div>`;
+        }
+
+        /* ── 초기화 ── */
+        document.getElementById('memberSelect').innerHTML = '<option value="">직책 선택…</option>' + MEMBERS.map(m=>`<option value="${m}">${m}</option>`).join('');
+        document.getElementById('grantMember').innerHTML = '<option value="">직책 선택…</option>' + MEMBERS.map(m=>`<option value="${m}">${m}</option>`).join('');
+        document.getElementById('useDate').value = todayISO();
+        document.getElementById('grantDate').value = todayISO();
+        document.querySelectorAll('input[name="grantDays"]').forEach(r=>r.addEventListener('change',()=>{
+            document.getElementById('grantDaysEtc').style.display = document.getElementById('gd-etc').checked?'':'none';
+        }));
+
+        onAuthReady(function(user){
+            const email = (user.email||'').toLowerCase();
+            isAdmin = ADMIN_EMAILS.includes(email);
+            document.body.classList.toggle('is-admin', isAdmin);
+            myMember = EMAIL_TO_MEMBER[email] || '';
+            if(myMember){ document.getElementById('memberSelect').value = myMember; onMemberChange(myMember); }
+
+            dbRef.on('value', snap=>{
+                cache = snap.val() || {};
+                renderMy(); renderAll(); if(isAdmin) renderGrantHist();
+            });
+        });
+    </script>
+</body>
+</html>
