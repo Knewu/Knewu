@@ -269,6 +269,8 @@
         const dbRef = database.ref('comp_leave_2026');
 
         const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","손課","홍部","김次","이課"];
+        const LABEL = { '수석': '수석부위원장' }; // 화면 표시명 (Firebase 키·duty 연동은 원래 약칭 유지)
+        function lbl(m){ return LABEL[m] || m; }
         const ADMIN_EMAILS = ['choihosang@kepco.co.kr']; // 총무국장
         const EMAIL_TO_MEMBER = {
             'jcy00700@kepco.co.kr':    '위원장',
@@ -384,7 +386,7 @@
             MEMBERS.forEach(m=>{
                 const s = statOf(m);
                 const zero = !s.grant && !s.use;
-                html += `<tr class="click${zero?' zero':''}" onclick="toggleRow('${m}')"><td class="dept">${m}</td>` +
+                html += `<tr class="click${zero?' zero':''}" onclick="toggleRow('${m}')"><td class="dept">${lbl(m)}</td>` +
                     `<td class="g">${zero?'—':fmtDays(s.grant)}</td><td class="u">${zero?'—':fmtDays(s.use)}</td><td class="r${s.rem<0?' neg':''}">${zero?'—':fmtDays(s.rem)}</td></tr>`;
                 if(openRow===m) html += `<tr class="detail"><td colspan="4"><div class="hist">${histHtml(m,false)}</div></td></tr>`;
             });
@@ -395,7 +397,7 @@
             MEMBERS.forEach(m=>objList(cache[m]?.use).forEach(x=>{ if(x.date>=today) ups.push({m, ...x}); }));
             ups.sort((a,b)=>a.date>b.date?1:-1);
             document.getElementById('upcoming').innerHTML = ups.length
-                ? ups.map(x=>`<span class="up-chip"><b>${x.m}</b> ${fmtDate(x.date)} ${halfLabel(x.half||'전일')}</span>`).join('')
+                ? ups.map(x=>`<span class="up-chip"><b>${lbl(x.m)}</b> ${fmtDate(x.date)} ${halfLabel(x.half||'전일')}</span>`).join('')
                 : `<div class="h-empty">예정된 사용 건이 없습니다.</div>`;
         }
         function toggleRow(m){ openRow = openRow===m?null:m; renderAll(); }
@@ -418,7 +420,7 @@
             if(!days || days<=0){ alert('일수를 확인해 주세요. (0.5일 단위)'); return; }
             if(!reason){ alert('사유를 입력해 주세요.'); return; }
             const targets = all ? MEMBERS : [member];
-            if(!confirm(`${all?'전원('+MEMBERS.length+'명)':member}에게 ${fmtDays(days)} 부여할까요?\n사유: ${reason}`)) return;
+            if(!confirm(`${all?'전원('+MEMBERS.length+'명)':lbl(member)}에게 ${fmtDays(days)} 부여할까요?\n사유: ${reason}`)) return;
             const upd = {};
             const at = Date.now();
             targets.forEach(m=>{ const k = dbRef.child(m).child('grant').push().key; upd[`${m}/grant/${k}`] = { days, date: date||todayISO(), reason, by: myMember||'총무', at }; });
@@ -432,15 +434,15 @@
             rows.sort((a,b)=>(b.at||0)-(a.at||0));
             document.getElementById('grantHistCnt').innerText = rows.length?rows.length+'건':'';
             document.getElementById('grantHist').innerHTML = rows.length ? rows.slice(0,60).map(x=>
-                `<div class="h-item"><span class="h-date">${fmtDate(x.date)}</span><span class="h-pill grant">${x.m}</span>` +
+                `<div class="h-item"><span class="h-date">${fmtDate(x.date)}</span><span class="h-pill grant">${lbl(x.m)}</span>` +
                 `<span class="h-txt">${escapeHtml(x.reason||'')}</span><span class="h-days grant">+${fmtDays(x.days)}</span>` +
                 `<button class="h-x" onclick="removeItem('${x.m}','grant','${x.id}')" title="취소">✕</button></div>`
             ).join('') : `<div class="h-empty">부여 내역이 없습니다.</div>`;
         }
 
         /* ── 초기화 ── */
-        document.getElementById('memberSelect').innerHTML = '<option value="">직책 선택…</option>' + MEMBERS.map(m=>`<option value="${m}">${m}</option>`).join('');
-        document.getElementById('grantMember').innerHTML = '<option value="">직책 선택…</option>' + MEMBERS.map(m=>`<option value="${m}">${m}</option>`).join('');
+        document.getElementById('memberSelect').innerHTML = '<option value="">직책 선택…</option>' + MEMBERS.map(m=>`<option value="${m}">${lbl(m)}</option>`).join('');
+        document.getElementById('grantMember').innerHTML = '<option value="">직책 선택…</option>' + MEMBERS.map(m=>`<option value="${m}">${lbl(m)}</option>`).join('');
         document.getElementById('useDate').value = todayISO();
         document.getElementById('grantDate').value = todayISO();
         document.querySelectorAll('input[name="grantDays"]').forEach(r=>r.addEventListener('change',()=>{
