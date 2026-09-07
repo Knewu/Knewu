@@ -631,7 +631,8 @@
         const dbRef = database.ref('perfect_clean_report_2026');
         const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 업무 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
         const weekRef = database.ref('perfect_clean_report_2026_week'); // 기준 주차(월요일) 저장
-        const archiveRef = database.ref('perfect_clean_report_2026_final_archive'); // 주차별 최종본 보관 {ISO: {thisWeek,lastWeek,label,savedAt}}
+        const archiveRef = database.ref('perfect_clean_report_2026_final_archive');
+        const compRef = database.ref('comp_leave_2026'); // 대체휴무(comp.html) — 읽기 전용 표시 연동 // 주차별 최종본 보관 {ISO: {thisWeek,lastWeek,label,savedAt}}
 
         const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","손課","홍部","김次","이課"];
         const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·손課·김次·이課은 출장근태만)
@@ -679,6 +680,7 @@
         let weekMonday = null; // 기준 주차의 월요일 (Date) — weekRef에서 로드
         // 부서별 활동 표에서 "이미지 저장 시 제외"할 부서 (화면 표시·Firebase 데이터에는 영향 없음, 브라우저 메모리에만 유지)
         let deptOff = {};
+        let compCache = {}; // 대체휴무 사용 내역 {직책:{use:{id:{date,half}}}}
 
         function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
         function pad(n){ return String(n).padStart(2,'0'); }
@@ -780,6 +782,16 @@
             if (Array.isArray(v)) return v.filter(Boolean);
             if (v.type || v.text) return [v];                    // 구버전 단일 객체
             return Object.keys(v).sort((a, b) => a - b).map(k => v[k]).filter(Boolean); // Firebase가 배열을 객체로 반환한 경우
+        }
+        // 대체휴무 사용분 → 근태 항목으로 변환 (표시 전용, Firebase 근태 데이터에는 저장하지 않음)
+        function compItemsOf(member, day) {
+            const mon = weekMonday ? new Date(weekMonday) : autoNextMonday();
+            const i = ATT_DAYS.indexOf(day); if (i < 0) return [];
+            const t = new Date(mon); t.setDate(mon.getDate() + i);
+            const iso = isoDate(t);
+            const use = (compCache[member] || {}).use || {};
+            return Object.keys(use).filter(k => use[k] && use[k].date === iso)
+                .map(k => ({ type: '근태', text: '대체휴무' + (use[k].half && use[k].half !== '전일' ? '(' + use[k].half + ')' : ''), comp: true }));
         }
         function attListOf(member, day) {
             return normDay(((serverCache[member] || {}).days || {})[day]);
@@ -1019,19 +1031,20 @@
             MEMBERS.forEach(m => {
                 let row = `<tr><td class="dept">${m}</td>`;
                 ATT_DAYS.forEach(w => {
-                    const list = normDay(serverCache[m]?.days?.[w]);
+                    const list = normDay(serverCache[m]?.days?.[w]).concat(compItemsOf(m, w));
                     if (list.length) {
                         // 같은 종류(출장/근태)끼리 묶어서 태그는 한 번만, 내용은 한 줄씩
                         const groups = [];
                         list.forEach((sc, idx) => {
                             let g = groups.find(x => x.type === sc.type);
                             if (!g) { g = { type: sc.type, entries: [] }; groups.push(g); }
-                            g.entries.push({ text: sc.text || '', idx: idx });
+                            g.entries.push({ text: sc.text || '', idx: idx, comp: !!sc.comp });
                         });
                         const items = groups.map(g =>
                             `<div class="att-item ${g.type}"><span class="b-tag">${g.type}</span>` +
                             g.entries.map(e =>
-                                `<span class="b-txt" title="더블클릭 삭제" ondblclick="removeAttLive('${m}','${w}',${e.idx})">${escapeHtml(e.text)}</span>`
+                                e.comp ? `<span class="b-txt" title="대체휴무 도구에서 신청됨">${escapeHtml(e.text)}</span>`
+                                       : `<span class="b-txt" title="더블클릭 삭제" ondblclick="removeAttLive('${m}','${w}',${e.idx})">${escapeHtml(e.text)}</span>`
                             ).join('') +
                             `</div>`
                         ).join('');
@@ -1369,6 +1382,8 @@
                 finalItems = { thisWeek: Array.isArray(v.thisWeek) ? v.thisWeek : [], lastWeek: Array.isArray(v.lastWeek) ? v.lastWeek : [] };
                 if (!editingWeek) maybeRenderFinal(); // 과거 주 편집 중이면 현재 주 변경으로 화면 안 건드림
             });
+
+            compRef.on('value', (snap) => { compCache = snap.val() || {}; renderSummary(); });
 
             archiveRef.on('value', (snap) => {
                 archiveList = snap.val() || {};
