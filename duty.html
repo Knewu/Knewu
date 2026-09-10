@@ -173,8 +173,19 @@
         .btn-print-xs:hover { border-color:var(--accent); color:var(--accent); }
         .btn-print-xs svg { width:13px; height:13px; }
         .sub-block + .sub-block { margin-top:26px; }
-        .sub-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:11px; }
+        .sub-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:11px; flex-wrap:wrap; }
         .sub-bar .sub-h { margin:0; }
+        .sub-bar .sub-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .seg.seg-xs { padding:2px; }
+        .seg.seg-xs label { padding:5px 10px; font-size:11.5px; }
+        .att-wk-hint { font-size:11px; font-weight:700; color:#d93025; white-space:nowrap; }
+        /* 2주 보기: 표 위 주차 라벨 + 두 번째 표 */
+        .att-wk-lbl { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:800; color:#26344f; margin:0 0 6px 2px; }
+        .att-wk-lbl .wk-tag { font-size:10px; font-weight:800; color:#fff; background:#26344f; border-radius:5px; padding:2px 6px; letter-spacing:.02em; }
+        #attWeek2 { margin-top:14px; }
+        .capture-target .att-wk-lbl { font-size:14px; margin-bottom:8px; }
+        .capture-target .att-wk-lbl .wk-tag { font-size:11.5px; padding:3px 8px; }
+        .capture-target #attWeek2 { margin-top:24px; }
         .sub-acts { display:flex; align-items:center; gap:6px; flex-shrink:0; }
         .hint-mini { font-size:11.5px; font-weight:600; color:var(--ink-faint); }
         .btn-reload { background:var(--paper); color:var(--ink-soft); border:1px solid var(--line); padding:8px 12px; border-radius:9px; font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer; }
@@ -455,6 +466,16 @@
                             </div>
                         </div>
 
+                        <div class="fld" id="wkFld" style="display:none;">
+                            <div class="fld-lbl">주차 <span class="fld-sub">2주 보기일 때 다음 주 근태를 미리 넣을 수 있어요</span></div>
+                            <div class="seg">
+                                <input type="radio" name="scWeek" id="wk-this" value="0" checked onchange="setInputWeek(0)">
+                                <label for="wk-this">이번 주</label>
+                                <input type="radio" name="scWeek" id="wk-next" value="1" onchange="setInputWeek(1)">
+                                <label for="wk-next">다음 주</label>
+                            </div>
+                        </div>
+
                         <div class="fld">
                             <div class="fld-lbl">요일 <span class="fld-sub">여러 개 선택 가능</span></div>
                             <div class="days-row">
@@ -532,12 +553,22 @@
                 </div>
                 <div class="sub-bar">
                     <div class="sub-h">출장 · 근태 <span id="attDate" style="font-weight:600;color:var(--ink-faint);font-size:12px;"></span></div>
-                    <button class="btn-print-xs" onclick="printAtt()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                        이미지 저장
-                    </button>
+                    <div class="sub-right">
+                        <span class="att-wk-hint" id="attWkHint"></span>
+                        <div class="seg seg-xs" title="명절 등으로 두 주를 함께 보려면 2주">
+                            <input type="radio" name="attWeeks" id="aw-1" value="1" checked onchange="setAttWeeks(1)">
+                            <label for="aw-1">1주</label>
+                            <input type="radio" name="attWeeks" id="aw-2" value="2" onchange="setAttWeeks(2)">
+                            <label for="aw-2">2주</label>
+                        </div>
+                        <button class="btn-print-xs" onclick="printAtt()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            이미지 저장
+                        </button>
+                    </div>
                 </div>
-                <table class="grid-table">
+                <div class="att-wk-lbl" id="attWkLbl0" style="display:none;"><span class="wk-tag">이번 주</span><span id="attWkRange0"></span></div>
+                <table class="grid-table" id="attTable0">
                     <thead><tr>
                         <th style="width:60px;">부서<br>직책</th>
                         <th data-w="월"><span class="th-w">월</span><span class="th-d" id="thd-월"></span></th>
@@ -548,6 +579,21 @@
                     </tr></thead>
                     <tbody id="attBody"></tbody>
                 </table>
+                <!-- 2주 보기: 다음 주 표 (Firebase {직책}/daysNext) -->
+                <div id="attWeek2" style="display:none;">
+                    <div class="att-wk-lbl" id="attWkLbl1"><span class="wk-tag">다음 주</span><span id="attWkRange1"></span></div>
+                    <table class="grid-table" id="attTable1">
+                        <thead><tr>
+                            <th style="width:60px;">부서<br>직책</th>
+                            <th data-w="월"><span class="th-w">월</span><span class="th-d" id="thd1-월"></span></th>
+                            <th data-w="화"><span class="th-w">화</span><span class="th-d" id="thd1-화"></span></th>
+                            <th data-w="수"><span class="th-w">수</span><span class="th-d" id="thd1-수"></span></th>
+                            <th data-w="목"><span class="th-w">목</span><span class="th-d" id="thd1-목"></span></th>
+                            <th data-w="금"><span class="th-w">금</span><span class="th-d" id="thd1-금"></span></th>
+                        </tr></thead>
+                        <tbody id="attBodyNext"></tbody>
+                    </table>
+                </div>
                 <div class="print-foot"><span>발행 | 전국전력노동조합 복지국</span><span id="phAttFoot"></span></div>
             </div>
         </section>
@@ -631,6 +677,7 @@
         const dbRef = database.ref('perfect_clean_report_2026');
         const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 업무 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
         const weekRef = database.ref('perfect_clean_report_2026_week'); // 기준 주차(월요일) 저장
+        const attWeeksRef = database.ref('perfect_clean_report_2026_attweeks'); // 근태표 표시 주 수 (1 또는 2, 전원 공유)
         const archiveRef = database.ref('perfect_clean_report_2026_final_archive');
         const compRef = database.ref('comp_leave_2026'); // 대체휴무(comp.html) — 읽기 전용 표시 연동 // 주차별 최종본 보관 {ISO: {thisWeek,lastWeek,label,savedAt}}
 
@@ -667,6 +714,11 @@
             "2027-12-27":"성탄절 대체휴일"
         };
         let holiDays = {}; // 이번 주 요일→공휴일명 (예: 월→광복절 대체휴일)
+        let attWeeks = 1;  // 근태표 표시 주 수 (attWeeksRef 동기화)
+        let inputWeek = 0; // 출장·근태 입력 대상 주 (0=이번 주 days, 1=다음 주 daysNext)
+        let weekInfo = [{ labels: {}, holis: {} }, { labels: {}, holis: {} }]; // [이번 주, 다음 주] 요일→날짜/공휴일
+        function nodeKey(wk) { return wk ? 'daysNext' : 'days'; }
+        function weekMonOf(wk) { const m = weekMonday ? new Date(weekMonday) : autoNextMonday(); m.setDate(m.getDate() + 7 * (wk || 0)); return m; }
 
         let selectedUser = "";
         let serverCache = {};
@@ -716,40 +768,87 @@
             document.getElementById('finDatePrint').innerText = range;
             document.getElementById('headSub').innerText = `작성 주간 ${range}`;
             const edW = document.getElementById('edTopWeek'); if (edW) edW.innerText = range;
-            document.getElementById('attDate').innerText =
-                `(${mon.getMonth()+1}.${mon.getDate()} ~ ${sun.getMonth()+1}.${sun.getDate()})`;
-
             // 인쇄용 레터헤드 / 푸터
-            const attRange = `${mon.getFullYear()}. ${pad(mon.getMonth()+1)}. ${pad(mon.getDate())} ~ ${pad(sun.getMonth()+1)}. ${pad(sun.getDate())}`;
             const today = `${now.getFullYear()}. ${pad(now.getMonth()+1)}. ${pad(now.getDate())}`;
             document.getElementById('phWorkDate').innerText = `작성 주간 · ${range}`;
-            document.getElementById('phAttDate').innerText = `대상 기간 · ${attRange}`;
             document.getElementById('phWorkFoot').innerText = today;
             document.getElementById('phAttFoot').innerText = today;
 
-            holiDays = {};
-            ATT_DAYS.forEach((w, i) => {
-                const t = new Date(mon); t.setDate(mon.getDate() + i);
-                const lbl = `${t.getMonth()+1}/${t.getDate()}`;
-                dayLabels[w] = lbl;
-                const key = `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`;
-                const hname = HOLIDAYS[key] || '';
-                if (hname) holiDays[w] = hname;
-                const cd = document.getElementById(`cd-${w}`); if (cd) cd.innerText = lbl;
-                const th = document.querySelector(`.grid-table th[data-w="${w}"]`);
-                const thd = document.getElementById(`thd-${w}`);
-                if (thd) thd.innerText = lbl;
-                if (th) {
-                    th.classList.toggle('holi', !!hname);
-                    let hn = th.querySelector('.th-hname');
-                    if (hname) {
-                        if (!hn) { hn = document.createElement('span'); hn.className = 'th-hname'; th.appendChild(hn); }
-                        hn.innerText = hname;
-                    } else if (hn) hn.remove();
-                }
-                const node = document.querySelector(`.day-node[data-w="${w}"]`);
-                if (node) node.classList.toggle('holi', !!hname);
+            calcAttDates();
+        }
+
+        // 근태표 날짜 — 이번 주 + (2주 보기면) 다음 주. 과거 주 편집 중에도 근태표는 현재 주 기준
+        function calcAttDates() {
+            const mon = weekMonOf(0);
+            const endSun = weekMonOf(attWeeks === 2 ? 1 : 0); endSun.setDate(endSun.getDate() + 6);
+            document.getElementById('attDate').innerText =
+                `(${mon.getMonth()+1}.${mon.getDate()} ~ ${endSun.getMonth()+1}.${endSun.getDate()})`;
+            const attRange = `${mon.getFullYear()}. ${pad(mon.getMonth()+1)}. ${pad(mon.getDate())} ~ ${pad(endSun.getMonth()+1)}. ${pad(endSun.getDate())}`;
+            document.getElementById('phAttDate').innerText = `대상 기간 · ${attRange}`;
+
+            [0, 1].forEach(wk => {
+                const m = weekMonOf(wk);
+                const info = { labels: {}, holis: {} };
+                ATT_DAYS.forEach((w, i) => {
+                    const t = new Date(m); t.setDate(m.getDate() + i);
+                    const lbl = `${t.getMonth()+1}/${t.getDate()}`;
+                    info.labels[w] = lbl;
+                    const hname = HOLIDAYS[isoDate(t)] || '';
+                    if (hname) info.holis[w] = hname;
+                    const thd = document.getElementById(wk ? `thd1-${w}` : `thd-${w}`);
+                    if (thd) thd.innerText = lbl;
+                    const th = document.querySelector(`#attTable${wk} th[data-w="${w}"]`);
+                    if (th) {
+                        th.classList.toggle('holi', !!hname);
+                        let hn = th.querySelector('.th-hname');
+                        if (hname) {
+                            if (!hn) { hn = document.createElement('span'); hn.className = 'th-hname'; th.appendChild(hn); }
+                            hn.innerText = hname;
+                        } else if (hn) hn.remove();
+                    }
+                });
+                weekInfo[wk] = info;
+                const fri = new Date(m); fri.setDate(m.getDate() + 4);
+                const rg = document.getElementById(`attWkRange${wk}`);
+                if (rg) rg.innerText = `${m.getMonth()+1}.${m.getDate()}(월) ~ ${fri.getMonth()+1}.${fri.getDate()}(금)`;
             });
+            dayLabels = weekInfo[0].labels;
+            holiDays = weekInfo[0].holis;
+            updateAttWeeksUI();
+        }
+
+        // 1주/2주 보기 전환 (Firebase 공유값 → 리스너에서 attWeeks 갱신)
+        function setAttWeeks(n) { attWeeksRef.set(n === 2 ? 2 : 1); }
+        function updateAttWeeksUI() {
+            const two = attWeeks === 2;
+            const w2 = document.getElementById('attWeek2'); if (w2) w2.style.display = two ? '' : 'none';
+            const l0 = document.getElementById('attWkLbl0'); if (l0) l0.style.display = two ? '' : 'none';
+            const r = document.getElementById(two ? 'aw-2' : 'aw-1'); if (r) r.checked = true;
+            const hint = document.getElementById('attWkHint');
+            if (hint) {
+                const hs = Object.values(weekInfo[1].holis || {});
+                hint.innerText = (!two && hs.length) ? `다음 주 ${hs[0].replace(' 대체휴일', '')} → 2주로 보세요` : '';
+            }
+            refreshInputWeekUI();
+        }
+        // 입력 대상 주 전환: 요일 버튼의 날짜·공휴일 표시를 해당 주로 바꿈
+        function setInputWeek(wk) {
+            wk = wk ? 1 : 0;
+            if (wk === inputWeek) return;
+            inputWeek = wk;
+            if (editingAtt) { editingAtt = null; updateAttModeUI(); } // 주를 바꾸면 새로 추가 모드
+            refreshInputWeekUI();
+        }
+        function refreshInputWeekUI() {
+            const info = weekInfo[inputWeek] || weekInfo[0];
+            ATT_DAYS.forEach(w => {
+                const cd = document.getElementById(`cd-${w}`); if (cd) cd.innerText = info.labels[w] || '';
+                const node = document.querySelector(`.day-node[data-w="${w}"]`);
+                if (node) node.classList.toggle('holi', !!info.holis[w]);
+            });
+            const r = document.getElementById(inputWeek ? 'wk-next' : 'wk-this'); if (r) r.checked = true;
+            const fld = document.getElementById('wkFld');
+            if (fld) fld.style.display = (attWeeks === 2 || inputWeek === 1) ? '' : 'none';
         }
 
         function initApp() {
@@ -784,8 +883,8 @@
             return Object.keys(v).sort((a, b) => a - b).map(k => v[k]).filter(Boolean); // Firebase가 배열을 객체로 반환한 경우
         }
         // 대체휴무 사용분 → 근태 항목으로 변환 (표시 전용, Firebase 근태 데이터에는 저장하지 않음)
-        function compItemsOf(member, day) {
-            const mon = weekMonday ? new Date(weekMonday) : autoNextMonday();
+        function compItemsOf(member, day, wk) {
+            const mon = weekMonOf(wk);
             const i = ATT_DAYS.indexOf(day); if (i < 0) return [];
             const t = new Date(mon); t.setDate(mon.getDate() + i);
             const iso = isoDate(t);
@@ -793,8 +892,8 @@
             return Object.keys(use).filter(k => use[k] && use[k].date === iso)
                 .map(k => ({ type: '근태', text: '대체휴무' + (use[k].half && use[k].half !== '전일' ? '(' + use[k].half + ')' : ''), comp: true }));
         }
-        function attListOf(member, day) {
-            return normDay(((serverCache[member] || {}).days || {})[day]);
+        function attListOf(member, day, wk) {
+            return normDay(((serverCache[member] || {})[nodeKey(wk)] || {})[day]);
         }
 
         // 선택 부서의 등록된 출장·근태 (한 건씩 수정·삭제)
@@ -803,16 +902,19 @@
             const list = document.getElementById('myAttList');
             if (!selectedUser) { wrap.style.display = 'none'; return; }
             const rows = [];
-            ATT_DAYS.forEach(w => {
-                attListOf(selectedUser, w).forEach((sc, idx) => {
-                    rows.push(
-                        `<div class="myatt-item" onclick="editAtt('${w}',${idx})">` +
-                        `<span class="myatt-day">${w} ${dayLabels[w] || ''}</span>` +
-                        `<span class="myatt-pill ${sc.type}">${sc.type}</span>` +
-                        `<span class="myatt-txt">${escapeHtml(sc.text || '')}</span>` +
-                        `<button class="myatt-x" onclick="event.stopPropagation();removeAttLive('${selectedUser}','${w}',${idx})" title="삭제">✕</button>` +
-                        `</div>`
-                    );
+            [0, 1].forEach(wk => { // 다음 주(daysNext) 항목은 1주 보기 상태여도 숨기지 않고 보여줌
+                const lbls = (weekInfo[wk] || {}).labels || {};
+                ATT_DAYS.forEach(w => {
+                    attListOf(selectedUser, w, wk).forEach((sc, idx) => {
+                        rows.push(
+                            `<div class="myatt-item" onclick="editAtt('${w}',${idx},${wk})">` +
+                            `<span class="myatt-day">${wk ? '담주 ' : ''}${w} ${lbls[w] || ''}</span>` +
+                            `<span class="myatt-pill ${sc.type}">${sc.type}</span>` +
+                            `<span class="myatt-txt">${escapeHtml(sc.text || '')}</span>` +
+                            `<button class="myatt-x" onclick="event.stopPropagation();removeAttLive('${selectedUser}','${w}',${idx},${wk})" title="삭제">✕</button>` +
+                            `</div>`
+                        );
+                    });
                 });
             });
             wrap.style.display = '';
@@ -822,12 +924,14 @@
         }
 
         // 등록된 항목을 입력칸으로 불러와 수정 (저장하면 그 항목만 교체)
-        let editingAtt = null; // {day, idx} — 설정되면 새로 추가하지 않고 해당 항목을 수정
-        function editAtt(day, idx) {
+        let editingAtt = null; // {day, idx, wk} — 설정되면 새로 추가하지 않고 해당 항목을 수정
+        function editAtt(day, idx, wk) {
             if (!selectedUser) return;
-            const sc = attListOf(selectedUser, day)[idx];
+            wk = wk ? 1 : 0;
+            const sc = attListOf(selectedUser, day, wk)[idx];
             if (!sc) return;
-            editingAtt = { day: day, idx: idx };
+            inputWeek = wk; refreshInputWeekUI(); // 수정 대상 주로 입력 주차를 맞춤
+            editingAtt = { day: day, idx: idx, wk: wk };
             document.getElementById(sc.type === '근태' ? 'sc-leave' : 'sc-trip').checked = true;
             activeDays = [day]; refreshDayNodesUI();
             const inp = document.getElementById('txScDetail');
@@ -848,7 +952,7 @@
             if (!el) return;
             if (editingAtt) {
                 el.style.display = '';
-                el.innerHTML = `✏️ <b>${editingAtt.day}요일</b> 항목을 수정 중입니다 (저장하면 이 항목만 교체돼요) ` +
+                el.innerHTML = `✏️ <b>${editingAtt.wk ? '다음 주 ' : ''}${editingAtt.day}요일</b> 항목을 수정 중입니다 (저장하면 이 항목만 교체돼요) ` +
                                `<button type="button" onclick="cancelEditAtt()">취소하고 새로 추가</button>`;
             } else {
                 el.style.display = 'none';
@@ -879,7 +983,8 @@
             const scType = document.querySelector('input[name="scType"]:checked').value;
             const scDetail = document.getElementById('txScDetail').value.trim();
             if (activeDays.length > 0 && scDetail) {
-                const daysObj = Object.assign({}, serverCache[selectedUser]?.days || {});
+                const nk = nodeKey(inputWeek); // 이번 주 days / 다음 주 daysNext
+                const daysObj = Object.assign({}, serverCache[selectedUser]?.[nk] || {});
                 if (editingAtt) {
                     // 수정 모드: 해당 요일의 그 항목만 교체
                     const arr = normDay(daysObj[editingAtt.day]).slice();
@@ -893,7 +998,7 @@
                         daysObj[w] = arr;
                     });
                 }
-                upd.days = daysObj;
+                upd[nk] = daysObj;
             }
             if (Object.keys(upd).length === 0) { alert('입력된 내용이 없습니다.'); return; }
             // 이번주·지난주·근태를 한 번에 저장 (분할 저장 시 발생하던 누락 방지)
@@ -915,7 +1020,7 @@
         function clearAttForMember() {
             if (!selectedUser) return;
             if (confirm(`[${selectedUser}]의 출장·근태를 전부 지울까요? (주간업무는 유지)`)) {
-                dbRef.child(selectedUser).child('days').remove().then(() => {
+                dbRef.child(selectedUser).update({ days: null, daysNext: null }).then(() => {
                     document.getElementById('txScDetail').value = '';
                     editingAtt = null; updateAttModeUI();
                     activeDays = []; refreshDayNodesUI();
@@ -923,15 +1028,16 @@
             }
         }
         // 특정 요일의 한 건만 삭제 (남은 건이 없으면 그 요일 자체를 제거)
-        function removeAttLive(user, day, idx) {
-            const arr = normDay(((serverCache[user] || {}).days || {})[day]).slice();
+        function removeAttLive(user, day, idx, wk) {
+            const nk = nodeKey(wk);
+            const arr = normDay(((serverCache[user] || {})[nk] || {})[day]).slice();
             const target = arr[idx];
             if (!target) return;
-            const label = `[${user}] ${day}요일 · ${target.type} ${target.text || ''}`;
+            const label = `[${user}] ${wk ? '다음 주 ' : ''}${day}요일 · ${target.type} ${target.text || ''}`;
             if (!confirm(`${label}\n이 항목을 삭제할까요?`)) return;
             arr.splice(idx, 1);
-            if (arr.length === 0) dbRef.child(user).child('days').child(day).remove();
-            else dbRef.child(user).child('days').child(day).set(arr);
+            if (arr.length === 0) dbRef.child(user).child(nk).child(day).remove();
+            else dbRef.child(user).child(nk).child(day).set(arr);
         }
 
         // 활동 텍스트 → 업무(항목) 배열. 빈 줄로 업무 구분. 한 업무 안에서는 줄을 그대로 표시
@@ -1027,11 +1133,19 @@
             syncCkAll();
             updateCkHint();
 
+            document.getElementById('attBody').innerHTML = buildAttGrid(0);
+            document.getElementById('attBodyNext').innerHTML = attWeeks === 2 ? buildAttGrid(1) : '';
+            requestAnimationFrame(fitAttCells);
+        }
+        // 근태표 본문 한 주치 (wk: 0=이번 주 days, 1=다음 주 daysNext)
+        function buildAttGrid(wk) {
+            const nk = nodeKey(wk);
+            const holis = (weekInfo[wk] || {}).holis || {};
             let grid = '';
             MEMBERS.forEach(m => {
                 let row = `<tr><td class="dept">${m}</td>`;
                 ATT_DAYS.forEach(w => {
-                    const list = normDay(serverCache[m]?.days?.[w]).concat(compItemsOf(m, w));
+                    const list = normDay(serverCache[m]?.[nk]?.[w]).concat(compItemsOf(m, w, wk));
                     if (list.length) {
                         // 같은 종류(출장/근태)끼리 묶어서 태그는 한 번만, 내용은 한 줄씩
                         const groups = [];
@@ -1044,17 +1158,16 @@
                             `<div class="att-item ${g.type}"><span class="b-tag">${g.type}</span>` +
                             g.entries.map(e =>
                                 e.comp ? `<span class="b-txt" title="대체휴무 도구에서 신청됨">${escapeHtml(e.text)}</span>`
-                                       : `<span class="b-txt" title="더블클릭 삭제" ondblclick="removeAttLive('${m}','${w}',${e.idx})">${escapeHtml(e.text)}</span>`
+                                       : `<span class="b-txt" title="더블클릭 삭제" ondblclick="removeAttLive('${m}','${w}',${e.idx},${wk})">${escapeHtml(e.text)}</span>`
                             ).join('') +
                             `</div>`
                         ).join('');
-                        row += `<td${holiDays[w] ? ' class="holi-col"' : ''}><div class="att-stack">${items}</div></td>`;
-                    } else row += `<td${holiDays[w] ? ' class="holi-col"' : ''}></td>`;
+                        row += `<td${holis[w] ? ' class="holi-col"' : ''}><div class="att-stack">${items}</div></td>`;
+                    } else row += `<td${holis[w] ? ' class="holi-col"' : ''}></td>`;
                 });
                 grid += row + `</tr>`;
             });
-            document.getElementById('attBody').innerHTML = grid;
-            requestAnimationFrame(fitAttCells);
+            return grid;
         }
 
         // 근태 셀: 글씨가 칸보다 길면 폰트를 줄여 칸 안에 맞춤 (엑셀 '축소하여 맞춤')
@@ -1153,7 +1266,7 @@
         function startNewWeek() {
             if (!serverLoaded) return;
             if (editingWeek) { alert('과거 주를 편집 중입니다.\n상단 주차 선택에서 ‘이번 주(현재)’로 돌아간 뒤 진행하세요.'); return; }
-            const msg = '다음 주 주간업무를 시작할까요?\n\n• 현재 주 최종본이 주차별 보관함에 저장됩니다 (나중에 드롭다운에서 다시 불러와 수정 가능)\n• 이번주 최종본 항목(제외 제외)이 순서 그대로 다음 주 「지난주 활동」으로 넘어갑니다\n• 모든 부서의 이번주 활동과 출장·근태가 비워집니다\n• 작성 주간이 다음 주로 이동합니다\n\n진행할까요?';
+            const msg = '다음 주 주간업무를 시작할까요?\n\n• 현재 주 최종본이 주차별 보관함에 저장됩니다 (나중에 드롭다운에서 다시 불러와 수정 가능)\n• 이번주 최종본 항목(제외 제외)이 순서 그대로 다음 주 「지난주 활동」으로 넘어갑니다\n• 모든 부서의 이번주 활동과 출장·근태가 비워집니다 (2주 보기로 미리 넣어둔 다음 주 근태는 새 주로 넘어옵니다)\n• 작성 주간이 다음 주로 이동하고 근태표는 1주 보기로 돌아갑니다\n\n진행할까요?';
             if (!confirm(msg)) return;
             // 1) 현재 주 보관
             const key = isoDate(weekMonday || autoNextMonday());
@@ -1166,8 +1279,14 @@
             finalItems = { thisWeek: [], lastWeek: carried };
             saveFinalNow();
             const upd = {};
-            MEMBERS.forEach(m => { upd[`${m}/thisWeek`] = ''; upd[`${m}/lastWeek`] = ''; upd[`${m}/work`] = null; upd[`${m}/days`] = null; });
+            MEMBERS.forEach(m => {
+                upd[`${m}/thisWeek`] = ''; upd[`${m}/lastWeek`] = ''; upd[`${m}/work`] = null;
+                upd[`${m}/days`] = (serverCache[m] && serverCache[m].daysNext) || null; // 다음 주 근태 → 이번 주로 이월
+                upd[`${m}/daysNext`] = null;
+            });
             dbRef.update(upd);
+            attWeeksRef.set(1);
+            inputWeek = 0;
             const nm = new Date(weekMonday || autoNextMonday()); nm.setDate(nm.getDate() + 7);
             weekRef.set(isoDate(nm));
             deptOff = {}; // 새 주가 시작되면 부서 체크는 전부 켠 상태로 초기화
@@ -1385,6 +1504,14 @@
 
             compRef.on('value', (snap) => { compCache = snap.val() || {}; renderSummary(); });
 
+            attWeeksRef.on('value', (snap) => {
+                attWeeks = snap.val() === 2 ? 2 : 1;
+                if (attWeeks === 1 && inputWeek === 1) { inputWeek = 0; if (editingAtt) { editingAtt = null; updateAttModeUI(); } }
+                calcAttDates();
+                renderSummary();
+                renderMyAtt();
+            });
+
             archiveRef.on('value', (snap) => {
                 archiveList = snap.val() || {};
                 renderWeekPicker();
@@ -1399,7 +1526,8 @@
                     weekMonday = autoNextMonday();
                     weekRef.set(isoDate(weekMonday)); // 최초 1회 저장
                 }
-                if (!editingWeek) calcDates();
+                if (!editingWeek) calcDates(); else calcAttDates();
+                if (serverLoaded) renderSummary(); // 주차가 바뀌면 근태표 공휴일 칸도 다시 칠함
                 renderWeekPicker();
             });
 
