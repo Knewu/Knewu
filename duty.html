@@ -320,6 +320,10 @@
         .week-picker > label { font-size:12.5px; font-weight:800; color:var(--ink); flex-shrink:0; }
         .week-picker select { flex:1; min-width:180px; font-family:inherit; font-size:14px; font-weight:700; color:#26344f; padding:11px 12px; border:1px solid var(--line); border-radius:11px; background:#fcfdfe; cursor:pointer; -webkit-appearance:none; appearance:none; }
         .week-picker select:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(26,115,232,.12); }
+        .undo-row { display:none; width:100%; align-items:center; justify-content:space-between; gap:10px; margin:6px 0 2px; font-size:12.5px; font-weight:700; color:#8a5a00; background:#fff4dd; border:1px solid #f3dca0; border-radius:9px; padding:8px 11px; }
+        .undo-row.show { display:flex; }
+        .undo-row button { flex:none; font-family:inherit; font-size:12px; font-weight:800; color:#b06a00; background:#fff; border:1px solid #f0d2a0; border-radius:7px; padding:6px 10px; cursor:pointer; }
+        .undo-row button:active { background:#fdf1dc; }
         .edit-badge { width:100%; font-size:12.5px; font-weight:800; color:#8a5a00; background:#fff4dd; border:1px solid #f3dca0; border-radius:9px; padding:8px 12px; text-align:center; }
         .fin-chk { flex-shrink:0; margin-top:7px; }
         .fin-chk input { width:18px; height:18px; accent-color:var(--accent); cursor:pointer; }
@@ -616,6 +620,10 @@
                 <select id="weekSel" onchange="onWeekSelChange(this.value)"></select>
                 <span id="editingBadge" class="edit-badge hide"></span>
             </div>
+            <div class="undo-row" id="undoRow">
+                <span id="undoTxt">↩ 방금 시작한 새 주를 되돌릴 수 있어요</span>
+                <button type="button" onclick="undoNewWeek()">되돌리기</button>
+            </div>
 
             <!-- 화면: 편집 가능 -->
             <div class="news screen-news">
@@ -678,6 +686,8 @@
         const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 업무 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
         const weekRef = database.ref('perfect_clean_report_2026_week'); // 기준 주차(월요일) 저장
         const attWeeksRef = database.ref('perfect_clean_report_2026_attweeks'); // 근태표 표시 주 수 (1 또는 2, 전원 공유)
+        const undoRef = database.ref('perfect_clean_report_2026_undo'); // 새 주 시작 직전 전체 스냅샷 (되돌리기용, 1회분)
+        let undoSnap = null; // undoRef 캐시
         const archiveRef = database.ref('perfect_clean_report_2026_final_archive');
         const compRef = database.ref('comp_leave_2026'); // 대체휴무(comp.html) — 읽기 전용 표시 연동 // 주차별 최종본 보관 {ISO: {thisWeek,lastWeek,label,savedAt}}
 
@@ -1268,8 +1278,15 @@
             if (editingWeek) { alert('과거 주를 편집 중입니다.\n상단 주차 선택에서 ‘이번 주(현재)’로 돌아간 뒤 진행하세요.'); return; }
             const msg = '다음 주 주간업무를 시작할까요?\n\n• 현재 주 최종본이 주차별 보관함에 저장됩니다 (나중에 드롭다운에서 다시 불러와 수정 가능)\n• 이번주 최종본 항목(제외 제외)이 순서 그대로 다음 주 「지난주 활동」으로 넘어갑니다\n• 모든 부서의 이번주 활동과 출장·근태가 비워집니다 (2주 보기로 미리 넣어둔 다음 주 근태는 새 주로 넘어옵니다)\n• 작성 주간이 다음 주로 이동하고 근태표는 1주 보기로 돌아갑니다\n\n진행할까요?';
             if (!confirm(msg)) return;
-            // 1) 현재 주 보관
+            // 0) 되돌리기용 전체 스냅샷 (부서 입력·근태·최종본·주차·근태표 주 수) — 직전 1회분만 보관
             const key = isoDate(weekMonday || autoNextMonday());
+            undoRef.set({
+                week: key, attWeeks: attWeeks,
+                members: serverCache || {},
+                final: { thisWeek: finalItems.thisWeek || [], lastWeek: finalItems.lastWeek || [] },
+                savedAt: Date.now()
+            });
+            // 1) 현재 주 보관
             archiveRef.child(key).set({
                 thisWeek: finalItems.thisWeek || [], lastWeek: finalItems.lastWeek || [],
                 label: weekLabelFromISO(key), savedAt: Date.now()
@@ -1296,6 +1313,40 @@
                 activeDays = []; refreshDayNodesUI();
             }
             alert('저장 완료 · 새 주가 시작되었습니다.\n지난 주는 상단 ‘주차 선택’에서 다시 불러와 수정할 수 있어요.');
+        }
+
+        // 새 주 시작 되돌리기: 스냅샷 시점(부서 입력·출장근태·최종본·주차)으로 전부 원복
+        function undoNewWeek() {
+            if (!serverLoaded) return;
+            if (editingWeek) { alert('과거 주를 편집 중입니다.\n상단 주차 선택에서 ‘이번 주(현재)’로 돌아간 뒤 진행하세요.'); return; }
+            const u = undoSnap;
+            if (!u || !u.week) { alert('되돌릴 기록이 없습니다.'); return; }
+            const cur = isoDate(weekMonday || autoNextMonday());
+            const exp = isoToDate(u.week); exp.setDate(exp.getDate() + 7);
+            let msg = `${weekLabelFromISO(u.week)} 주로 되돌릴까요?\n\n• 부서별 활동 · 출장·근태 · 최종본이 새 주 시작 직전 상태로 복구됩니다\n• 새 주에 입력한 내용은 사라집니다\n• 되돌리기 기록은 한 번 쓰면 없어집니다`;
+            if (isoDate(exp) !== cur) msg += `\n\n⚠ 기록 시점(${u.week})과 현재 주차(${cur})가 한 주 차이가 아닙니다. 그래도 진행하면 기록 시점으로 강제 복구됩니다.`;
+            if (!confirm(msg)) return;
+            Promise.all([
+                dbRef.set(u.members || {}),
+                finalRef.set({ thisWeek: (u.final && u.final.thisWeek) || [], lastWeek: (u.final && u.final.lastWeek) || [] }),
+                weekRef.set(u.week),
+                attWeeksRef.set(u.attWeeks === 2 ? 2 : 1)
+            ]).then(() => undoRef.remove()).then(() => {
+                deptOff = {};
+                if (selectedUser) clickMemberBtn(selectedUser);
+                alert('되돌림 완료 · ' + weekLabelFromISO(u.week) + ' 주로 복구되었습니다.');
+            }).catch(() => alert('되돌리기에 실패했습니다. 네트워크 상태를 확인하고 다시 시도하세요.'));
+        }
+        function updateUndoUI() {
+            const row = document.getElementById('undoRow'); if (!row) return;
+            const ok = !!(undoSnap && undoSnap.week) && !editingWeek;
+            row.classList.toggle('show', ok);
+            const t = document.getElementById('undoTxt');
+            if (ok && t) {
+                const d = new Date(undoSnap.savedAt || 0);
+                const when = undoSnap.savedAt ? ` (${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())} 실행)` : '';
+                t.innerText = `↩ 새 주 시작 되돌리기 → ${weekLabelFromISO(undoSnap.week)} 주로 복구${when}`;
+            }
         }
 
         // 인쇄: 업무 항목 → 정돈된 뉴스레터 (현재 주 or 편집 중인 과거 주)
@@ -1459,6 +1510,7 @@
                 calcDates(); // finDate 현재 주로 복구
                 [reloadBtn, newBtn].forEach(b => { if (b) { b.disabled = false; b.style.opacity = ''; } });
             }
+            updateUndoUI();
         }
 
         // 🔗 로그인 계정 → 직책 자동 연동 (duty는 약칭 사용)
@@ -1516,6 +1568,8 @@
                 archiveList = snap.val() || {};
                 renderWeekPicker();
             });
+
+            undoRef.on('value', (snap) => { undoSnap = snap.val() || null; updateUndoUI(); });
 
             weekRef.on('value', (snap) => {
                 const v = snap.val();
