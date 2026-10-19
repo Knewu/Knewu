@@ -38,6 +38,7 @@
         .st-chip.open { background: var(--accent-tint); color: var(--accent-dk); }
         .st-chip.voting { background: #fce8e6; color: #c5221f; }
         .st-chip.closed { background: #e6f4ea; color: #137333; }
+        .st-chip.canceled { background: #eceef1; color: #5f6672; }
         .tabbar { position:sticky; top:56px; z-index:99; background:var(--paper); border-bottom:1px solid var(--line); padding:8px 12px; }
         .tabs { max-width:888px; margin:0 auto; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; background:#eef0f3; border-radius:10px; padding:3px; }
         .tab-btn { height:44px; border:none; background:none; border-radius:8px; font-size:14px; font-weight:700; color:var(--ink-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
@@ -273,7 +274,7 @@
 
         // ── Firebase 경로 (새 경로 — 다른 도구 데이터와 무관) ──
         // contest_2026/current = 주제ID
-        // contest_2026/topics/{id} = { title, desc, deadline, fields:['정면','좌측','우측'] (칸 이름 배열, 1~5개), examples:[칸별 예시, 선택], status:'open'|'voting'|'closed', createdBy, createdAt, votingAt, closedAt,
+        // contest_2026/topics/{id} = { title, desc, deadline, fields:['정면','좌측','우측'] (칸 이름 배열, 1~5개), examples:[칸별 예시, 선택], status:'open'|'voting'|'closed'|'canceled', prevStatus(취소 직전 상태), createdBy, createdAt, votingAt, closedAt, canceledAt,
         //                              entries/{eid}:{by, texts:[칸별 문구], at}, votes/{직책}: eid }
         // (초기 버전 호환: fields:'single'|'pair'+subLabel, entries 의 text/sub 도 읽음)
         const database = firebase.database();
@@ -317,7 +318,7 @@
         }
         function votesOf(t){ return (t&&t.votes)||{}; }
         function countsOf(t){ const c={}; Object.values(votesOf(t)).forEach(eid=>{ c[eid]=(c[eid]||0)+1; }); return c; }
-        function statusLabel(s){ return s==='voting'?'투표 중':s==='closed'?'마감':'제출 받는 중'; }
+        function statusLabel(s){ return s==='voting'?'투표 중':s==='closed'?'마감':s==='canceled'?'취소됨':'제출 받는 중'; }
 
         // ── 탭 ──
         const TABS=['submit','list','vote'];
@@ -347,7 +348,7 @@
             if(past.length){
                 picker = `<div class="fld" style="margin-top:14px;"><div class="fld-lbl">지난 공모 보기</div><select class="topic-sel" onchange="setView(this.value)">` +
                     `<option value="">${currentId ? '🟢 진행 중 · '+escapeHtml((topics[currentId]||{}).title||'') : '(진행 중인 공모 없음)'}</option>` +
-                    past.map(k=>`<option value="${k}" ${k===viewId?'selected':''}>🗂 ${escapeHtml(topics[k].title||k)} · ${statusLabel(topics[k].status)}</option>`).join('') +
+                    past.map(k=>`<option value="${k}" ${k===viewId?'selected':''}>${topics[k].status==='canceled'?'🚫':'🗂'} ${escapeHtml(topics[k].title||k)} · ${statusLabel(topics[k].status)}</option>`).join('') +
                     `</select></div>`;
             }
             if(!t){
@@ -359,7 +360,8 @@
             const fs = fieldsOf(t);
             meta.push(fs.length>1 ? `✏️ 칸 ${fs.length}개 · ${fs.map(escapeHtml).join(' · ')}` : '✏️ 문구 하나');
             meta.push(`🗳 1인 1표 · 득표 실시간 공개 · 제출자는 마감 후 공개`);
-            el.innerHTML = `<div class="topic-h">${escapeHtml(t.title)}</div>` +
+            const cancelNote = t.status==='canceled' ? `<div class="notice warn" style="margin-bottom:12px;">🚫 취소된 공모예요${t.canceledAt?' ('+fmtDT(t.canceledAt)+')':''}. 제출 내용만 기록으로 남아 있어요.</div>` : '';
+            el.innerHTML = cancelNote + `<div class="topic-h">${escapeHtml(t.title)}</div>` +
                 `<div class="topic-meta">${meta.map(m=>`<span>${m}</span>`).join('')}</div>` +
                 (t.desc ? `<div class="topic-desc">${escapeHtml(t.desc)}</div>` : '') + picker;
         }
@@ -462,6 +464,10 @@
             const total = Object.keys(votes).length;
             $('phTitle').textContent = `${t.title} · 투표 결과`;
             $('phDate').textContent = t.closedAt ? `마감 ${fmtDT(t.closedAt)} · ${total}명 참여` : '';
+            if(st==='canceled'){
+                el.innerHTML = `<div class="empty">취소된 공모라 투표 결과가 없어요.</div>`;
+                return;
+            }
             if(st==='open'){
                 el.innerHTML = `<div class="empty">아직 투표가 시작되지 않았어요.<br>지금까지 <b>${all.length}건</b> 제출됐어요.${isAdmin&&isCurrent()?'<br>아래에서 투표를 시작할 수 있어요.':''}</div>`;
                 return;
@@ -504,14 +510,28 @@
             if(!isAdmin) return;
             // 새 공모 열기 (현재 공모가 없거나 마감됐을 때 바로, 진행 중이면 접어서)
             const cur = currentId && topics[currentId];
+            const active = cur && (cur.status==='open' || cur.status==='voting' || !cur.status);
             const canOpenNow = !cur || cur.status==='closed';
             const form =
-                `<div class="fld"><div class="fld-lbl">공모 제목</div><input class="inp" id="nTitle" placeholder="예) 2026 창립기념 현수막 문구"></div>` +
-                `<div class="fld"><div class="fld-lbl">안내문<span class="opt">(선택)</span></div><textarea class="inp" id="nDesc" rows="3" placeholder="어디에 쓰는 문구인지, 분량, 참고할 점 등"></textarea></div>` +
-                `<div class="fld"><div class="fld-lbl">제출 마감일<span class="opt">(선택 · 표시용)</span></div><input class="inp" id="nDead" type="date"></div>` +
+                (draft.from ? `<div class="notice" style="margin-bottom:12px;">취소한 「${escapeHtml(draft.from)}」 설정을 채워뒀어요. 고칠 곳만 고쳐서 다시 열면 돼요.</div>` : '') +
+                `<div class="fld"><div class="fld-lbl">공모 제목</div><input class="inp" id="nTitle" value="${escapeHtml(draft.title)}" oninput="draft.title=this.value" placeholder="예) 2026 창립기념 현수막 문구"></div>` +
+                `<div class="fld"><div class="fld-lbl">안내문<span class="opt">(선택)</span></div><textarea class="inp" id="nDesc" rows="3" oninput="draft.desc=this.value" placeholder="어디에 쓰는 문구인지, 분량, 참고할 점 등">${escapeHtml(draft.desc)}</textarea></div>` +
+                `<div class="fld"><div class="fld-lbl">제출 마감일<span class="opt">(선택 · 표시용)</span></div><input class="inp" id="nDead" type="date" value="${escapeHtml(draft.deadline)}" oninput="draft.deadline=this.value" onchange="draft.deadline=this.value"></div>` +
                 `<div class="fld"><div class="fld-lbl">문안 칸<span class="opt">(칸마다 이름을 정해요 · 예: 정면 / 좌측 / 우측 · 최대 ${MAX_FIELDS}개 · 첫 칸만 필수)</span></div><div id="nFieldsBox"></div><button type="button" class="nf-add" id="nfAdd" onclick="addNewField()">+ 칸 추가</button></div>` +
                 `<button type="button" class="btn btn-warn" style="margin-top:14px;" onclick="createTopic()">${cur && cur.status!=='closed' ? '진행 중인 공모를 보관하고 새 공모 열기' : '새 공모 열기'}</button>`;
-            sub.innerHTML = `<div class="admin-box"><div class="ab-h">총무 · 새 공모</div>` +
+            // 진행 중 공모 취소 (제출·투표 단계 모두)
+            const manage = active
+                ? `<div class="admin-box"><div class="ab-h">총무 · 공모 취소</div>` +
+                  `<div class="ab-d">설정을 잘못했거나 처음부터 다시 받아야 할 때 써요. 취소하면 모든 사람 화면에서 공모가 내려가고, 제출된 문안은 지우지 않고 '지난 공모'에 취소됨으로 남아요. 설정은 아래 새 공모 칸에 그대로 채워져요.</div>` +
+                  `<button type="button" class="btn btn-danger" onclick="cancelTopic()">공모 취소</button></div>`
+                : '';
+            // 취소된 공모를 보고 있을 때: 되돌리기
+            const restore = (t && t.status==='canceled')
+                ? `<div class="admin-box"><div class="ab-h">총무 · 취소된 공모</div>` +
+                  `<div class="ab-d">실수로 취소했으면 되돌릴 수 있어요. 제출된 문안${t.prevStatus==='voting'?'과 표':''}가 그대로 다시 진행돼요.${active?' 지금 진행 중인 공모는 지난 공모로 보관돼요.':''}</div>` +
+                  `<button type="button" class="btn btn-warn" onclick="restoreTopic()">취소 되돌리기</button></div>`
+                : '';
+            sub.innerHTML = restore + manage + `<div class="admin-box"><div class="ab-h">총무 · 새 공모</div>` +
                 (canOpenNow ? form : `<details class="fold"><summary>새 공모 열기 (진행 중인 공모는 보관됩니다)</summary><div style="padding-top:6px;">${form}</div></details>`) +
                 `</div>`;
             renderNewFields();
@@ -529,8 +549,50 @@
                     `<button type="button" class="btn btn-ghost" style="width:100%;height:44px;" onclick="setStatus('voting')">투표 다시 열기</button></div>`;
             }
         }
-        // 새 공모 폼의 칸 이름 목록 (화면 안에서만 유지)
+        // 새 공모 폼 입력값 (화면 안에서만 유지 — 실시간 갱신으로 다시 그려져도 안 날아가게)
+        let draft = { title:'', desc:'', deadline:'', from:'' };
         let newFields = [{ name:'문구', ex:'' }];
+        function resetDraft(){ draft = { title:'', desc:'', deadline:'', from:'' }; newFields = [{ name:'문구', ex:'' }]; }
+        function prefillFrom(t){
+            const exs = examplesOf(t);
+            draft = { title: t.title||'', desc: t.desc||'', deadline: t.deadline||'', from: t.title||'' };
+            newFields = fieldsOf(t).map((f,i)=>({ name:f, ex: exs[i]||'' }));
+        }
+        function cancelTopic(){
+            const t = topic(); if(!isAdmin || !t || !isCurrent()) return;
+            const st = t.status||'open'; if(st!=='open' && st!=='voting') return;
+            const n = entriesOf(t).length, v = Object.keys(votesOf(t)).length;
+            const msg = `「${t.title}」 공모를 취소할까요?\n\n` +
+                `• 모든 사람 화면에서 공모가 내려가요\n` +
+                `• 제출 ${n}건${v?` · 표 ${v}개`:''}는 지우지 않고 '지난 공모'에 취소됨으로 남아요\n` +
+                `• 같은 설정을 새 공모 칸에 채워둘게요 — 고쳐서 다시 열면 돼요`;
+            if(!confirm(msg)) return;
+            const id = viewId, upd = {};
+            upd[`topics/${id}/status`] = 'canceled';
+            upd[`topics/${id}/prevStatus`] = st;
+            upd[`topics/${id}/canceledAt`] = Date.now();
+            upd['current'] = null;
+            rootRef.update(upd).then(()=>{
+                prefillFrom(t); editingEntry=null; viewId=null; renderAll();
+                showToast('공모를 취소했어요');
+                setTimeout(()=>{ const box=$('adminSubmit'); if(box) box.scrollIntoView({behavior:'smooth',block:'start'}); }, 80);
+            }).catch(()=>alert('취소에 실패했어요. 네트워크를 확인하고 다시 시도해 주세요.'));
+        }
+        function restoreTopic(){
+            const t = topic(); if(!isAdmin || !t || t.status!=='canceled') return;
+            const cur = currentId && topics[currentId];
+            const curActive = cur && cur.status!=='closed' && cur.status!=='canceled';
+            let msg = `「${t.title}」 공모 취소를 되돌릴까요?\n제출된 문안${t.prevStatus==='voting'?'과 표':''}가 그대로 다시 진행돼요.`;
+            if(curActive) msg += `\n\n지금 진행 중인 「${cur.title}」은(는) 지난 공모로 보관돼요.`;
+            if(!confirm(msg)) return;
+            const id = viewId, upd = {};
+            upd[`topics/${id}/status`] = (t.prevStatus==='voting') ? 'voting' : 'open';
+            upd[`topics/${id}/prevStatus`] = null;
+            upd[`topics/${id}/canceledAt`] = null;
+            upd['current'] = id;
+            rootRef.update(upd).then(()=>{ viewId=id; if(draft.from===t.title) resetDraft(); renderAll(); showToast('취소를 되돌렸어요'); switchTab('submit'); })
+                .catch(()=>alert('되돌리기에 실패했어요.'));
+        }
         function readNewFields(){ const arr=[]; document.querySelectorAll('#nFieldsBox .nf-block').forEach(b=>{ const n=b.querySelector('input[id^="nF"]'), e=b.querySelector('input[id^="nE"]'); arr.push({ name: n?n.value:'', ex: e?e.value:'' }); }); if(arr.length) newFields=arr; }
         function renderNewFields(){
             const box=$('nFieldsBox'); if(!box) return;
@@ -544,7 +606,8 @@
         function addNewField(){ readNewFields(); if(newFields.length>=MAX_FIELDS) return; newFields.push({ name:'', ex:'' }); renderNewFields(); const last=$('nF'+(newFields.length-1)); if(last) last.focus(); }
         function removeNewField(i){ readNewFields(); if(newFields.length<=1) return; newFields.splice(i,1); renderNewFields(); }
         function createTopic(){
-            const title=($('nTitle').value||'').trim(); if(!title){ alert('공모 제목을 입력해 주세요.'); return; }
+            if($('nTitle')) draft.title=$('nTitle').value; if($('nDesc')) draft.desc=$('nDesc').value; if($('nDead')) draft.deadline=$('nDead').value;
+            const title=(draft.title||'').trim(); if(!title){ alert('공모 제목을 입력해 주세요.'); return; }
             readNewFields();
             const kept = newFields.map(f=>({ name:String(f.name||'').trim(), ex:String(f.ex||'').trim() })).filter(f=>f.name).slice(0,MAX_FIELDS);
             if(!kept.length){ alert('문안 칸 이름을 하나 이상 적어 주세요.'); return; }
@@ -552,8 +615,8 @@
             const cur = currentId && topics[currentId];
             if(cur && cur.status!=='closed' && !confirm(`진행 중인 「${cur.title}」을(를) 보관하고 새 공모를 열까요?\n(보관된 공모는 '지난 공모 보기'에서 다시 볼 수 있어요)`)) return;
             const ref = topicsRef.push();
-            ref.set({ title, desc:($('nDesc').value||'').trim(), deadline:$('nDead').value||'', fields, examples, status:'open', createdBy: me, createdAt: Date.now() })
-               .then(()=>currentRef.set(ref.key)).then(()=>{ viewId=ref.key; editingEntry=null; newFields=[{ name:'문구', ex:'' }]; renderAll(); showToast('새 공모를 열었어요'); switchTab('submit'); })
+            ref.set({ title, desc:(draft.desc||'').trim(), deadline:draft.deadline||'', fields, examples, status:'open', createdBy: me, createdAt: Date.now() })
+               .then(()=>currentRef.set(ref.key)).then(()=>{ viewId=ref.key; editingEntry=null; resetDraft(); renderAll(); showToast('새 공모를 열었어요'); switchTab('submit'); })
                .catch(()=>alert('공모 생성에 실패했어요.'));
         }
         function setStatus(s){
