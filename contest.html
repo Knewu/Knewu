@@ -65,6 +65,11 @@
         .fld + .fld { margin-top: 12px; }
         .fld-lbl { font-size:12px; font-weight:700; color:var(--ink-soft); }
         .fld-lbl .opt { font-weight:600; color:var(--ink-faint); margin-left:4px; }
+        .fld-ex { font-size:12.5px; color:var(--ink-faint); line-height:1.5; white-space:pre-wrap; margin-top:-2px; }
+        .nf-block { border:1px solid var(--line); border-radius:10px; padding:8px; }
+        .nf-block + .nf-block { margin-top:6px; }
+        .nf-block .nf-ex { margin-top:6px; }
+        .nf-block .nf-ex input { font-size:13px; padding:9px 11px; }
         .inp, textarea.inp { width:100%; padding:11px 12px; font-size:15px; border:1px solid var(--line); border-radius:10px; background:#fcfdfe; color:var(--ink); line-height:1.5; }
         textarea.inp { min-height: 72px; resize: vertical; }
         .inp:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(26,115,232,.12); background:#fff; }
@@ -268,7 +273,7 @@
 
         // ── Firebase 경로 (새 경로 — 다른 도구 데이터와 무관) ──
         // contest_2026/current = 주제ID
-        // contest_2026/topics/{id} = { title, desc, deadline, fields:['정면','좌측','우측'] (칸 이름 배열, 1~5개), status:'open'|'voting'|'closed', createdBy, createdAt, votingAt, closedAt,
+        // contest_2026/topics/{id} = { title, desc, deadline, fields:['정면','좌측','우측'] (칸 이름 배열, 1~5개), examples:[칸별 예시, 선택], status:'open'|'voting'|'closed', createdBy, createdAt, votingAt, closedAt,
         //                              entries/{eid}:{by, texts:[칸별 문구], at}, votes/{직책}: eid }
         // (초기 버전 호환: fields:'single'|'pair'+subLabel, entries 의 text/sub 도 읽음)
         const database = firebase.database();
@@ -300,6 +305,7 @@
             if(t.fields==='pair') return ['메인 문구', t.subLabel||'서브 문구'];
             return ['문구'];
         }
+        function examplesOf(t){ const ex=(t&&Array.isArray(t.examples))?t.examples:[]; return fieldsOf(t).map((f,i)=>String(ex[i]||'').trim()); }
         function textsOf(e){ if(Array.isArray(e.texts)) return e.texts.map(x=>String(x||'').trim()); return [String(e.text||'').trim(), String(e.sub||'').trim()]; }
         function entriesOf(t){ const e=(t&&t.entries)||{}; return Object.keys(e).map(k=>Object.assign({id:k},e[k])).filter(x=>textsOf(x)[0]); }
         // 문안 본문: 칸이 하나면 큰 글씨만, 여러 칸이면 칸 이름 + 글
@@ -368,10 +374,12 @@
                 return;
             }
             const ed = editingEntry ? ((t.entries||{})[editingEntry]||null) : null;
-            const fs = fieldsOf(t); const cur = ed ? textsOf(ed) : [];
+            const fs = fieldsOf(t), exs = examplesOf(t); const cur = ed ? textsOf(ed) : [];
             el.innerHTML =
                 `<div class="sec-h"><span>${ed?'문안 수정':'문안 제출'}</span><span class="sub">${escapeHtml(me)}</span></div>` +
-                fs.map((f,i)=>`<div class="fld"><div class="fld-lbl">${escapeHtml(f)}${i>0?'<span class="opt">(비워도 돼요)</span>':''}</div><textarea class="inp${i===0?' main':''}" id="inF${i}" rows="2" placeholder="${i===0?'예) 함께 지켜온 ○○년, 함께 만들 내일':escapeHtml(f)+' 문구'}">${escapeHtml(cur[i]||'')}</textarea></div>`).join('') +
+                fs.map((f,i)=>`<div class="fld"><div class="fld-lbl">${escapeHtml(f)}${i>0?'<span class="opt">(비워도 돼요)</span>':''}</div>` +
+                    (exs[i] ? `<div class="fld-ex">예) ${escapeHtml(exs[i])}</div>` : '') +
+                    `<textarea class="inp${i===0?' main':''}" id="inF${i}" rows="2">${escapeHtml(cur[i]||'')}</textarea></div>`).join('') +
                 `<button type="button" class="btn btn-primary" onclick="submitEntry()">${ed?'수정 저장':'제출하기'}</button>` +
                 (ed ? `<button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px;height:44px;" onclick="cancelEdit()">수정 취소</button>` : '') +
                 `<div class="notice" style="margin-top:12px;">여러 개 내도 돼요. 제출한 문안은 아래 「내가 낸 문안」에서 투표 시작 전까지 고치거나 지울 수 있어요.</div>`;
@@ -522,26 +530,30 @@
             }
         }
         // 새 공모 폼의 칸 이름 목록 (화면 안에서만 유지)
-        let newFields = ['문구'];
-        function readNewFields(){ const arr=[]; document.querySelectorAll('#nFieldsBox input').forEach(i=>arr.push(i.value)); if(arr.length) newFields=arr; }
+        let newFields = [{ name:'문구', ex:'' }];
+        function readNewFields(){ const arr=[]; document.querySelectorAll('#nFieldsBox .nf-block').forEach(b=>{ const n=b.querySelector('input[id^="nF"]'), e=b.querySelector('input[id^="nE"]'); arr.push({ name: n?n.value:'', ex: e?e.value:'' }); }); if(arr.length) newFields=arr; }
         function renderNewFields(){
             const box=$('nFieldsBox'); if(!box) return;
-            box.innerHTML = newFields.map((f,i)=>`<div class="nf-row"><span class="nf-no">${i+1}</span><input class="inp grow" id="nF${i}" value="${escapeHtml(f)}" placeholder="칸 이름 (예: 정면)" onblur="readNewFields()">` +
-                `<button type="button" title="이 칸 빼기" onclick="removeNewField(${i})" ${newFields.length<=1?'disabled style="opacity:.35"':''}>✕</button></div>`).join('');
+            box.innerHTML = newFields.map((f,i)=>`<div class="nf-block">` +
+                `<div class="nf-row"><span class="nf-no">${i+1}</span><input class="inp grow" id="nF${i}" value="${escapeHtml(f.name)}" placeholder="칸 이름 (예: 정면)" onblur="readNewFields()">` +
+                `<button type="button" title="이 칸 빼기" onclick="removeNewField(${i})" ${newFields.length<=1?'disabled style="opacity:.35"':''}>✕</button></div>` +
+                `<div class="nf-row nf-ex"><span class="nf-no"></span><input class="inp grow" id="nE${i}" value="${escapeHtml(f.ex)}" placeholder="문안 예시 (선택) — 제출 칸 위에 보여요" onblur="readNewFields()"></div>` +
+                `</div>`).join('');
             const add=$('nfAdd'); if(add) add.style.display = newFields.length>=MAX_FIELDS ? 'none' : '';
         }
-        function addNewField(){ readNewFields(); if(newFields.length>=MAX_FIELDS) return; newFields.push(''); renderNewFields(); const last=$('nF'+(newFields.length-1)); if(last) last.focus(); }
+        function addNewField(){ readNewFields(); if(newFields.length>=MAX_FIELDS) return; newFields.push({ name:'', ex:'' }); renderNewFields(); const last=$('nF'+(newFields.length-1)); if(last) last.focus(); }
         function removeNewField(i){ readNewFields(); if(newFields.length<=1) return; newFields.splice(i,1); renderNewFields(); }
         function createTopic(){
             const title=($('nTitle').value||'').trim(); if(!title){ alert('공모 제목을 입력해 주세요.'); return; }
             readNewFields();
-            const fields = newFields.map(f=>String(f||'').trim()).filter(Boolean).slice(0,MAX_FIELDS);
-            if(!fields.length){ alert('문안 칸 이름을 하나 이상 적어 주세요.'); return; }
+            const kept = newFields.map(f=>({ name:String(f.name||'').trim(), ex:String(f.ex||'').trim() })).filter(f=>f.name).slice(0,MAX_FIELDS);
+            if(!kept.length){ alert('문안 칸 이름을 하나 이상 적어 주세요.'); return; }
+            const fields = kept.map(f=>f.name), examples = kept.map(f=>f.ex);
             const cur = currentId && topics[currentId];
             if(cur && cur.status!=='closed' && !confirm(`진행 중인 「${cur.title}」을(를) 보관하고 새 공모를 열까요?\n(보관된 공모는 '지난 공모 보기'에서 다시 볼 수 있어요)`)) return;
             const ref = topicsRef.push();
-            ref.set({ title, desc:($('nDesc').value||'').trim(), deadline:$('nDead').value||'', fields, status:'open', createdBy: me, createdAt: Date.now() })
-               .then(()=>currentRef.set(ref.key)).then(()=>{ viewId=ref.key; editingEntry=null; newFields=['문구']; renderAll(); showToast('새 공모를 열었어요'); switchTab('submit'); })
+            ref.set({ title, desc:($('nDesc').value||'').trim(), deadline:$('nDead').value||'', fields, examples, status:'open', createdBy: me, createdAt: Date.now() })
+               .then(()=>currentRef.set(ref.key)).then(()=>{ viewId=ref.key; editingEntry=null; newFields=[{ name:'문구', ex:'' }]; renderAll(); showToast('새 공모를 열었어요'); switchTab('submit'); })
                .catch(()=>alert('공모 생성에 실패했어요.'));
         }
         function setStatus(s){
@@ -601,7 +613,7 @@
                 topics=snap.val()||{};
                 if(!viewId || !topics[viewId]) viewId=currentId;
                 // 입력 중이면 입력칸을 다시 그리지 않음 (다른 사람 제출로 내 글이 날아가지 않게)
-                const ae=document.activeElement; const typing = ae && /^(inF\d|nF\d|nTitle|nDesc|nDead)$/.test(ae.id||'');
+                const ae=document.activeElement; const typing = ae && /^(inF\d|nF\d|nE\d|nTitle|nDesc|nDead)$/.test(ae.id||'');
                 if(typing){ const t=topic(); $('cntList').textContent=entriesOf(t).length; $('cntVote').textContent=Object.keys(votesOf(t)).length; renderMine(); renderList(); renderVote(); }
                 else renderAll();
             });
