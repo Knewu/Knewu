@@ -135,6 +135,20 @@
         .vote-card.top .v-bar i { background:var(--gold); }
         .vote-sum { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:13px; font-weight:700; color:var(--ink-soft); margin-bottom:10px; flex-wrap:wrap; }
         .vote-sum b { color:var(--accent-dk); font-weight:800; }
+        .fseg { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:4px; background:#eef0f3; border-radius:10px; padding:3px; margin-bottom:12px; }
+        .fseg button { height:42px; border:none; background:none; border-radius:8px; font-size:14px; font-weight:700; color:var(--ink-soft); cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 6px; }
+        .fseg button.on { background:#fff; color:var(--accent-dk); font-weight:800; box-shadow:0 1px 2px rgba(0,0,0,.1); }
+        .fs-ok { color:#137333; font-weight:900; }
+        .fs-prog { font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--page); border-radius:8px; padding:8px 10px; margin:-2px 0 10px; }
+        .fs-prog b { color:var(--accent-dk); font-weight:800; }
+        .win-box { background:var(--gold-bg); border:1px solid #e9d28a; border-radius:12px; padding:12px 14px; margin-bottom:4px; }
+        .win-h { font-size:13px; font-weight:800; color:var(--gold); margin-bottom:8px; }
+        .win-row { display:flex; align-items:baseline; gap:8px; }
+        .win-row + .win-row { margin-top:7px; }
+        .win-txt { flex:1; min-width:0; font-size:15px; font-weight:800; color:#2a2410; line-height:1.4; word-break:keep-all; }
+        .win-n { flex:none; font-size:12px; font-weight:800; color:var(--gold); }
+        .vm-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .vm-row .vm-l { font-size:12.5px; font-weight:800; color:#6b5210; }
         .admin-box { margin-top:12px; background:#fff9ef; border:1px solid #f0d2a0; border-radius:var(--radius); padding:14px 16px; display:flex; flex-direction:column; gap:9px; }
         .admin-box .ab-h { font-size:13px; font-weight:800; color:var(--warn-ink); }
         .admin-box .ab-d { font-size:12.5px; line-height:1.55; color:#6b5210; }
@@ -275,7 +289,10 @@
         // ── Firebase 경로 (새 경로 — 다른 도구 데이터와 무관) ──
         // contest_2026/current = 주제ID
         // contest_2026/topics/{id} = { title, desc, deadline, fields:['정면','좌측','우측'] (칸 이름 배열, 1~5개), examples:[칸별 예시, 선택], status:'open'|'voting'|'closed'|'canceled', prevStatus(취소 직전 상태), createdBy, createdAt, votingAt, closedAt, canceledAt,
-        //                              entries/{eid}:{by, texts:[칸별 문구], at}, votes/{직책}: eid }
+        //                              voteMode:'field'(칸별 투표)|'entry'(세트 투표),
+        //                              entries/{eid}:{by, texts:[칸별 문구], at},
+        //                              votes/{직책}: eid               ← 세트 투표
+        //                              fieldVotes/f{칸번호}/{직책}: eid  ← 칸별 투표 (문안 데이터는 그대로, 표만 칸별로 따로 저장) }
         // (초기 버전 호환: fields:'single'|'pair'+subLabel, entries 의 text/sub 도 읽음)
         const database = firebase.database();
         const rootRef = database.ref('contest_2026');
@@ -317,6 +334,19 @@
                 `<div class="e-line"><span class="e-flbl">${escapeHtml(f)}</span><span class="${i===0?'e-main':'e-sub'}">${escapeHtml(ts[i])}</span></div>`).join('');
         }
         function votesOf(t){ return (t&&t.votes)||{}; }
+        // 투표 방식: 칸이 하나면 세트, 지정돼 있으면 그대로, 없으면 (기존 세트 표가 있으면 세트 / 없으면 칸별)
+        function voteModeOf(t){
+            if(!t || fieldsOf(t).length<=1) return 'entry';
+            if(t.voteMode==='field' || t.voteMode==='entry') return t.voteMode;
+            return Object.keys(t.votes||{}).length ? 'entry' : 'field';
+        }
+        function fieldVotesOf(t, fi){ return ((t&&t.fieldVotes)||{})['f'+fi] || {}; }
+        function fieldCountsOf(t, fi){ const c={}; Object.values(fieldVotesOf(t,fi)).forEach(eid=>{ c[eid]=(c[eid]||0)+1; }); return c; }
+        function voterCountOf(t){
+            if(voteModeOf(t)!=='field') return Object.keys(votesOf(t)).length;
+            const set=new Set(); fieldsOf(t).forEach((f,i)=>Object.keys(fieldVotesOf(t,i)).forEach(k=>set.add(k))); return set.size;
+        }
+        let voteField = 0; // 칸별 투표에서 보고 있는 칸
         function countsOf(t){ const c={}; Object.values(votesOf(t)).forEach(eid=>{ c[eid]=(c[eid]||0)+1; }); return c; }
         function statusLabel(s){ return s==='voting'?'투표 중':s==='closed'?'마감':s==='canceled'?'취소됨':'제출 받는 중'; }
 
@@ -337,7 +367,7 @@
             else { chip.className='st-chip '+(t.status||'open'); chip.textContent=(isCurrent()?'':'보관 · ')+statusLabel(t.status); }
             const n = entriesOf(t).length;
             $('cntList').textContent = n;
-            $('cntVote').textContent = Object.keys(votesOf(t)).length;
+            $('cntVote').textContent = voterCountOf(t);
             renderTopic(); renderSubmit(); renderMine(); renderList(); renderVote(); renderAdmin();
         }
 
@@ -359,7 +389,7 @@
             if(t.deadline) meta.push(`📅 제출 마감 ${fmtDate(t.deadline)}`);
             const fs = fieldsOf(t);
             meta.push(fs.length>1 ? `✏️ 칸 ${fs.length}개 · ${fs.map(escapeHtml).join(' · ')}` : '✏️ 문구 하나');
-            meta.push(`🗳 1인 1표 · 득표 실시간 공개 · 제출자는 마감 후 공개`);
+            meta.push(voteModeOf(t)==='field' ? `🗳 칸별로 따로 1인 1표 · 득표 실시간 공개 · 제출자는 마감 후 공개` : `🗳 1인 1표 · 득표 실시간 공개 · 제출자는 마감 후 공개`);
             const cancelNote = t.status==='canceled' ? `<div class="notice warn" style="margin-bottom:12px;">🚫 취소된 공모예요${t.canceledAt?' ('+fmtDT(t.canceledAt)+')':''}. 제출 내용만 기록으로 남아 있어요.</div>` : '';
             el.innerHTML = cancelNote + `<div class="topic-h">${escapeHtml(t.title)}</div>` +
                 `<div class="topic-meta">${meta.map(m=>`<span>${m}</span>`).join('')}</div>` +
@@ -473,6 +503,7 @@
                 return;
             }
             if(!all.length){ el.innerHTML=`<div class="empty">제출된 문안이 없어요.</div>`; return; }
+            if(voteModeOf(t)==='field'){ renderVoteByField(t, el); return; }
             const closed = st==='closed';
             // 투표 중: 제출 순서 고정(먼저 올라온 순) / 마감 후: 득표순
             let arr = all.slice().sort((a,b)=>(a.at||0)-(b.at||0));
@@ -494,6 +525,80 @@
                     `<div class="v-side"><span class="v-num">${c}</span><span class="v-lbl">표</span></div>` +
                     `</div>`;
             }).join('');
+        }
+        // ── 칸별 투표 ──
+        function fieldCard(t, e, fi, c, max, closed, mine, top, rank){
+            const txt = textsOf(e)[fi];
+            return `<div class="vote-card${mine?' mine':''}${top?' top':''}${closed?' locked':''}" ${closed?'':`onclick="castFieldVote(${fi},'${e.id}')" role="button" tabindex="0"`}>` +
+                `<div class="v-body"><div class="e-main">${escapeHtml(txt)}</div>` +
+                `<div class="e-foot">${rank?`<span class="v-rank">${rank}위</span>`:''}${closed?`<span class="e-by">${escapeHtml(e.by)}</span>`:`<span class="e-by hidden">제출자 비공개</span>`}${mine&&!closed?'<span class="v-pick">내 표</span>':''}</div>` +
+                `<div class="v-bar"><i style="width:${Math.round(c/max*100)}%"></i></div></div>` +
+                `<div class="v-side"><span class="v-num">${c}</span><span class="v-lbl">표</span></div>` +
+                `</div>`;
+        }
+        function renderVoteByField(t, el){
+            const fs = fieldsOf(t), closed = t.status==='closed';
+            const all = entriesOf(t).slice().sort((a,b)=>(a.at||0)-(b.at||0)); // 투표 중엔 제출 순 고정
+            const cands = (fi)=> all.filter(e=>textsOf(e)[fi]);
+            if(voteField<0 || voteField>=fs.length) voteField = 0;
+            if(!closed){
+                const fi = voteField;
+                const seg = `<div class="fseg no-cap">` + fs.map((f,i)=>{
+                    const voted = !!fieldVotesOf(t,i)[me];
+                    return `<button type="button" class="${i===fi?'on':''}" onclick="setVoteField(${i})">${escapeHtml(f)}${voted?' <span class="fs-ok">✓</span>':''}</button>`;
+                }).join('') + `</div>`;
+                const list = cands(fi), counts = fieldCountsOf(t,fi), myPick = fieldVotesOf(t,fi)[me]||null;
+                const nVoters = Object.keys(fieldVotesOf(t,fi)).length;
+                const done = fs.filter((f,i)=>fieldVotesOf(t,i)[me]).length;
+                const max = Math.max(1, ...list.map(e=>counts[e.id]||0));
+                const sum = `<div class="vote-sum"><span>${escapeHtml(fs[fi])} · <b>${nVoters}명</b> 참여 / ${MEMBER_COUNT}명</span><span>${myPick?'✅ 이 칸 투표했어요 · 다른 문안을 누르면 바뀌어요':'문안을 눌러 한 표를 주세요'}</span></div>` +
+                    `<div class="fs-prog">칸마다 따로 한 표씩 · 내 투표 <b>${done}/${fs.length}칸</b>${done<fs.length?' — 위에서 칸을 바꿔 계속 투표하세요':' 완료'}</div>`;
+                el.innerHTML = seg + sum + (list.length
+                    ? list.map(e=>fieldCard(t, e, fi, counts[e.id]||0, max, false, myPick===e.id, false, 0)).join('')
+                    : `<div class="empty">이 칸에 들어온 문안이 없어요.</div>`);
+                return;
+            }
+            // 마감: 칸별 1위 요약 + 칸마다 득표순
+            const total = voterCountOf(t);
+            let winners = '', sections = '';
+            fs.forEach((f,fi)=>{
+                const counts = fieldCountsOf(t,fi);
+                const list = cands(fi).sort((a,b)=>(counts[b.id]||0)-(counts[a.id]||0) || (a.at||0)-(b.at||0));
+                const nV = Object.keys(fieldVotesOf(t,fi)).length;
+                const topN = list.length ? (counts[list[0].id]||0) : 0;
+                const tops = topN>0 ? list.filter(e=>(counts[e.id]||0)===topN) : [];
+                winners += `<div class="win-row"><span class="e-flbl">${escapeHtml(f)}</span><span class="win-txt">${tops.length ? tops.map(e=>escapeHtml(textsOf(e)[fi])).join(' / ') : '<span style="color:var(--ink-faint)">득표 없음</span>'}</span>${tops.length?`<span class="win-n">${topN}표${tops.length>1?' · 동점':''}</span>`:''}</div>`;
+                const max = Math.max(1, topN);
+                sections += `<div class="sec-h" style="margin:18px 0 8px;"><span>${escapeHtml(f)}</span><span class="sub">${nV}명 참여</span></div>` +
+                    (list.length ? list.map((e,i)=>{ const c=counts[e.id]||0; return fieldCard(t, e, fi, c, max, true, false, topN>0 && c===topN, i+1); }).join('')
+                                 : `<div class="empty">이 칸에 들어온 문안이 없어요.</div>`);
+            });
+            el.innerHTML = `<div class="vote-sum"><span>마감 · <b>${total}명</b> 참여 · 칸별 득표순</span><button type="button" class="btn btn-ghost no-cap" onclick="saveResultImage()">🖼 결과 이미지 저장</button></div>` +
+                `<div class="win-box"><div class="win-h">칸별 1위</div>${winners}</div>` + sections;
+        }
+        function setVoteField(i){ voteField = i; renderVote(); }
+        function castFieldVote(fi, eid){
+            const t = topic(); if(!t || !isCurrent() || t.status!=='voting' || voteModeOf(t)!=='field') return;
+            const ref = topicsRef.child(viewId).child('fieldVotes').child('f'+fi).child(me);
+            const cur = fieldVotesOf(t,fi)[me];
+            const f = fieldsOf(t)[fi];
+            if(cur===eid){ if(confirm(`${f} 칸에 준 표를 거둘까요?`)) ref.remove().then(()=>showToast('표를 거뒀어요')); return; }
+            ref.set(eid).then(()=>{
+                showToast(`${f} ${cur?'표를 옮겼어요':'투표했어요'}`);
+                // 아직 투표 안 한 다음 칸으로 안내
+                const t2 = topic(); const fs = fieldsOf(t2);
+                const next = fs.findIndex((x,i)=>i!==fi && !fieldVotesOf(t2,i)[me]);
+                if(!cur && next>=0) setTimeout(()=>{ voteField = next; renderVote(); window.scrollTo({top:0,behavior:'smooth'}); }, 450);
+            }).catch(()=>alert('투표에 실패했어요. 다시 시도해 주세요.'));
+        }
+        function setVoteMode(m){
+            const t = topic(); if(!isAdmin || !t || !isCurrent() || t.status==='closed') return;
+            if(voteModeOf(t)===m) return;
+            if(t.status==='voting'){
+                const had = voterCountOf(t);
+                if(!confirm(`투표 방식을 「${m==='field'?'칸별':'세트'}」로 바꿀까요?\n\n지금까지 ${had}명이 한 표는 지우지 않고 그대로 두지만, 바뀐 방식에선 보이지 않아요(다시 바꾸면 돌아와요).\n모두 새 방식으로 다시 투표해야 해요.`)) return;
+            }
+            topicsRef.child(viewId).update({ voteMode: m }).then(()=>showToast(m==='field'?'칸별 투표로 바꿨어요':'세트 투표로 바꿨어요'));
         }
         function castVote(eid){
             const t = topic(); if(!t || !isCurrent() || t.status!=='voting'){ return; }
@@ -518,6 +623,7 @@
                 `<div class="fld"><div class="fld-lbl">안내문<span class="opt">(선택)</span></div><textarea class="inp" id="nDesc" rows="3" oninput="draft.desc=this.value" placeholder="어디에 쓰는 문구인지, 분량, 참고할 점 등">${escapeHtml(draft.desc)}</textarea></div>` +
                 `<div class="fld"><div class="fld-lbl">제출 마감일<span class="opt">(선택 · 표시용)</span></div><input class="inp" id="nDead" type="date" value="${escapeHtml(draft.deadline)}" oninput="draft.deadline=this.value" onchange="draft.deadline=this.value"></div>` +
                 `<div class="fld"><div class="fld-lbl">문안 칸<span class="opt">(칸마다 이름을 정해요 · 예: 정면 / 좌측 / 우측 · 최대 ${MAX_FIELDS}개 · 첫 칸만 필수)</span></div><div id="nFieldsBox"></div><button type="button" class="nf-add" id="nfAdd" onclick="addNewField()">+ 칸 추가</button></div>` +
+                `<div class="fld" id="nVmFld"><div class="fld-lbl">투표 방식<span class="opt">(칸이 2개 이상일 때 · 투표 시작 전까지 바꿀 수 있어요)</span></div><div class="seg"><button type="button" id="nVmField" class="${draft.voteMode!=='entry'?'on':''}" onclick="setDraftVm('field')">칸별 따로</button><button type="button" id="nVmEntry" class="${draft.voteMode==='entry'?'on':''}" onclick="setDraftVm('entry')">세트로</button></div></div>` +
                 `<button type="button" class="btn btn-warn" style="margin-top:14px;" onclick="createTopic()">${cur && cur.status!=='closed' ? '진행 중인 공모를 보관하고 새 공모 열기' : '새 공모 열기'}</button>`;
             // 진행 중 공모 취소 (제출·투표 단계 모두)
             const manage = active
@@ -536,12 +642,17 @@
                 `</div>`;
             renderNewFields();
             if(!t || !isCurrent()) return;
-            const n = entriesOf(t).length, v = Object.keys(votesOf(t)).length;
+            const n = entriesOf(t).length, v = voterCountOf(t);
+            const vm = voteModeOf(t), multi = fieldsOf(t).length>1;
+            const vmSeg = multi
+                ? `<div class="vm-row"><span class="vm-l">투표 방식</span><div class="seg"><button type="button" class="${vm==='field'?'on':''}" onclick="setVoteMode('field')">칸별 따로</button><button type="button" class="${vm==='entry'?'on':''}" onclick="setVoteMode('entry')">세트로</button></div></div>` +
+                  `<div class="ab-d">${vm==='field'?`${fieldsOf(t).map(escapeHtml).join(' · ')} 칸마다 따로 한 표씩 줘요. 칸별로 1위가 나와요.`:'칸을 묶은 문안 한 세트에 한 표를 줘요.'}</div>`
+                : '';
             if(t.status==='open'){
-                vt.innerHTML = `<div class="admin-box"><div class="ab-h">총무 · 투표 시작</div><div class="ab-d">시작하면 문안 제출·수정이 잠기고 전원이 한 표씩 줄 수 있어요. 득표 수는 실시간으로 보이고, 제출자는 마감 후 공개돼요.</div>` +
+                vt.innerHTML = `<div class="admin-box"><div class="ab-h">총무 · 투표 시작</div>${vmSeg}<div class="ab-d">시작하면 문안 제출·수정이 잠기고 투표가 열려요. 득표 수는 실시간으로 보이고, 제출자는 마감 후 공개돼요.</div>` +
                     `<button type="button" class="btn btn-warn" onclick="setStatus('voting')" ${n?'':'disabled style="opacity:.5"'}>투표 시작 (${n}건)</button></div>`;
             } else if(t.status==='voting'){
-                vt.innerHTML = `<div class="admin-box"><div class="ab-h">총무 · 투표 마감</div><div class="ab-d">지금까지 ${v}명 참여. 마감하면 득표순으로 정렬되고 제출자가 공개돼요. 이미지로 저장할 수 있어요.</div>` +
+                vt.innerHTML = `<div class="admin-box"><div class="ab-h">총무 · 투표 마감</div>${vmSeg}<div class="ab-d">지금까지 ${v}명 참여. 마감하면 득표순으로 정렬되고 제출자가 공개돼요. 이미지로 저장할 수 있어요.</div>` +
                     `<button type="button" class="btn btn-danger" onclick="setStatus('closed')">투표 마감</button>` +
                     `<button type="button" class="btn btn-ghost" style="width:100%;height:44px;" onclick="setStatus('open')">투표 취소하고 제출 다시 받기 (표는 지워짐)</button></div>`;
             } else {
@@ -550,21 +661,22 @@
             }
         }
         // 새 공모 폼 입력값 (화면 안에서만 유지 — 실시간 갱신으로 다시 그려져도 안 날아가게)
-        let draft = { title:'', desc:'', deadline:'', from:'' };
+        let draft = { title:'', desc:'', deadline:'', from:'', voteMode:'field' };
+        function setDraftVm(m){ draft.voteMode = m; const a=$('nVmField'), b=$('nVmEntry'); if(a) a.classList.toggle('on', m!=='entry'); if(b) b.classList.toggle('on', m==='entry'); }
         let newFields = [{ name:'문구', ex:'' }];
-        function resetDraft(){ draft = { title:'', desc:'', deadline:'', from:'' }; newFields = [{ name:'문구', ex:'' }]; }
+        function resetDraft(){ draft = { title:'', desc:'', deadline:'', from:'', voteMode:'field' }; newFields = [{ name:'문구', ex:'' }]; }
         function prefillFrom(t){
             const exs = examplesOf(t);
-            draft = { title: t.title||'', desc: t.desc||'', deadline: t.deadline||'', from: t.title||'' };
+            draft = { title: t.title||'', desc: t.desc||'', deadline: t.deadline||'', from: t.title||'', voteMode: voteModeOf(t)==='entry' && fieldsOf(t).length>1 ? 'entry' : 'field' };
             newFields = fieldsOf(t).map((f,i)=>({ name:f, ex: exs[i]||'' }));
         }
         function cancelTopic(){
             const t = topic(); if(!isAdmin || !t || !isCurrent()) return;
             const st = t.status||'open'; if(st!=='open' && st!=='voting') return;
-            const n = entriesOf(t).length, v = Object.keys(votesOf(t)).length;
+            const n = entriesOf(t).length, v = voterCountOf(t);
             const msg = `「${t.title}」 공모를 취소할까요?\n\n` +
                 `• 모든 사람 화면에서 공모가 내려가요\n` +
-                `• 제출 ${n}건${v?` · 표 ${v}개`:''}는 지우지 않고 '지난 공모'에 취소됨으로 남아요\n` +
+                `• 제출 ${n}건${v?` · 투표 ${v}명`:''}은 지우지 않고 '지난 공모'에 취소됨으로 남아요\n` +
                 `• 같은 설정을 새 공모 칸에 채워둘게요 — 고쳐서 다시 열면 돼요`;
             if(!confirm(msg)) return;
             const id = viewId, upd = {};
@@ -602,6 +714,7 @@
                 `<div class="nf-row nf-ex"><span class="nf-no"></span><input class="inp grow" id="nE${i}" value="${escapeHtml(f.ex)}" placeholder="문안 예시 (선택) — 제출 칸 위에 보여요" onblur="readNewFields()"></div>` +
                 `</div>`).join('');
             const add=$('nfAdd'); if(add) add.style.display = newFields.length>=MAX_FIELDS ? 'none' : '';
+            const vmf=$('nVmFld'); if(vmf) vmf.style.display = newFields.length>1 ? '' : 'none';
         }
         function addNewField(){ readNewFields(); if(newFields.length>=MAX_FIELDS) return; newFields.push({ name:'', ex:'' }); renderNewFields(); const last=$('nF'+(newFields.length-1)); if(last) last.focus(); }
         function removeNewField(i){ readNewFields(); if(newFields.length<=1) return; newFields.splice(i,1); renderNewFields(); }
@@ -615,7 +728,7 @@
             const cur = currentId && topics[currentId];
             if(cur && cur.status!=='closed' && !confirm(`진행 중인 「${cur.title}」을(를) 보관하고 새 공모를 열까요?\n(보관된 공모는 '지난 공모 보기'에서 다시 볼 수 있어요)`)) return;
             const ref = topicsRef.push();
-            ref.set({ title, desc:(draft.desc||'').trim(), deadline:draft.deadline||'', fields, examples, status:'open', createdBy: me, createdAt: Date.now() })
+            ref.set({ title, desc:(draft.desc||'').trim(), deadline:draft.deadline||'', fields, examples, voteMode: fields.length>1 ? (draft.voteMode==='entry'?'entry':'field') : 'entry', status:'open', createdBy: me, createdAt: Date.now() })
                .then(()=>currentRef.set(ref.key)).then(()=>{ viewId=ref.key; editingEntry=null; resetDraft(); renderAll(); showToast('새 공모를 열었어요'); switchTab('submit'); })
                .catch(()=>alert('공모 생성에 실패했어요.'));
         }
@@ -626,7 +739,7 @@
             const upd = { status:s };
             if(s==='voting' && t.status==='open') upd.votingAt = Date.now();
             if(s==='closed') upd.closedAt = Date.now();
-            if(s==='open') upd.votes = null;
+            if(s==='open'){ upd.votes = null; upd.fieldVotes = null; }
             topicsRef.child(viewId).update(upd).then(()=>{ showToast(s==='voting'?'투표 시작':s==='closed'?'투표 마감':'제출 단계로 돌아갔어요'); if(s!=='open') switchTab('vote'); });
         }
 
@@ -677,7 +790,7 @@
                 if(!viewId || !topics[viewId]) viewId=currentId;
                 // 입력 중이면 입력칸을 다시 그리지 않음 (다른 사람 제출로 내 글이 날아가지 않게)
                 const ae=document.activeElement; const typing = ae && /^(inF\d|nF\d|nE\d|nTitle|nDesc|nDead)$/.test(ae.id||'');
-                if(typing){ const t=topic(); $('cntList').textContent=entriesOf(t).length; $('cntVote').textContent=Object.keys(votesOf(t)).length; renderMine(); renderList(); renderVote(); }
+                if(typing){ const t=topic(); $('cntList').textContent=entriesOf(t).length; $('cntVote').textContent=voterCountOf(t); renderMine(); renderList(); renderVote(); }
                 else renderAll();
             });
         });
