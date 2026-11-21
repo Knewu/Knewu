@@ -51,6 +51,25 @@ input.field{width:100%;padding:16px;border-radius:14px;border:2px solid var(--li
 #cd.show{display:flex}
 #cd .n{font-size:150px;font-weight:900;line-height:1}
 .err{color:#FFB4A8;font-size:13px;min-height:20px}
+body.flash{background:#7A1E18 !important}
+.seqgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.schip{height:40px;border-radius:10px;color:var(--ink);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center}
+.pbtn{flex:1;min-height:180px;width:100%;border-radius:28px;border:6px solid var(--ivory);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;touch-action:none}
+.pbtn:active{transform:scale(.97)} .pbtn:disabled{opacity:.35}
+.cv{display:block;margin:0 auto;border-radius:16px;background:var(--ivory);touch-action:none}
+.pen{width:44px;height:44px;border-radius:99px;border:3px solid var(--line)}
+.timer{flex:1;background:var(--ink);border-radius:16px;padding:8px;text-align:center;font-size:42px;font-weight:900;letter-spacing:.06em;font-variant-numeric:tabular-nums;color:#EF5A5A}
+.bigbtn{width:108px;height:108px;border-radius:999px;border:5px solid var(--ivory);color:var(--ink);font-size:20px;font-weight:900;flex:none;touch-action:none}
+.keygrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.keyb{height:72px;border-radius:14px;border:2px solid var(--line);background:var(--navy);color:var(--ivory);font-size:36px;font-weight:700}
+.keycols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+.keycol{background:var(--navy);border-radius:10px;padding:6px 0;text-align:center}
+.kc{font-size:24px;line-height:1.5}
+.choice{min-height:110px;border-radius:22px;border:3px solid var(--line);background:var(--panel);color:var(--ivory);font-size:30px;font-weight:900}
+.choice.on{border-color:var(--gold);background:var(--gold);color:var(--ink)}
+.choice:disabled{opacity:.5}
+.sm{min-width:64px;min-height:40px;border-radius:10px;border:none;background:var(--line);color:var(--ivory);font-weight:700;font-size:13px}
+.sm:disabled{opacity:.4}
 </style>
 </head>
 <body>
@@ -63,7 +82,7 @@ input.field{width:100%;padding:16px;border-radius:14px;border:2px solid var(--li
 
 <script type="module">
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, update, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, update, serverTimestamp, runTransaction, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB186Tg9fsrnR-K_lufo4X5iY9OVpgDeHk",
@@ -85,7 +104,9 @@ const NUNCHI_WINDOW = 300;   // ms 안에 같이 누르면 동시
 const MUGUNG_GRACE = 250;    // 빨간불 받은 직후 봐주는 시간(ms)
 const TUG_SECONDS = 10;
 const COUNTDOWN_MS = 3500;
-const GAME_TITLES = {lobby:'대기', tug:'폰 줄다리기', nunchi:'눈치게임', mugung:'무궁화 꽃이 피었습니다'};
+const GAME_TITLES = {lobby:'대기', tug:'폰 줄다리기', nunchi:'눈치게임', mugung:'무궁화 꽃이 피었습니다',
+  piano:'인간 피아노', draw:'릴레이 캐치마인드', bomb:'폭탄 해체', t10:'10초 맞히기', minor:'소수파 생존', chicken:'치킨 버튼'};
+const PLAY_GAMES = ['tug','nunchi','mugung','piano','draw','bomb','t10','minor','chicken'];
 
 function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function teamName(cfg, t){ return (cfg && cfg.teamNames && cfg.teamNames[t]) || DEFAULT_TEAM_NAMES[t] || '미배정'; }
@@ -184,6 +205,157 @@ function balancedAssign(pids, n, rnd){
   a.forEach((pid,i)=>{ out[pid] = (i % n) + 1; });
   return out;
 }
+
+// ── 팀 순위 공통 점수 (1·2·3위)
+const TEAM_RANK_POINTS = [3,2,1];
+
+// ── 인간 피아노
+const PIANO_COLORS = [{n:'빨강',c:'#EF5A5A'},{n:'파랑',c:'#3E8EF0'},{n:'노랑',c:'#F2C744'},{n:'초록',c:'#3FB66E'},{n:'보라',c:'#B18CF2'}];
+function makeSeq(len, k, rnd){
+  rnd = rnd || Math.random; k = Math.max(1, Math.min(PIANO_COLORS.length, k));
+  const a = [];
+  for (let i=0;i<len;i++) a.push(Math.floor(rnd()*k));
+  if (k > 1){ for (let c=0;c<k && c<len;c++){ if (!a.includes(c)) a[Math.floor(rnd()*len)] = c; } }  // 모든 색이 한 번은 나오게(가능하면)
+  return a;
+}
+// 팀 진행: {pos, miss, fin(ms)} → 완주 순 → 진행 순
+function rankTeamProgress(teams, prog){
+  const rows = teams.map(t => { const d = (prog||{})[t] || {}; return {team:t, pos:Number(d.pos)||0, miss:Number(d.miss)||0, fin:(typeof d.fin==='number')?d.fin:null}; });
+  rows.sort((x,y) => {
+    if ((x.fin!=null) !== (y.fin!=null)) return x.fin!=null ? -1 : 1;
+    if (x.fin!=null) return x.fin - y.fin;
+    return (y.pos - x.pos) || (x.miss - y.miss);
+  });
+  rows.forEach((r,i) => r.rank = i+1);
+  return rows;
+}
+
+// ── 릴레이 캐치마인드
+const DRAW_WORDS = ['단체교섭','파업','송전탑','전봇대','변압기','정전','월급날','회식','노래방','출장','야근','워크숍','명함','악수','현수막','확성기',
+  '눈사람','크리스마스트리','산타','붕어빵','군고구마','호떡','김장','스키장','펭귄','기린','코끼리','문어','라면','삼겹살','치킨','소주','등산','낚시',
+  '골프','자전거','비행기','지하철','엘리베이터','우산','안경','넥타이','시계','전구','콘센트','건전지','태풍','무지개','사과나무','해바라기'];
+function normAns(s){ return String(s||'').replace(/[\s.,!?~·]/g,'').toLowerCase(); }
+function drawTurn(st, t){
+  const order = asList(st.order), secs = (Number(st.secs)||4)*1000;
+  if (!order.length || t < st.startAt) return {idx:-1, pid:null, remain:0, drawing:false};
+  const i = Math.floor((t - st.startAt) / secs);
+  if (i >= order.length) return {idx:order.length, pid:null, remain:0, drawing:false};
+  return {idx:i, pid:order[i], remain: secs - ((t - st.startAt) % secs), drawing:true};
+}
+// strokes: {key:{c,w,p:"x,y;x,y"}} 좌표 0~1000
+function paintStrokes(ctx, size, strokes, done){
+  Object.keys(strokes||{}).sort().forEach(k => {
+    if (done && done.has(k)) return;
+    const s = strokes[k]; if (!s || !s.p) return;
+    const pts = String(s.p).split(';').map(q => q.split(',').map(Number)).filter(q => q.length===2 && !isNaN(q[0]));
+    if (!pts.length) return;
+    ctx.strokeStyle = s.c || '#21242B'; ctx.lineWidth = (Number(s.w)||7) * size / 1000; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(pts[0][0]*size/1000, pts[0][1]*size/1000);
+    if (pts.length === 1) ctx.lineTo(pts[0][0]*size/1000 + 0.1, pts[0][1]*size/1000);
+    for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0]*size/1000, pts[i][1]*size/1000);
+    ctx.stroke();
+    if (done) done.add(k);
+  });
+}
+const DRAW_PENS = [{n:'검정',c:'#21242B'},{n:'빨강',c:'#D63A2F'},{n:'파랑',c:'#2F6FD6'}];
+
+// ── 폭탄 해체
+const WIRE_COLORS = ['빨강','파랑','노랑','흰색','검정'];
+const WIRE_HEX = {'빨강':'#EF5A5A','파랑':'#3E8EF0','노랑':'#F2C744','흰색':'#F5F2EA','검정':'#15161A'};
+const BTN_COLORS = ['빨강','파랑','노랑','흰색'];
+const BTN_LABELS = ['중단','누르기','폭발','대기'];
+const KEY_COLS = [
+  ['★','◇','Ω','▲','ψ','●','¶'],
+  ['◆','★','¶','∞','□','Ω','ж'],
+  ['△','ψ','■','ж','◇','∞','λ'],
+  ['●','λ','☆','§','▲','■','※']
+];
+const WIRE_RULES = ['빨간 선이 하나도 없으면 → 두 번째 선','마지막 선이 흰색이면 → 마지막 선','파란 선이 두 개 이상이면 → 마지막 파란 선','노란 선이 딱 하나면 → 첫 번째 선','그 밖에는 → 세 번째 선'];
+const BUTTON_RULES = ['글자가 「폭발」이면 → 꾹 누르기','빨간 버튼에 글자가 「중단」이면 → 짧게 한 번','일련번호 마지막 숫자가 짝수면 → 꾹 누르기','노란 버튼이면 → 짧게 한 번','그 밖에는 → 꾹 누르기'];
+function solveWires(w){
+  const n = w.length, cnt = c => w.filter(x => x===c).length;
+  if (!cnt('빨강')) return 1;
+  if (w[n-1] === '흰색') return n-1;
+  if (cnt('파랑') >= 2) return w.lastIndexOf('파랑');
+  if (cnt('노랑') === 1) return 0;
+  return 2;
+}
+function solveButton(btn, serial){
+  const last = Number(String(serial).slice(-1));
+  if (btn.label === '폭발') return 'hold';
+  if (btn.color === '빨강' && btn.label === '중단') return 'tap';
+  if (last % 2 === 0) return 'hold';
+  if (btn.color === '노랑') return 'tap';
+  return 'hold';
+}
+function keypadOrder(keys){
+  const col = KEY_COLS.find(c => keys.every(k => c.includes(k)));
+  return col ? keys.slice().sort((a,b) => col.indexOf(a) - col.indexOf(b)) : keys.slice();
+}
+function genBomb(rnd){
+  rnd = rnd || Math.random;
+  const pick = a => a[Math.floor(rnd()*a.length)];
+  const L = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const serial = pick(L) + Math.floor(rnd()*10) + pick(L) + '-' + Math.floor(rnd()*10) + Math.floor(rnd()*10);
+  const wires = []; const wn = 4 + Math.floor(rnd()*2);
+  for (let i=0;i<wn;i++) wires.push(pick(WIRE_COLORS));
+  const button = {color: pick(BTN_COLORS), label: pick(BTN_LABELS)};
+  let keys;
+  for (let tries=0; tries<200; tries++){
+    const col = pick(KEY_COLS).slice();
+    for (let i=col.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); const t=col[i]; col[i]=col[j]; col[j]=t; }
+    keys = col.slice(0,4);
+    if (KEY_COLS.filter(c => keys.every(k => c.includes(k))).length === 1) break;
+  }
+  return {serial, wires, button, keys};
+}
+function bombMods(d){ d = d || {}; return (d.w?1:0) + (d.b?1:0) + (d.ks?1:0); }
+function rankBomb(teams, prog){
+  const rows = teams.map(t => { const d = (prog||{})[t] || {}; return {team:t, mods:bombMods(d), strikes:Number(d.s)||0, exploded:!!d.x, at:(typeof d.at==='number')?d.at:null}; });
+  rows.sort((x,y) => {
+    if ((x.at!=null) !== (y.at!=null)) return x.at!=null ? -1 : 1;
+    if (x.at!=null) return x.at - y.at;
+    return (y.mods - x.mods) || (x.strikes - y.strikes);
+  });
+  rows.forEach((r,i) => r.rank = i+1);
+  return rows;
+}
+const BOMB_MAX_STRIKES = 3;
+
+// ── 10초 맞히기: data {pid: 누른 시각(ms, 시작 기준)}
+function rankT10(alive, data){
+  const rows = alive.map(pid => { const v = (data||{})[pid]; const ms = (typeof v==='number') ? v : null; return {pid, ms, err: ms==null ? null : Math.abs(ms - 10000)}; });
+  rows.sort((x,y) => (x.err==null) - (y.err==null) || (x.err - y.err));
+  let r = 0; rows.forEach(x => x.rank = x.err==null ? null : ++r);
+  return rows;
+}
+function fmtSec2(ms){ return (Math.max(0, ms)/1000).toFixed(2); }
+
+// ── 소수파 생존: votes {pid:'a'|'b'}
+const MINOR_PRESETS = [['짜장면','짬뽕'],['산','바다'],['여름','겨울'],['아침형','저녁형'],['소주','맥주'],['부먹','찍먹'],['강아지','고양이'],['비','눈'],
+  ['카톡','전화'],['고기','회'],['노래방','당구장'],['월요일','금요일'],['계란후라이 반숙','완숙'],['라면 꼬들','푹 퍼진'],['엘리베이터','계단']];
+function judgeMinor(alive, votes){
+  const a = [], b = [], none = [];
+  alive.forEach(pid => { const v = (votes||{})[pid]; (v==='a' ? a : v==='b' ? b : none).push(pid); });
+  let survivors, tie = false;
+  if (!a.length && !b.length) survivors = [];
+  else if (!a.length) survivors = b.slice();
+  else if (!b.length) survivors = a.slice();
+  else if (a.length === b.length){ survivors = a.concat(b); tie = true; }
+  else survivors = (a.length < b.length ? a : b).slice();
+  const sset = new Set(survivors);
+  return {a, b, none, survivors, out: alive.filter(p => !sset.has(p)), tie};
+}
+
+// ── 치킨 버튼: 0.25초마다 1점씩 오름
+const CHICKEN_STEP = 250;
+function chickenValue(startAt, t){ return Math.max(0, Math.floor((t - startAt) / CHICKEN_STEP)); }
+function rankChicken(alive, data, startAt, explodeAt){
+  const rows = alive.map(pid => { const ts = (data||{})[pid]; const ok = typeof ts==='number' && ts < explodeAt; return {pid, v: ok ? chickenValue(startAt, ts) : 0, locked: typeof ts==='number', boom: !ok}; });
+  rows.sort((x,y) => y.v - x.v);
+  let r = 0; rows.forEach(x => x.rank = x.v > 0 ? ++r : null);
+  return rows;
+}
 // ===== 공통 끝 =====
 
 const R = p => ref(db, ROOT + '/' + p);
@@ -195,7 +367,7 @@ let play = {}, playKey = '', playUnsub = null, playLoaded = false;
 let screenKey = '';
 let L = newLocal('');
 
-function newLocal(round){ return {round, taps:0, dirty:false, p:0, out:false, fin:false, pressed:false, redSeenAt:0, restored:false}; }
+function newLocal(round){ return {round, taps:0, dirty:false, p:0, out:false, fin:false, pressed:false, redSeenAt:0, restored:false, lastMiss:null, holdStart:0, t10:null, chick:0, pick:null, pickQ:null}; }
 const now = () => Date.now() + offset;
 const me = () => (players && PID && players[PID]) || null;
 const myTeam = () => { const m = me(); return m ? Number(m.team)||0 : 0; };
@@ -220,7 +392,7 @@ onValue(R('state'), s => {
 
 function onStateChange(prev){
   const g = ST.game, round = ST.round || '';
-  const key = (['tug','nunchi','mugung'].includes(g) && round) ? g + '/' + round : '';
+  const key = (PLAY_GAMES.includes(g) && round) ? g + '/' + round : '';
   if (key !== playKey){
     if (playUnsub) { playUnsub(); playUnsub = null; }
     playKey = key; play = {}; playLoaded = false;
@@ -246,7 +418,8 @@ function restoreLocal(){
   L.restored = true;
   const mine = play[PID];
   if (ST.game === 'tug') L.taps = Math.max(L.taps, Number(mine)||0);
-  if (ST.game === 'nunchi') L.pressed = L.pressed || typeof mine === 'number';
+  if (['nunchi','t10','chicken'].includes(ST.game)) L.pressed = L.pressed || typeof mine === 'number';
+  if (ST.game === 't10' && typeof mine === 'number') L.t10 = mine;
   if (ST.game === 'mugung' && mine){
     L.p = Math.max(L.p, Number(mine.p)||0);
     L.out = L.out || !!mine.out;
@@ -296,6 +469,12 @@ function screenKeyNow(){
   if (g === 'tug') return ['tug', r, ST.a, ST.b, myTeam(), JSON.stringify(cfg.teamNames||{})].join('|');
   if (g === 'nunchi') return ['nunchi', r, inAlive()].join('|');
   if (g === 'mugung') return ['mugung', r, inAlive(), L.out, L.fin].join('|');
+  if (g === 'piano') return ['piano', r, myTeam(), pianoMine()].join('|');
+  if (g === 'draw') return ['draw', r, myTeam(), JSON.stringify(cfg.teamNames||{})].join('|');
+  if (g === 'bomb') return ['bomb', r, myTeam(), bombRole(), teamMembers(players, myTeam()).join(',')].join('|');
+  if (g === 't10') return ['t10', r, inAlive()].join('|');
+  if (g === 'minor') return ['minor', r, inAlive(), (ST.q||{}).n, !!(ST.q||{}).closed].join('|');
+  if (g === 'chicken') return ['chicken', r, inAlive()].join('|');
   return 'lobby';
 }
 
@@ -310,6 +489,12 @@ function buildScreen(){
   if (g === 'tug') return tugView();
   if (g === 'nunchi') return nunchiView();
   if (g === 'mugung') return mugungView();
+  if (g === 'piano') return pianoView();
+  if (g === 'draw') return drawView();
+  if (g === 'bomb') return bombView();
+  if (g === 't10') return t10View();
+  if (g === 'minor') return minorView();
+  if (g === 'chicken') return chickenView();
   return lobbyView();
 }
 
@@ -325,6 +510,15 @@ function bindScreen(){
   if (nb) nb.addEventListener('pointerdown', onNunchiPress, {passive:false});
   const mb = $('mBtn');
   if (mb) mb.addEventListener('pointerdown', onMugungTap, {passive:false});
+  const pb = $('pBtn');
+  if (pb) pb.addEventListener('pointerdown', onPianoPress, {passive:false});
+  if ($('dCv')) setupCanvas();
+  if (ST.game === 'bomb') bindBomb();
+  const tb2 = $('tBtn');
+  if (tb2) tb2.addEventListener('pointerdown', onT10Press, {passive:false});
+  if (ST.game === 'minor') bindMinor();
+  const cb = $('cBtn');
+  if (cb) cb.addEventListener('pointerdown', onChickenPress, {passive:false});
 }
 
 // ── 입장
@@ -387,12 +581,18 @@ function lobbyView(){
 const RULES = {
   tug: ['두 팀이 10초 동안 버튼을 연타해요', '팀 평균 연타수가 높은 쪽으로 줄이 끌려가요', '안 뛰는 팀은 관전하면서 응원!'],
   nunchi: ['1부터 차례로, 남이 안 누를 것 같을 때 「지금!」', '0.3초 안에 같이 누르면 둘 다 탈락', '마지막까지 못 누른 한 명도 탈락'],
-  mugung: ['초록불일 때 버튼을 연타해서 앞으로', '빨간불에 누르면 바로 탈락', '먼저 골인한 순서대로 1·2·3등']
+  mugung: ['초록불일 때 버튼을 연타해서 앞으로', '빨간불에 누르면 바로 탈락', '먼저 골인한 순서대로 1·2·3등'],
+  piano: ['팀원마다 색 버튼이 하나씩 생겨요', '화면 순서대로 자기 색 차례에 누르기', '한 번 틀리면 처음부터 · 먼저 끝낸 팀이 1등'],
+  draw: ['그리는 팀은 한 명씩 몇 초씩 이어서 그려요', '다른 팀은 보면서 정답을 입력', '먼저 맞힌 팀 +2, 그린 팀도 +1'],
+  bomb: ['팀마다 한 명만 폭탄을 봐요', '나머지는 매뉴얼을 보고 말로 해체 방법을 알려줘요', '전선·버튼·기호 3단계 · 실수 3번이면 펑'],
+  t10: ['시작하면 시계가 돌아가요', '3초 뒤에 숫자가 사라져요', '감으로 딱 10초에 멈추기 · 가장 가까운 사람이 1등'],
+  minor: ['둘 중 하나를 골라요', '적게 고른 쪽만 살아남아요 (동점이면 모두 생존)', '안 고르면 탈락 · 끝까지 살아남기'],
+  chicken: ['점수가 계속 올라가요', '아무 때나 「챙기기」를 누르면 그 점수 확정', '터지기 전에 못 챙기면 0점']
 };
 function introView(){
   const g = ST.game, t = myTeam();
   const rules = (RULES[g]||[]).map((r,i) => `<div class="row"><span class="num">${i+1}</span><span style="flex:1">${esc(r)}</span></div>`).join('');
-  const teamLine = (g === 'tug')
+  const teamLine = (['tug','piano','draw','bomb'].includes(g))
     ? (t ? `<div class="card center" style="border:2px solid ${teamColor(t)}"><div class="muted">우리 팀</div><div style="font-size:24px;font-weight:900">${esc(teamName(cfg,t))}</div></div>`
          : `<div class="card center muted">팀 배정 전이라 이번엔 관전해요</div>`)
     : '';
@@ -544,6 +744,348 @@ function tickMugung(){
   }
 }
 
+// ── 인간 피아노
+function pianoSeq(){ return asList((ST.seqs||{})[myTeam()]); }
+function pianoMine(){ const v = (ST.colors||{})[PID]; return (typeof v === 'number') ? v : -1; }
+function pianoView(){
+  const t = myTeam(), mine = pianoMine();
+  if (!t || mine < 0 || !pianoSeq().length) return `<div class="grow"><div style="font-size:24px;font-weight:900">관전 중</div><div class="muted center">팀이 없어서 이번엔 구경해요</div></div><div class="card" id="pTeams"></div>`;
+  const pc = PIANO_COLORS[mine];
+  return `<div><div class="gl"><span class="gold">순서</span><span id="pProg"></span></div><div id="pSeq" class="seqgrid"></div></div>
+    <div class="center"><div class="muted">지금 차례</div><div id="pTurn" style="font-size:30px;font-weight:900;margin-top:2px"></div></div>
+    <button class="pbtn" id="pBtn" style="background:${pc.c}"><span style="font-size:16px;font-weight:700">내 색</span><span style="font-size:60px;font-weight:900;line-height:1">${pc.n}</span></button>
+    <div class="muted center" id="pInfo"></div>
+    <div class="card" id="pTeams"></div>`;
+}
+function onPianoPress(e){
+  e.preventDefault();
+  const t = myTeam(), mine = pianoMine(), seq = pianoSeq();
+  if (!isLive() || now() < ST.startAt || !t || mine < 0) return;
+  const startAt = ST.startAt;
+  runTransaction(R('play/piano/' + ST.round + '/' + t), cur => {
+    cur = cur || {pos:0, miss:0};
+    if (typeof cur.fin === 'number') return;
+    if (seq[cur.pos] === mine){
+      cur.pos = (cur.pos||0) + 1;
+      if (cur.pos >= seq.length) cur.fin = Math.max(1, now() - startAt);
+    } else { cur.pos = 0; cur.miss = (cur.miss||0) + 1; }
+    return cur;
+  });
+}
+function tickPiano(){
+  const teams = Object.keys(ST.seqs||{}).map(Number).filter(Boolean);
+  const box = $('pTeams');
+  if (box){
+    const rows = rankTeamProgress(teams, play);
+    box.innerHTML = '<div class="sec-t">팀별 진행</div>' + rows.map(r => {
+      const len = asList((ST.seqs||{})[r.team]).length || 1;
+      return `<div class="row"><span class="dot" style="background:${teamColor(r.team)}"></span><span style="flex:1;font-weight:700">${esc(teamName(cfg,r.team))}</span>
+        <span class="muted">${r.fin!=null ? '완주 ' + fmtSec2(r.fin) + '초' : r.pos + ' / ' + len}${r.miss ? ' · 실수 ' + r.miss : ''}</span></div>`;
+    }).join('');
+  }
+  const sq = $('pSeq'); if (!sq) return;
+  const seq = pianoSeq(), d = play[myTeam()] || {}, pos = Number(d.pos)||0, fin = typeof d.fin === 'number';
+  sq.innerHTML = seq.map((c,i) => `<div class="schip" style="background:${PIANO_COLORS[c].c};${i<pos||fin?'opacity:.3;':''}${i===pos&&!fin?'outline:3px solid var(--ivory);outline-offset:2px;':''}">${PIANO_COLORS[c].n[0]}</div>`).join('');
+  $('pProg').textContent = (fin ? seq.length : pos) + ' / ' + seq.length;
+  const mine = pianoMine();
+  const owner = {}; Object.keys(ST.colors||{}).forEach(p => { if (players[p] && Number(players[p].team) === myTeam()) owner[ST.colors[p]] = p; });
+  const turn = $('pTurn');
+  if (fin) turn.textContent = '완주! ' + fmtSec2(d.fin) + '초';
+  else if (now() < ST.startAt) turn.textContent = '준비';
+  else { const c = seq[pos]; turn.textContent = PIANO_COLORS[c].n + ' — ' + (c === mine ? '너야!' : playerName(players, owner[c])); turn.style.color = c === mine ? 'var(--gold)' : 'var(--ivory)'; }
+  $('pBtn').disabled = fin;
+  const miss = Number(d.miss)||0;
+  if (L.lastMiss != null && miss > L.lastMiss){ document.body.classList.add('flash'); setTimeout(() => document.body.classList.remove('flash'), 350); try { navigator.vibrate && navigator.vibrate(150); } catch(e){} }
+  L.lastMiss = miss;
+  $('pInfo').textContent = '팀원 ' + Object.keys(owner).length + '명이 색을 하나씩 · 틀리면 처음부터 · 실수 ' + miss + '번';
+}
+
+// ── 릴레이 캐치마인드
+const D = {cur:null, flushed:0, pen:DRAW_PENS[0].c, drawn:new Set(), size:0, ctx:null, round:''};
+function drawRole(){ const t = myTeam(); if (!t) return 'none'; return t === ST.team ? 'drawer' : 'guesser'; }
+function drawEnd(){ return ST.startAt + asList(ST.order).length * (Number(ST.secs)||4) * 1000; }
+function drawView(){
+  const role = drawRole();
+  const word = role === 'drawer' ? `<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><div class="muted">제시어 · 우리 팀만 보여요</div><div style="font-size:24px;font-weight:900">${esc(ST.word)}</div></div><span class="chip" style="background:${teamColor(ST.team)};color:var(--ink)">그리는 팀</span></div>` : '';
+  const pens = role === 'drawer' ? `<div style="display:flex;gap:8px;align-items:center" id="dPens">${DRAW_PENS.map(p => `<button class="pen" data-pen="${p.c}" aria-label="${p.n} 펜" style="background:${p.c}"></button>`).join('')}<span class="muted" style="margin-left:auto" id="dMyTurn"></span></div>` : '';
+  const guess = role === 'guesser' ? `<div style="display:flex;gap:8px"><input class="field" id="gIn" maxlength="20" placeholder="정답 입력" autocomplete="off" style="padding:12px"><button class="btn" id="gBtn" style="width:90px">제출</button></div>` :
+    (role === 'none' ? '<div class="muted center">팀이 없어서 구경만 해요</div>' : '');
+  return `${word}<div class="gl" style="margin:0"><span id="dWho"></span><span id="dTime" class="gold"></span></div>
+    <canvas id="dCv" class="cv"></canvas>${pens}${guess}<div class="card" id="dFeed" style="min-height:50px"></div><div class="muted center" id="dOrder"></div>`;
+}
+function setupCanvas(){
+  const cv = $('dCv'); if (!cv) return;
+  const w = Math.min(cv.parentElement.clientWidth, 440);
+  const dpr = window.devicePixelRatio || 1;
+  cv.style.width = w + 'px'; cv.style.height = w + 'px';
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * dpr);
+  D.ctx = cv.getContext('2d'); D.size = cv.width; D.drawn = new Set();
+  D.ctx.fillStyle = '#F5F2EA'; D.ctx.fillRect(0, 0, D.size, D.size);
+  if (drawRole() === 'drawer'){
+    cv.addEventListener('pointerdown', drawDown, {passive:false});
+    cv.addEventListener('pointermove', drawMove, {passive:false});
+    cv.addEventListener('pointerup', drawUp); cv.addEventListener('pointercancel', drawUp); cv.addEventListener('pointerleave', drawUp);
+    document.querySelectorAll('[data-pen]').forEach(b => b.onclick = () => { D.pen = b.dataset.pen; markPen(); });
+    markPen();
+  }
+  const gb = $('gBtn');
+  if (gb){ gb.onclick = sendGuess; $('gIn').onkeydown = e => { if (e.key === 'Enter') sendGuess(); }; }
+}
+function markPen(){ document.querySelectorAll('[data-pen]').forEach(b => b.style.outline = b.dataset.pen === D.pen ? '3px solid var(--ivory)' : 'none'); }
+function canDraw(){ const t = now(); return isLive() && drawRole() === 'drawer' && drawTurn(ST, t).pid === PID; }
+function cvPoint(e){ const r = $('dCv').getBoundingClientRect(); return [Math.round(Math.max(0, Math.min(1000, (e.clientX - r.left) / r.width * 1000))), Math.round(Math.max(0, Math.min(1000, (e.clientY - r.top) / r.height * 1000)))]; }
+function drawDown(e){ e.preventDefault(); if (!canDraw()) return; D.cur = [cvPoint(e)]; D.flushed = 0; drawLocal(D.cur[0], D.cur[0]); }
+function drawMove(e){
+  e.preventDefault();
+  if (!D.cur) return;
+  if (!canDraw()){ drawUp(); return; }
+  const p = cvPoint(e), q = D.cur[D.cur.length-1];
+  if (Math.abs(p[0]-q[0]) + Math.abs(p[1]-q[1]) < 6) return;
+  D.cur.push(p); drawLocal(q, p);
+}
+function drawUp(){ if (!D.cur) return; flushStroke(); D.cur = null; }
+function drawLocal(a, b){
+  const c = D.ctx, k = D.size / 1000;
+  c.strokeStyle = D.pen; c.lineWidth = 7 * k; c.lineCap = 'round'; c.lineJoin = 'round';
+  c.beginPath(); c.moveTo(a[0]*k, a[1]*k); c.lineTo(b[0]*k + (a===b?0.1:0), b[1]*k); c.stroke();
+}
+function flushStroke(){
+  if (!D.cur || D.cur.length <= D.flushed) return;
+  const seg = D.cur.slice(Math.max(0, D.flushed - 1));
+  D.flushed = D.cur.length;
+  push(R('play/draw/' + ST.round + '/strokes'), {c: D.pen, w: 7, p: seg.map(q => q.join(',')).join(';')});
+}
+setInterval(() => { if (D.cur) flushStroke(); }, 120);
+function sendGuess(){
+  const v = ($('gIn').value || '').trim();
+  if (!v || !isLive() || now() < ST.startAt || now() > ST.guessEnd) return;
+  push(R('play/draw/' + ST.round + '/guesses'), {pid: PID, team: myTeam(), text: v.slice(0, 20), at: serverTimestamp()});
+  $('gIn').value = '';
+}
+function tickDraw(){
+  const cv = $('dCv'); if (!cv || !D.ctx) return;
+  paintStrokes(D.ctx, D.size, (play||{}).strokes, D.drawn);
+  const t = now(), turn = drawTurn(ST, t), order = asList(ST.order), end = drawEnd();
+  $('dWho').textContent = t < ST.startAt ? '준비' : (turn.drawing ? '그리는 중: ' + playerName(players, turn.pid) + (turn.pid === PID ? ' (나)' : '') : '그리기 끝 · 맞히기만');
+  $('dTime').textContent = t < ST.startAt ? '' : (turn.drawing ? Math.ceil(turn.remain/1000) + '초' : '남은 ' + Math.max(0, Math.ceil((ST.guessEnd - t)/1000)) + '초');
+  const my = $('dMyTurn');
+  if (my){ const i = order.indexOf(PID); my.textContent = turn.pid === PID ? '지금 네 차례! 그려!' : (i > turn.idx ? (i - turn.idx) + '명 뒤에 네 차례' : '네 차례 끝'); my.style.color = turn.pid === PID ? 'var(--gold)' : ''; }
+  $('dOrder').textContent = '순서: ' + order.map((p,i) => (i === turn.idx ? '▶' : '') + playerName(players,p)).join(' → ');
+  const gs = Object.keys((play||{}).guesses || {}).sort().map(k => play.guesses[k]).filter(Boolean);
+  const ans = normAns(ST.word);
+  $('dFeed').innerHTML = gs.length ? gs.slice(-6).reverse().map(g => `<div class="row" style="padding:6px 0"><span class="dot" style="background:${teamColor(g.team)}"></span>
+    <span style="font-weight:700">${esc(playerName(players, g.pid))}</span><span style="flex:1" class="${normAns(g.text)===ans?'gold':''}">${normAns(g.text)===ans ? '정답!' : esc(g.text)}</span></div>`).join('') : '<div class="muted center">정답 추측이 여기 떠요</div>';
+  const gb = $('gBtn'); if (gb) gb.disabled = t < ST.startAt || t > ST.guessEnd;
+  if (end && t > end && D.cur) drawUp();
+}
+
+// ── 폭탄 해체
+function bombRole(){
+  const t = myTeam(); if (!t || !(ST.bombs||{})[t]) return 'none';
+  return (ST.bombers||{})[t] === PID ? 'bomber' : 'manual';
+}
+function myBomb(){ const b = (ST.bombs||{})[myTeam()] || {}; return {serial:b.serial||'', wires:asList(b.wires), button:b.button||{}, keys:asList(b.keys)}; }
+function manualPages(){
+  const t = myTeam(), bomber = (ST.bombers||{})[t];
+  const holders = teamMembers(players, t).filter(p => p !== bomber);
+  const j = holders.indexOf(PID), H = Math.min(holders.length, 3);
+  if (j < 0 || !H) return [0,1,2];
+  if (j >= 3) return [j % 3];
+  return [0,1,2].filter(p => p % H === j);
+}
+function manualHTML(pages){
+  const page = {
+    0: `<div class="card"><div class="sec-t">매뉴얼 · 전선</div><div class="muted" style="color:var(--ivory)">선 순서는 위에서부터 1, 2, 3… 아래 규칙을 1번부터 보고, 처음 맞는 규칙대로 딱 한 개만 자르기</div>
+        ${WIRE_RULES.map((r,i) => `<div class="row"><span class="num">${i+1}</span><span style="flex:1">${esc(r)}</span></div>`).join('')}</div>`,
+    1: `<div class="card"><div class="sec-t">매뉴얼 · 버튼</div><div class="muted" style="color:var(--ivory)">짧게 한 번 = 탁 누르고 바로 떼기 · 꾹 누르기 = 2초 넘게 누르고 있다 떼기. 위에서부터 처음 맞는 줄대로.</div>
+        ${BUTTON_RULES.map((r,i) => `<div class="row"><span class="num">${i+1}</span><span style="flex:1">${esc(r)}</span></div>`).join('')}
+        <div class="muted" style="margin-top:6px">일련번호는 폭탄 화면 오른쪽 위에 있어요 (예: K7Q-24 → 마지막 숫자 4)</div></div>`,
+    2: `<div class="card"><div class="sec-t">매뉴얼 · 기호</div><div class="muted" style="color:var(--ivory)">폭탄의 기호 4개가 전부 들어 있는 줄은 딱 하나. 그 줄에서 위에서부터 나오는 순서대로 누르기</div>
+        <div class="keycols">${KEY_COLS.map((c,i) => `<div class="keycol"><div class="muted">${i+1}줄</div>${c.map(k => `<div class="kc">${k}</div>`).join('')}</div>`).join('')}</div></div>`
+  };
+  return pages.map(p => page[p]).join('');
+}
+function bombView(){
+  const role = bombRole(), t = myTeam();
+  if (role === 'none') return `<div class="grow"><div style="font-size:24px;font-weight:900">관전 중</div><div class="muted center">팀이 없어서 이번엔 구경해요</div></div><div class="card" id="bTeams"></div>`;
+  const status = `<div style="display:flex;gap:10px;align-items:stretch"><div class="timer" id="bTimer">--:--</div>
+    <div class="card center" style="padding:10px 14px"><div class="muted">실수 (3번이면 펑)</div><div style="font-size:22px;font-weight:900" id="bStrikes">0 / 3</div></div></div>`;
+  if (role === 'manual'){
+    const bomber = (ST.bombers||{})[t];
+    return `<div class="card" style="background:${teamColor(t)};color:var(--ink);font-weight:700;line-height:1.5">폭탄 담당: ${esc(playerName(players,bomber))}. 폭탄은 그 폰에만 보여요. 아래 매뉴얼 보고 말로 알려줘!</div>
+      ${status}<div class="card" id="bMods"></div>${manualHTML(manualPages())}`;
+  }
+  const b = myBomb();
+  const holders = teamMembers(players, t).filter(p => p !== PID).length;
+  return `<div class="card" style="background:var(--accent);color:var(--ink);font-weight:700;line-height:1.5">너는 폭탄 담당이야. 폭탄은 너한테만 보여. 보이는 걸 팀원한테 말로 설명해.</div>
+    ${status}
+    <div class="card"><div class="gl"><span class="gold">1단계 · 전선</span><span class="muted">일련번호 <b style="color:var(--ivory)">${esc(b.serial)}</b></span></div><div id="bWires"></div></div>
+    <div class="card" style="display:flex;align-items:center;gap:14px"><div style="flex:1"><div class="sec-t">2단계 · 버튼</div><div class="muted" id="bBtnInfo">짧게 한 번 또는 꾹(2초) — 매뉴얼에 물어봐</div></div>
+      <button class="bigbtn" id="bBtn" style="background:${WIRE_HEX[b.button.color]||'#ccc'}">${esc(b.button.label)}</button></div>
+    <div class="card"><div class="gl"><span class="gold">3단계 · 기호</span><span class="muted" id="bKeyProg"></span></div><div class="keygrid" id="bKeys">${b.keys.map(k => `<button class="keyb" data-key="${k}">${k}</button>`).join('')}</div></div>
+    ${holders ? '' : manualHTML([0,1,2])}`;
+}
+function bombData(){ return (play||{})[myTeam()] || {}; }
+function bombOver(d){ return !!d.x || typeof d.at === 'number' || now() > ST.endAt; }
+function bombWrite(patch, wrong){
+  const d = bombData(), s = (Number(d.s)||0) + (wrong ? 1 : 0);
+  const u = Object.assign({}, patch, {s});
+  if (s >= BOMB_MAX_STRIKES) u.x = 1;
+  const next = Object.assign({}, d, u);
+  if (!u.x && next.w && next.b && next.ks) u.at = Math.max(1, now() - ST.startAt);
+  update(R('play/bomb/' + ST.round + '/' + myTeam()), u);
+  if (wrong){ document.body.classList.add('flash'); setTimeout(() => document.body.classList.remove('flash'), 350); try { navigator.vibrate && navigator.vibrate(200); } catch(e){} }
+}
+function bindBomb(){
+  const bw = $('bWires');
+  if (bw) bw.onclick = e => {
+    const btn = e.target.closest('[data-wire]'); if (!btn) return;
+    const d = bombData(), i = Number(btn.dataset.wire);
+    if (!isLive() || now() < ST.startAt || bombOver(d) || d.w || (d.wc && d.wc[i])) return;
+    const ok = solveWires(myBomb().wires) === i;
+    bombWrite({['wc/' + i]: 1, w: ok ? 1 : 0}, !ok);
+  };
+  const bb = $('bBtn');
+  if (bb){
+    let t0 = 0;
+    bb.addEventListener('pointerdown', e => { e.preventDefault(); if (!isLive() || now() < ST.startAt || bombOver(bombData()) || bombData().b) return; t0 = performance.now(); L.holdStart = t0; }, {passive:false});
+    const up = () => {
+      if (!t0) return;
+      const dur = performance.now() - t0; t0 = 0; L.holdStart = 0;
+      const info = $('bBtnInfo');
+      let kind = dur < 800 ? 'tap' : (dur >= 1800 ? 'hold' : '');
+      if (!kind){ if (info) info.textContent = '애매해요! 탁 짧게 또는 2초 넘게 꾹'; return; }
+      const b = myBomb(), ok = solveButton(b.button, b.serial) === kind;
+      bombWrite({b: ok ? 1 : 0}, !ok);
+    };
+    bb.addEventListener('pointerup', up); bb.addEventListener('pointercancel', up); bb.addEventListener('pointerleave', up);
+  }
+  const bk = $('bKeys');
+  if (bk) bk.onclick = e => {
+    const btn = e.target.closest('[data-key]'); if (!btn) return;
+    const d = bombData();
+    if (!isLive() || now() < ST.startAt || bombOver(d) || d.ks) return;
+    const order = keypadOrder(myBomb().keys), k = Number(d.k)||0;
+    if (btn.dataset.key === order[k]) bombWrite(k + 1 >= 4 ? {k: 4, ks: 1} : {k: k + 1}, false);
+    else bombWrite({k: 0}, true);
+  };
+}
+function tickBomb(){
+  const tm = $('bTimer');
+  const box = $('bTeams');
+  if (box){
+    const teams = Object.keys(ST.bombs||{}).map(Number);
+    box.innerHTML = '<div class="sec-t">팀별 상황</div>' + rankBomb(teams, play).map(r => `<div class="row"><span class="dot" style="background:${teamColor(r.team)}"></span><span style="flex:1;font-weight:700">${esc(teamName(cfg,r.team))}</span><span class="muted">${r.at!=null ? '해체 ' + fmtSec2(r.at) + '초' : (r.exploded ? '펑!' : r.mods + '/3 단계')}</span></div>`).join('');
+  }
+  if (!tm) return;
+  const d = bombData(), t = now();
+  const left = Math.max(0, (t < ST.startAt ? ST.endAt - ST.startAt : ST.endAt - t));
+  tm.textContent = d.at != null && typeof d.at === 'number' ? '해체!' : (d.x || (t > ST.endAt) ? '펑!' : Math.floor(left/60000) + ':' + String(Math.floor(left/1000) % 60).padStart(2,'0'));
+  tm.style.color = typeof d.at === 'number' ? 'var(--gold)' : '#EF5A5A';
+  $('bStrikes').textContent = Math.min(Number(d.s)||0, BOMB_MAX_STRIKES) + ' / ' + BOMB_MAX_STRIKES;
+  const over = bombOver(d);
+  const mods = $('bMods');
+  if (mods) mods.innerHTML = '<div class="sec-t">진행</div>' + [['전선', d.w], ['버튼', d.b], ['기호', d.ks]].map(([n,ok]) => `<div class="row"><span style="flex:1;font-weight:700">${n}</span><span class="${ok?'gold':'muted'}">${ok ? '해체 완료' : '남음'}</span></div>`).join('');
+  const bw = $('bWires');
+  if (bw){
+    const b = myBomb(), wc = d.wc || {};
+    bw.innerHTML = b.wires.map((c,i) => `<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><span class="muted" style="width:14px">${i+1}</span>
+      <div style="flex:1;height:14px;border-radius:99px;background:${WIRE_HEX[c]};${wc[i]?'opacity:.25;':''}${c==='검정'?'border:1px solid #5A6B95;':''}"></div>
+      <span class="muted" style="width:30px">${c}</span><button class="sm" data-wire="${i}" ${wc[i]||d.w||over?'disabled':''}>${wc[i]?'잘림':'자르기'}</button></div>`).join('') + (d.w ? '<div class="gold" style="font-weight:700">전선 해체 완료</div>' : '');
+    const ki = $('bKeyProg'); if (ki) ki.textContent = d.ks ? '해체 완료' : (Number(d.k)||0) + ' / 4';
+    const order = keypadOrder(b.keys), k = Number(d.k)||0;
+    document.querySelectorAll('[data-key]').forEach(el => { const done = d.ks || order.indexOf(el.dataset.key) < k; el.style.background = done ? 'var(--gold)' : ''; el.style.color = done ? 'var(--ink)' : ''; el.disabled = over && !done; el.style.opacity = over && !done ? .4 : 1; });
+    const bi = $('bBtnInfo');
+    if (bi){ if (d.b) bi.textContent = '버튼 해체 완료'; else if (L.holdStart) bi.textContent = '누르는 중… ' + ((performance.now() - L.holdStart)/1000).toFixed(1) + '초'; }
+    $('bBtn').style.opacity = d.b || over ? .35 : 1;
+  }
+}
+
+// ── 10초 맞히기
+function t10View(){
+  if (!inAlive()) return `<div class="grow"><div style="font-size:24px;font-weight:900">관전 중</div><div class="muted center">시작 뒤에 들어와서 이번 판은 구경해요</div></div>`;
+  return `<div class="grow"><div class="muted" id="tHint">숫자는 3초 뒤에 사라져요</div><div class="big" id="tNum" style="font-size:88px">0.00</div>
+    <div id="tMine" style="font-size:20px;font-weight:900;min-height:28px"></div></div>
+    <button class="btn huge" id="tBtn">멈춰!</button><div class="muted center">감으로 딱 10.00초에 누르세요 · 가장 가까운 사람이 1등</div>`;
+}
+function onT10Press(e){
+  e.preventDefault();
+  if (!isLive() || now() < ST.startAt || L.pressed || !inAlive()) return;
+  L.pressed = true; L.t10 = now() - ST.startAt;
+  set(R('play/t10/' + ST.round + '/' + PID), Math.round(L.t10));
+  tickT10();
+}
+function tickT10(){
+  const n = $('tNum'); if (!n) return;
+  const t = now(), el = t - ST.startAt;
+  const mine = typeof play[PID] === 'number' ? play[PID] : (L.pressed ? L.t10 : null);
+  if (mine != null){ n.textContent = fmtSec2(mine); $('tMine').textContent = '오차 ' + fmtSec2(Math.abs(mine - 10000)) + '초'; $('tHint').textContent = '내 기록'; }
+  else if (t < ST.startAt) n.textContent = '0.00';
+  else n.textContent = el < 3000 ? fmtSec2(el) : '?.??';
+  const b = $('tBtn'); if (b) b.disabled = mine != null || t < ST.startAt;
+}
+
+// ── 소수파 생존
+function minorView(){
+  const q = ST.q;
+  const header = `<div class="center"><div class="muted">${q ? q.n + '번째 질문 · ' : ''}생존 ${asList(ST.alive).length}명</div></div>`;
+  if (!q) return header + `<div class="grow"><div style="font-size:22px;font-weight:900">곧 첫 질문</div><div class="muted center">둘 중 하나! 적게 고른 쪽만 살아남아요</div></div>`;
+  if (q.closed){
+    const r = q.res || {}, surv = asList(r.survivors).includes(PID);
+    const was = asList(r.voters).includes(PID);
+    return header + `<div class="grow"><div style="font-size:20px;font-weight:700">${esc(q.a)} ${Number(r.aN)||0}명 vs ${esc(q.b)} ${Number(r.bN)||0}명</div>
+      <div style="font-size:30px;font-weight:900">${r.tie ? '동점! 모두 생존' : (esc(r.winLabel||'') + ' 생존')}</div>
+      <div class="banner" style="background:${surv?'var(--gold)':'var(--ivory)'};font-size:26px">${!was ? '이번 질문은 구경' : (surv ? '살았다!' : '탈락…')}</div></div>
+      <div class="muted center">사회자가 다음 질문을 열면 바뀌어요</div>`;
+  }
+  if (!inAlive()) return header + `<div class="grow"><div style="font-size:26px;font-weight:900">${esc(q.a)} vs ${esc(q.b)}</div><div class="muted center">탈락해서 구경 중이에요</div><div class="big" id="mnTime" style="font-size:56px"></div></div>`;
+  return header + `<div class="center" style="font-size:15px;font-weight:700">적게 고른 쪽이 살아남아요</div><div class="big gold" id="mnTime" style="font-size:56px"></div>
+    <div style="display:flex;flex-direction:column;gap:12px;flex:1;justify-content:center">
+      <button class="choice" data-pick="a" id="mnA">${esc(q.a)}</button><button class="choice" data-pick="b" id="mnB">${esc(q.b)}</button></div>
+    <div class="muted center">마감 전까지는 바꿀 수 있어요 · 안 고르면 탈락</div>`;
+}
+function bindMinor(){
+  document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => {
+    const q = ST.q; if (!q || q.closed || !inAlive() || now() > q.closeAt) return;
+    L.pick = b.dataset.pick; L.pickQ = q.n;
+    set(R('play/minor/' + ST.round + '/q' + q.n + '/' + PID), b.dataset.pick);
+    tickMinor();
+  });
+}
+function tickMinor(){
+  const q = ST.q; if (!q) return;
+  const tm = $('mnTime'); if (tm) tm.textContent = q.closed ? '' : Math.max(0, Math.ceil((q.closeAt - now())/1000));
+  const mine = ((play||{})['q' + q.n] || {})[PID] || (L.pickQ === q.n ? L.pick : null);
+  ['a','b'].forEach(k => { const b = $(k === 'a' ? 'mnA' : 'mnB'); if (b){ b.classList.toggle('on', mine === k); b.disabled = now() > q.closeAt; } });
+}
+
+// ── 치킨 버튼
+function chickenView(){
+  if (!inAlive()) return `<div class="grow"><div style="font-size:24px;font-weight:900">관전 중</div></div><div class="big gold" id="cPot">0</div><div class="card" id="cList"></div>`;
+  return `<div class="center muted">점수가 계속 올라가요. 언제 터질지는 아무도 몰라요</div>
+    <div class="grow"><div class="big gold" id="cPot" style="font-size:110px">0</div><div id="cMine" style="font-size:20px;font-weight:900;min-height:28px"></div></div>
+    <button class="btn huge" id="cBtn">지금 챙기기!</button><div class="card" id="cList"></div>`;
+}
+function onChickenPress(e){
+  e.preventDefault();
+  if (!isLive() || now() < ST.startAt || L.pressed || !inAlive() || now() >= ST.explodeAt) return;
+  L.pressed = true; L.chick = chickenValue(ST.startAt, now());
+  set(R('play/chicken/' + ST.round + '/' + PID), serverTimestamp());
+  tickChicken();
+}
+function tickChicken(){
+  const pot = $('cPot'); if (!pot) return;
+  const t = now(), boom = t >= ST.explodeAt;
+  pot.textContent = t < ST.startAt ? '0' : (boom ? '펑!' : chickenValue(ST.startAt, t));
+  pot.style.color = boom ? '#EF5A5A' : 'var(--gold)';
+  const ts = (play||{})[PID];
+  const mine = $('cMine');
+  if (mine) mine.textContent = typeof ts === 'number' ? (ts < ST.explodeAt ? chickenValue(ST.startAt, ts) + '점 챙겼어요!' : '펑… 0점') : (L.pressed ? L.chick + '점 챙기는 중…' : (boom ? '펑… 못 챙겼어요 0점' : ''));
+  const b = $('cBtn'); if (b) b.disabled = L.pressed || typeof ts === 'number' || boom || t < ST.startAt;
+  const list = Object.keys(play||{}).filter(p => typeof play[p] === 'number' && play[p] < ST.explodeAt).sort((x,y) => play[y] - play[x]);
+  $('cList').innerHTML = '<div class="sec-t">챙긴 사람</div>' + (list.map(p => `<div class="row"><span style="flex:1;font-weight:700">${esc(playerName(players,p))}${p===PID?' (나)':''}</span><b>${chickenValue(ST.startAt, play[p])}점</b></div>`).join('') || '<div class="muted">아직 아무도 안 챙겼어요</div>');
+}
+
 // ── 결과
 function resultView(){
   const res = ST.result || {};
@@ -566,6 +1108,27 @@ function resultView(){
       <span style="flex:1;font-weight:700" class="${r.out?'strike':''}">${esc(r.name)}${r.pid===PID?' (나)':''}</span>
       <span class="muted">${r.out ? '탈락' : (r.fin ? '골인' : r.p + '/' + res.goal)}</span></div>`).join('')}</div>`;
   }
+  else if (res.kind === 'piano' || res.kind === 'bomb'){
+    const rows = asList(res.rows), w = rows[0];
+    const ok = r => res.kind === 'piano' ? r.fin != null : r.at != null;
+    body = `<div class="banner" style="background:${w && ok(w) ? teamColor(w.team) : 'var(--ivory)'}">${w && ok(w) ? esc(teamName(cfg, w.team)) + ' 1등!' : (res.kind === 'bomb' ? '아무도 해체 못 함' : '아무도 완주 못 함')}</div>
+      <div class="card">${rows.map(r => `<div class="row"><span class="num">${r.rank}</span><span class="dot" style="background:${teamColor(r.team)}"></span><span style="flex:1;font-weight:700">${esc(teamName(cfg,r.team))}</span>
+      <span class="muted">${res.kind === 'piano' ? (r.fin != null ? fmtSec2(r.fin) + '초' : r.pos + '칸') : (r.at != null ? fmtSec2(r.at) + '초' : (r.exploded ? '펑! ' : '') + r.mods + '/3')}</span></div>`).join('')}</div>`;
+  } else if (res.kind === 'draw'){
+    const c = res.correct;
+    body = `<div class="card center"><div class="muted">정답</div><div style="font-size:34px;font-weight:900">${esc(res.word)}</div></div>
+      ${c ? `<div class="banner" style="background:${teamColor(c.team)}">${esc(c.name)} 정답! (${esc(teamName(cfg,c.team))})</div>` : `<div class="banner" style="background:var(--ivory)">아무도 못 맞혔어요</div>`}
+      <div class="muted center">그린 팀: ${esc(teamName(cfg,res.team))}</div>`;
+  } else if (res.kind === 't10' || res.kind === 'chicken'){
+    const rows = asList(res.rows);
+    body = `<div class="banner" style="background:var(--gold)">${rows[0] && rows[0].rank ? esc(rows[0].name) + ' 1등!' : '1등 없음'}</div>
+      <div class="card">${rows.map(r => `<div class="row"><span class="num">${r.rank || '-'}</span><span style="flex:1;font-weight:700">${esc(r.name)}${r.pid===PID?' (나)':''}</span>
+      <span class="muted">${res.kind === 't10' ? (r.ms != null ? fmtSec2(r.ms) + '초' : '안 누름') : (r.v ? r.v + '점' : '펑 0점')}</span></div>`).join('')}</div>`;
+  } else if (res.kind === 'minor'){
+    const surv = asList(res.survivors).includes(PID);
+    body = `<div class="banner" style="background:${surv ? 'var(--gold)' : 'var(--ivory)'}">${surv ? '최후의 생존자!' : '소수파 생존 끝'}</div>
+      <div class="card"><div class="sec-t">생존 ${asList(res.survivors).length}명</div><div style="font-weight:700">${asList(res.survivorNames).map(esc).join(' · ') || '없음'}</div></div>`;
+  }
   return `<div class="center muted">${esc(GAME_TITLES[ST.game] || '')} 결과</div>${body}
     <div class="muted center" style="margin-top:auto">다음 게임을 기다려요</div>`;
 }
@@ -583,6 +1146,12 @@ function tick(){
   if (ST.game === 'tug') tickTug();
   else if (ST.game === 'nunchi') tickNunchi();
   else if (ST.game === 'mugung') tickMugung();
+  else if (ST.game === 'piano') tickPiano();
+  else if (ST.game === 'draw') tickDraw();
+  else if (ST.game === 'bomb') tickBomb();
+  else if (ST.game === 't10') tickT10();
+  else if (ST.game === 'minor') tickMinor();
+  else if (ST.game === 'chicken') tickChicken();
 }
 setInterval(tick, 100);
 </script>

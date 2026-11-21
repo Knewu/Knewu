@@ -101,7 +101,9 @@ const NUNCHI_WINDOW = 300;   // ms 안에 같이 누르면 동시
 const MUGUNG_GRACE = 250;    // 빨간불 받은 직후 봐주는 시간(ms)
 const TUG_SECONDS = 10;
 const COUNTDOWN_MS = 3500;
-const GAME_TITLES = {lobby:'대기', tug:'폰 줄다리기', nunchi:'눈치게임', mugung:'무궁화 꽃이 피었습니다'};
+const GAME_TITLES = {lobby:'대기', tug:'폰 줄다리기', nunchi:'눈치게임', mugung:'무궁화 꽃이 피었습니다',
+  piano:'인간 피아노', draw:'릴레이 캐치마인드', bomb:'폭탄 해체', t10:'10초 맞히기', minor:'소수파 생존', chicken:'치킨 버튼'};
+const PLAY_GAMES = ['tug','nunchi','mugung','piano','draw','bomb','t10','minor','chicken'];
 
 function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function teamName(cfg, t){ return (cfg && cfg.teamNames && cfg.teamNames[t]) || DEFAULT_TEAM_NAMES[t] || '미배정'; }
@@ -200,6 +202,157 @@ function balancedAssign(pids, n, rnd){
   a.forEach((pid,i)=>{ out[pid] = (i % n) + 1; });
   return out;
 }
+
+// ── 팀 순위 공통 점수 (1·2·3위)
+const TEAM_RANK_POINTS = [3,2,1];
+
+// ── 인간 피아노
+const PIANO_COLORS = [{n:'빨강',c:'#EF5A5A'},{n:'파랑',c:'#3E8EF0'},{n:'노랑',c:'#F2C744'},{n:'초록',c:'#3FB66E'},{n:'보라',c:'#B18CF2'}];
+function makeSeq(len, k, rnd){
+  rnd = rnd || Math.random; k = Math.max(1, Math.min(PIANO_COLORS.length, k));
+  const a = [];
+  for (let i=0;i<len;i++) a.push(Math.floor(rnd()*k));
+  if (k > 1){ for (let c=0;c<k && c<len;c++){ if (!a.includes(c)) a[Math.floor(rnd()*len)] = c; } }  // 모든 색이 한 번은 나오게(가능하면)
+  return a;
+}
+// 팀 진행: {pos, miss, fin(ms)} → 완주 순 → 진행 순
+function rankTeamProgress(teams, prog){
+  const rows = teams.map(t => { const d = (prog||{})[t] || {}; return {team:t, pos:Number(d.pos)||0, miss:Number(d.miss)||0, fin:(typeof d.fin==='number')?d.fin:null}; });
+  rows.sort((x,y) => {
+    if ((x.fin!=null) !== (y.fin!=null)) return x.fin!=null ? -1 : 1;
+    if (x.fin!=null) return x.fin - y.fin;
+    return (y.pos - x.pos) || (x.miss - y.miss);
+  });
+  rows.forEach((r,i) => r.rank = i+1);
+  return rows;
+}
+
+// ── 릴레이 캐치마인드
+const DRAW_WORDS = ['단체교섭','파업','송전탑','전봇대','변압기','정전','월급날','회식','노래방','출장','야근','워크숍','명함','악수','현수막','확성기',
+  '눈사람','크리스마스트리','산타','붕어빵','군고구마','호떡','김장','스키장','펭귄','기린','코끼리','문어','라면','삼겹살','치킨','소주','등산','낚시',
+  '골프','자전거','비행기','지하철','엘리베이터','우산','안경','넥타이','시계','전구','콘센트','건전지','태풍','무지개','사과나무','해바라기'];
+function normAns(s){ return String(s||'').replace(/[\s.,!?~·]/g,'').toLowerCase(); }
+function drawTurn(st, t){
+  const order = asList(st.order), secs = (Number(st.secs)||4)*1000;
+  if (!order.length || t < st.startAt) return {idx:-1, pid:null, remain:0, drawing:false};
+  const i = Math.floor((t - st.startAt) / secs);
+  if (i >= order.length) return {idx:order.length, pid:null, remain:0, drawing:false};
+  return {idx:i, pid:order[i], remain: secs - ((t - st.startAt) % secs), drawing:true};
+}
+// strokes: {key:{c,w,p:"x,y;x,y"}} 좌표 0~1000
+function paintStrokes(ctx, size, strokes, done){
+  Object.keys(strokes||{}).sort().forEach(k => {
+    if (done && done.has(k)) return;
+    const s = strokes[k]; if (!s || !s.p) return;
+    const pts = String(s.p).split(';').map(q => q.split(',').map(Number)).filter(q => q.length===2 && !isNaN(q[0]));
+    if (!pts.length) return;
+    ctx.strokeStyle = s.c || '#21242B'; ctx.lineWidth = (Number(s.w)||7) * size / 1000; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(pts[0][0]*size/1000, pts[0][1]*size/1000);
+    if (pts.length === 1) ctx.lineTo(pts[0][0]*size/1000 + 0.1, pts[0][1]*size/1000);
+    for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0]*size/1000, pts[i][1]*size/1000);
+    ctx.stroke();
+    if (done) done.add(k);
+  });
+}
+const DRAW_PENS = [{n:'검정',c:'#21242B'},{n:'빨강',c:'#D63A2F'},{n:'파랑',c:'#2F6FD6'}];
+
+// ── 폭탄 해체
+const WIRE_COLORS = ['빨강','파랑','노랑','흰색','검정'];
+const WIRE_HEX = {'빨강':'#EF5A5A','파랑':'#3E8EF0','노랑':'#F2C744','흰색':'#F5F2EA','검정':'#15161A'};
+const BTN_COLORS = ['빨강','파랑','노랑','흰색'];
+const BTN_LABELS = ['중단','누르기','폭발','대기'];
+const KEY_COLS = [
+  ['★','◇','Ω','▲','ψ','●','¶'],
+  ['◆','★','¶','∞','□','Ω','ж'],
+  ['△','ψ','■','ж','◇','∞','λ'],
+  ['●','λ','☆','§','▲','■','※']
+];
+const WIRE_RULES = ['빨간 선이 하나도 없으면 → 두 번째 선','마지막 선이 흰색이면 → 마지막 선','파란 선이 두 개 이상이면 → 마지막 파란 선','노란 선이 딱 하나면 → 첫 번째 선','그 밖에는 → 세 번째 선'];
+const BUTTON_RULES = ['글자가 「폭발」이면 → 꾹 누르기','빨간 버튼에 글자가 「중단」이면 → 짧게 한 번','일련번호 마지막 숫자가 짝수면 → 꾹 누르기','노란 버튼이면 → 짧게 한 번','그 밖에는 → 꾹 누르기'];
+function solveWires(w){
+  const n = w.length, cnt = c => w.filter(x => x===c).length;
+  if (!cnt('빨강')) return 1;
+  if (w[n-1] === '흰색') return n-1;
+  if (cnt('파랑') >= 2) return w.lastIndexOf('파랑');
+  if (cnt('노랑') === 1) return 0;
+  return 2;
+}
+function solveButton(btn, serial){
+  const last = Number(String(serial).slice(-1));
+  if (btn.label === '폭발') return 'hold';
+  if (btn.color === '빨강' && btn.label === '중단') return 'tap';
+  if (last % 2 === 0) return 'hold';
+  if (btn.color === '노랑') return 'tap';
+  return 'hold';
+}
+function keypadOrder(keys){
+  const col = KEY_COLS.find(c => keys.every(k => c.includes(k)));
+  return col ? keys.slice().sort((a,b) => col.indexOf(a) - col.indexOf(b)) : keys.slice();
+}
+function genBomb(rnd){
+  rnd = rnd || Math.random;
+  const pick = a => a[Math.floor(rnd()*a.length)];
+  const L = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const serial = pick(L) + Math.floor(rnd()*10) + pick(L) + '-' + Math.floor(rnd()*10) + Math.floor(rnd()*10);
+  const wires = []; const wn = 4 + Math.floor(rnd()*2);
+  for (let i=0;i<wn;i++) wires.push(pick(WIRE_COLORS));
+  const button = {color: pick(BTN_COLORS), label: pick(BTN_LABELS)};
+  let keys;
+  for (let tries=0; tries<200; tries++){
+    const col = pick(KEY_COLS).slice();
+    for (let i=col.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); const t=col[i]; col[i]=col[j]; col[j]=t; }
+    keys = col.slice(0,4);
+    if (KEY_COLS.filter(c => keys.every(k => c.includes(k))).length === 1) break;
+  }
+  return {serial, wires, button, keys};
+}
+function bombMods(d){ d = d || {}; return (d.w?1:0) + (d.b?1:0) + (d.ks?1:0); }
+function rankBomb(teams, prog){
+  const rows = teams.map(t => { const d = (prog||{})[t] || {}; return {team:t, mods:bombMods(d), strikes:Number(d.s)||0, exploded:!!d.x, at:(typeof d.at==='number')?d.at:null}; });
+  rows.sort((x,y) => {
+    if ((x.at!=null) !== (y.at!=null)) return x.at!=null ? -1 : 1;
+    if (x.at!=null) return x.at - y.at;
+    return (y.mods - x.mods) || (x.strikes - y.strikes);
+  });
+  rows.forEach((r,i) => r.rank = i+1);
+  return rows;
+}
+const BOMB_MAX_STRIKES = 3;
+
+// ── 10초 맞히기: data {pid: 누른 시각(ms, 시작 기준)}
+function rankT10(alive, data){
+  const rows = alive.map(pid => { const v = (data||{})[pid]; const ms = (typeof v==='number') ? v : null; return {pid, ms, err: ms==null ? null : Math.abs(ms - 10000)}; });
+  rows.sort((x,y) => (x.err==null) - (y.err==null) || (x.err - y.err));
+  let r = 0; rows.forEach(x => x.rank = x.err==null ? null : ++r);
+  return rows;
+}
+function fmtSec2(ms){ return (Math.max(0, ms)/1000).toFixed(2); }
+
+// ── 소수파 생존: votes {pid:'a'|'b'}
+const MINOR_PRESETS = [['짜장면','짬뽕'],['산','바다'],['여름','겨울'],['아침형','저녁형'],['소주','맥주'],['부먹','찍먹'],['강아지','고양이'],['비','눈'],
+  ['카톡','전화'],['고기','회'],['노래방','당구장'],['월요일','금요일'],['계란후라이 반숙','완숙'],['라면 꼬들','푹 퍼진'],['엘리베이터','계단']];
+function judgeMinor(alive, votes){
+  const a = [], b = [], none = [];
+  alive.forEach(pid => { const v = (votes||{})[pid]; (v==='a' ? a : v==='b' ? b : none).push(pid); });
+  let survivors, tie = false;
+  if (!a.length && !b.length) survivors = [];
+  else if (!a.length) survivors = b.slice();
+  else if (!b.length) survivors = a.slice();
+  else if (a.length === b.length){ survivors = a.concat(b); tie = true; }
+  else survivors = (a.length < b.length ? a : b).slice();
+  const sset = new Set(survivors);
+  return {a, b, none, survivors, out: alive.filter(p => !sset.has(p)), tie};
+}
+
+// ── 치킨 버튼: 0.25초마다 1점씩 오름
+const CHICKEN_STEP = 250;
+function chickenValue(startAt, t){ return Math.max(0, Math.floor((t - startAt) / CHICKEN_STEP)); }
+function rankChicken(alive, data, startAt, explodeAt){
+  const rows = alive.map(pid => { const ts = (data||{})[pid]; const ok = typeof ts==='number' && ts < explodeAt; return {pid, v: ok ? chickenValue(startAt, ts) : 0, locked: typeof ts==='number', boom: !ok}; });
+  rows.sort((x,y) => y.v - x.v);
+  let r = 0; rows.forEach(x => x.rank = x.v > 0 ? ++r : null);
+  return rows;
+}
 // ===== 공통 끝 =====
 
 // 비밀번호는 해시로만 들어 있어요 (바꾸려면 새 비밀번호의 SHA-256 값으로 교체)
@@ -252,7 +405,7 @@ async function keepAwake(){ try { if (navigator.wakeLock) await navigator.wakeLo
 
 function syncPlay(){
   const g = ST.game, r = ST.round || '';
-  const key = (['tug','nunchi','mugung'].includes(g) && r) ? g + '/' + r : '';
+  const key = (PLAY_GAMES.includes(g) && r) ? g + '/' + r : '';
   if (key === playKey) return;
   if (playUnsub){ playUnsub(); playUnsub = null; }
   playKey = key; play = {};
@@ -285,7 +438,8 @@ function keyNow(){
   if (TAB === 'score') return 'score|' + JSON.stringify([players, cfg, scores]);
   const g = ST.game || 'lobby';
   if (g === 'lobby') return 'menu|' + JSON.stringify(cfg.teamCount||3);
-  return ['run', g, ST.phase, ST.round, JSON.stringify(ST.result||null), JSON.stringify([players, cfg]), pts.tug, pts.nunchi, mugGoal, autoLight].join('|');
+  return ['run', g, ST.phase, ST.round, JSON.stringify(ST.result||null), JSON.stringify([players, cfg]), JSON.stringify(pts), mugGoal, autoLight,
+    pianoLen, drawTeam, drawWord, drawSecs, bombSecs, minorIdx, ST.q ? ST.q.n + ':' + !!ST.q.closed : '-', asList(ST.alive).length].join('|');
 }
 function build(){
   if (TAB === 'team') return teamTab();
@@ -296,6 +450,12 @@ function build(){
   if (g === 'tug') return tugPanel() + back;
   if (g === 'nunchi') return nunchiPanel() + back;
   if (g === 'mugung') return mugungPanel() + back;
+  if (g === 'piano') return pianoPanel() + back;
+  if (g === 'draw') return drawPanel() + back;
+  if (g === 'bomb') return bombPanel() + back;
+  if (g === 't10') return t10Panel() + back;
+  if (g === 'minor') return minorPanel() + back;
+  if (g === 'chicken') return chickenPanel() + back;
   return menuView();
 }
 
@@ -311,6 +471,8 @@ function bind(){
       el.blur();
     };
   });
+  const cw = $('main').querySelector('input[data-custom=word]');
+  if (cw) cw.onchange = () => { const v = cw.value.trim().slice(0, 15); if (v) drawWord = v; cw.blur(); screenKey = ''; render(); };
 }
 
 async function act(a, d){
@@ -344,6 +506,25 @@ async function act(a, d){
       }
       break;
     case 'copy': copyText(d.url); break;
+    case 'pianoLen': pianoLen = Number(d.v); render(); break;
+    case 'pianoStart': startPiano(); break;
+    case 'pianoEnd': finalizePiano(); break;
+    case 'drawTeam': drawTeam = Number(d.v); render(); break;
+    case 'drawWord': pickWord(); render(); break;
+    case 'drawSecs': drawSecs = Number(d.v); render(); break;
+    case 'drawStart': startDraw(); break;
+    case 'drawEnd': finalizeDraw(null); break;
+    case 'bombSecs': bombSecs = Number(d.v); render(); break;
+    case 'bombStart': startBomb(); break;
+    case 'bombEnd': finalizeBomb(); break;
+    case 't10Start': startT10(); break;
+    case 't10End': finalizeT10(); break;
+    case 'minorStart': startMinor(); break;
+    case 'minorNext': minorIdx++; render(); break;
+    case 'minorOpen': openMinor(); break;
+    case 'minorClose': update(R('state/q'), {closeAt: now() - 801}); break;
+    case 'minorEnd': finalizeMinor(); break;
+    case 'chickenStart': startChicken(); break;
   }
 }
 
@@ -362,16 +543,16 @@ function menuView(){
     <div class="item" style="opacity:.6"><span style="flex:1"><span class="t">팀 짜기 게임</span><span class="d">방식 보류 · 지금은 「팀·인원」 탭에서 랜덤 배정</span></span><span class="pill off">보류</span></div></div>
   <div><div class="sec-t">팀전</div>
     ${menuItem('폰 줄다리기', '10초 연타 · 팀 평균으로 비교', 'tug', true)}
-    ${menuItem('폭탄 해체', '1명은 폭탄, 나머지는 매뉴얼', 'bomb', false)}
-    ${menuItem('릴레이 캐치마인드', '이어 그리기 · 다른 팀이 맞히기', 'draw', false)}
-    ${menuItem('인간 피아노', '색 버튼 하나씩 · 순서대로', 'piano', false)}</div>
+    ${menuItem('폭탄 해체', '1명은 폭탄, 나머지는 매뉴얼', 'bomb', true)}
+    ${menuItem('릴레이 캐치마인드', '이어 그리기 · 다른 팀이 맞히기', 'draw', true)}
+    ${menuItem('인간 피아노', '색 버튼 하나씩 · 순서대로', 'piano', true)}</div>
   <div><div class="sec-t">개인전</div>
     ${menuItem('눈치게임', '1부터 차례로 · 겹치면 둘 다 탈락', 'nunchi', true)}
     ${menuItem('무궁화 꽃이 피었습니다', '초록엔 연타, 빨강엔 멈춤', 'mugung', true)}</div>
   <div><div class="sec-t">여유분</div>
-    ${menuItem('10초 맞히기', '감으로 10.00초에 멈추기', 't10', false)}
-    ${menuItem('소수파 생존', '적게 고른 쪽만 생존', 'minor', false)}
-    ${menuItem('치킨 버튼', '버틸수록 점수 · 터지면 0점', 'chicken', false)}</div>
+    ${menuItem('10초 맞히기', '감으로 10.00초에 멈추기', 't10', true)}
+    ${menuItem('소수파 생존', '적게 고른 쪽만 생존', 'minor', true)}
+    ${menuItem('치킨 버튼', '버틸수록 점수 · 터지면 0점', 'chicken', true)}</div>
   <div class="muted">참가자 ${n}명 접속 중</div>`;
 }
 
@@ -547,6 +728,32 @@ async function applyResult(){
       if (t) add('scores/team/' + t, n);
     });
     text = '무궁화 1~3등';
+  } else if (r.kind === 'piano' || r.kind === 'bomb'){
+    asList(r.rows).forEach(x => {
+      const ok = r.kind === 'piano' ? (x.fin != null || x.pos > 0) : x.mods > 0;
+      if (ok && x.rank <= 3) add('scores/team/' + x.team, TEAM_RANK_POINTS[x.rank - 1]);
+    });
+    text = GAME_TITLES[r.kind] + ' 팀 순위';
+  } else if (r.kind === 'draw' && r.correct){
+    add('scores/team/' + r.correct.team, 2);
+    add('scores/team/' + r.team, 1);
+    text = '캐치마인드 ' + r.word;
+  } else if (r.kind === 't10' || r.kind === 'chicken'){
+    asList(r.rows).forEach(x => {
+      if (!x.rank || x.rank > 3) return;
+      const n = MUGUNG_POINTS[x.rank - 1];
+      add('scores/player/' + x.pid, n);
+      const t = players[x.pid] && Number(players[x.pid].team);
+      if (t) add('scores/team/' + t, n);
+    });
+    text = GAME_TITLES[r.kind] + ' 1~3등';
+  } else if (r.kind === 'minor'){
+    asList(r.survivors).forEach(pid => {
+      add('scores/player/' + pid, pts.minor);
+      const t = players[pid] && Number(players[pid].team);
+      if (t) add('scores/team/' + t, pts.minor);
+    });
+    text = '소수파 생존 ' + asList(r.survivors).length + '명';
   } else return;
   const out = {};
   Object.keys(u).forEach(k => out[k] = increment(u[k]));
@@ -635,6 +842,320 @@ function copyText(t){
   else prompt('길게 눌러 복사하세요', t);
 }
 
+// ── 공통: 팀 순위 결과 표
+function teamRankRows(rows, fmt){
+  return `<div class="card">${rows.map(r => `<div class="row"><span class="num">${r.rank}</span><span class="dot" style="background:${teamColor(r.team)}"></span>
+    <span style="flex:1;font-weight:700">${esc(teamName(cfg,r.team))}</span><span class="muted">${fmt(r)}</span></div>`).join('')}</div>`;
+}
+function activeTeams(){ return teamList(cfg).filter(t => teamMembers(players, t).length); }
+function choiceRow(act, vals, cur, label){
+  return `<div class="sec-t">${label}</div><div class="grid3">${vals.map(v => `<button class="btn ${cur===v?'':'ghost'}" data-act="${act}" data-v="${v}">${v}${act==='drawSecs'?'초':(act==='bombSecs'?'초':'칸')}</button>`).join('')}</div>`;
+}
+
+// ── 인간 피아노
+let pianoLen = 12;
+function pianoPanel(){
+  const teams = activeTeams();
+  if (ST.phase === 'live'){
+    return `<div class="card"><div class="gl"><span style="color:var(--gold)">진행 중</span><span class="muted" id="hpTime"></span></div><div id="hpList"></div></div>
+      <button class="btn main" data-act="pianoEnd">지금 끝내기</button>`;
+  }
+  const start = `${choiceRow('pianoLen', [8,12,16], pianoLen, '순서 길이')}
+    <button class="btn ${ST.phase==='result'?'ghost':'main'}" data-act="pianoStart" ${teams.length?'':'disabled'}>${ST.phase==='result'?'한 판 더':'시작'} (${teams.length}팀 동시에)</button>`;
+  if (ST.phase === 'result'){
+    const r = ST.result || {}, rows = asList(r.rows);
+    const has = rows.some(x => x.fin != null || x.pos > 0);
+    return teamRankRows(rows, x => x.fin != null ? '완주 ' + fmtSec2(x.fin) + '초' : x.pos + '칸 · 실수 ' + x.miss) +
+      (has ? applyBtn('점수 반영: 1·2·3위 팀 +3 / +2 / +1') : '') + start;
+  }
+  return `<div class="card"><div style="font-size:20px;font-weight:900">인간 피아노</div>
+    <div class="muted" style="margin-top:4px">팀원마다 색이 하나씩 배정돼요. 모든 팀이 동시에 하고, 틀리면 처음부터. 3분 안에 먼저 끝낸 팀이 1등.</div></div>${start}`;
+}
+function startPiano(){
+  const seqs = {}, colors = {};
+  activeTeams().forEach(t => {
+    const mem = teamMembers(players, t);
+    mem.forEach((pid, i) => colors[pid] = i % PIANO_COLORS.length);
+    seqs[t] = makeSeq(pianoLen, Math.min(mem.length, PIANO_COLORS.length));
+  });
+  setState({game:'piano', phase:'live', round: newRound(), startAt: now() + COUNTDOWN_MS, len: pianoLen, seqs, colors});
+}
+async function finalizePiano(){
+  if (finalizing || ST.phase !== 'live') return; finalizing = true;
+  try{
+    const prog = (await get(R('play/piano/' + ST.round))).val() || {};
+    const rows = rankTeamProgress(Object.keys(ST.seqs||{}).map(Number), prog);
+    await update(R('state'), {phase:'result', result:{kind:'piano', rows, applied:false}});
+  }catch(e){ finalizing = false; console.warn(e); }
+}
+function tickPianoHost(){
+  const el = $('hpList'); if (!el) return;
+  const t = now(), teams = Object.keys(ST.seqs||{}).map(Number);
+  $('hpTime').textContent = t < ST.startAt ? '준비' : fmtSec2(t - ST.startAt) + '초';
+  const rows = rankTeamProgress(teams, play);
+  el.innerHTML = rows.map(r => { const len = asList(ST.seqs[r.team]).length;
+    return `<div class="row"><span class="dot" style="background:${teamColor(r.team)}"></span><span style="flex:1;font-weight:700">${esc(teamName(cfg,r.team))}</span>
+    <span class="muted">${r.fin != null ? '완주 ' + fmtSec2(r.fin) + '초' : r.pos + ' / ' + len}${r.miss ? ' · 실수 ' + r.miss : ''}</span></div>`; }).join('');
+  if (t > ST.startAt && (rows.every(r => r.fin != null) || t > ST.startAt + 180000)) finalizePiano();
+}
+
+// ── 릴레이 캐치마인드
+let drawTeam = 0, drawWord = '', drawSecs = 4;
+const usedWords = new Set();
+function pickWord(){ const pool = DRAW_WORDS.filter(w => !usedWords.has(w)); drawWord = (pool.length ? pool : DRAW_WORDS)[Math.floor(Math.random() * (pool.length || DRAW_WORDS.length))]; }
+function drawSetup(){
+  const teams = activeTeams();
+  if (!teams.includes(drawTeam)) drawTeam = teams[0] || 0;
+  if (!drawWord) pickWord();
+  return `<div class="sec-t">그릴 팀</div><div class="grid3">${teams.map(t => `<button class="btn ${drawTeam===t?'':'ghost'}" data-act="drawTeam" data-v="${t}" style="${drawTeam===t?'background:'+teamColor(t):''}">${esc(teamName(cfg,t))}</button>`).join('')}</div>
+    <div class="card"><div class="gl"><span style="color:var(--gold)">제시어 (그리는 팀만 봐요)</span><button class="sm" data-act="drawWord">다른 단어</button></div>
+      <div style="font-size:26px;font-weight:900">${esc(drawWord)}</div>
+      <input class="field" data-custom="word" maxlength="15" placeholder="직접 입력하려면 여기에" style="margin-top:8px"></div>
+    ${choiceRow('drawSecs', [3,4,5], drawSecs, '한 명당 그리는 시간')}
+    <button class="btn main" data-act="drawStart" ${drawTeam?'':'disabled'}>시작: ${esc(teamName(cfg,drawTeam))} ${teamMembers(players,drawTeam).length}명 × ${drawSecs}초 + 맞히기 20초</button>`;
+}
+function drawPanel(){
+  if (ST.phase === 'live'){
+    return `<div class="card"><div class="gl"><span style="color:var(--gold)">제시어: ${esc(ST.word)}</span><span class="muted" id="hdTime"></span></div>
+      <div id="hdWho" style="font-weight:700"></div></div>
+      <canvas id="hdCv" style="display:block;width:100%;max-width:360px;margin:0 auto;border-radius:14px;background:#F5F2EA"></canvas>
+      <div class="card"><div class="sec-t">정답 추측</div><div id="hdFeed"></div></div>
+      <button class="btn main" data-act="drawEnd">지금 끝내기</button>`;
+  }
+  if (ST.phase === 'result'){
+    const r = ST.result || {}, c = r.correct;
+    return `<div class="card" style="text-align:center"><div class="muted">정답</div><div style="font-size:28px;font-weight:900">${esc(r.word)}</div>
+      <div style="margin-top:6px;font-weight:700">${c ? esc(c.name) + ' (' + esc(teamName(cfg,c.team)) + ') 정답!' : '아무도 못 맞힘'}</div></div>
+      ${c ? applyBtn('점수 반영: ' + esc(teamName(cfg,c.team)) + ' +2, 그린 ' + esc(teamName(cfg,r.team)) + ' +1') : ''}
+      <div class="sec-t" style="margin-top:6px">다음 차례</div>${drawSetup()}`;
+  }
+  return `<div class="card"><div style="font-size:20px;font-weight:900">릴레이 캐치마인드</div>
+    <div class="muted" style="margin-top:4px">한 팀이 이어서 그리고 나머지 팀이 맞혀요. 먼저 맞힌 팀 +2, 그린 팀 +1. 팀마다 돌아가면서.</div></div>${drawSetup()}`;
+}
+function startDraw(){
+  const mem = teamMembers(players, drawTeam).slice();
+  for (let i = mem.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); const t = mem[i]; mem[i] = mem[j]; mem[j] = t; }
+  const startAt = now() + COUNTDOWN_MS;
+  usedWords.add(drawWord);
+  setState({game:'draw', phase:'live', round: newRound(), team: drawTeam, word: drawWord, order: mem, secs: drawSecs, startAt, guessEnd: startAt + mem.length * drawSecs * 1000 + 20000});
+  const teams = activeTeams(); drawTeam = teams[(teams.indexOf(drawTeam) + 1) % teams.length] || drawTeam; pickWord();
+}
+async function finalizeDraw(correct){
+  if (finalizing || ST.phase !== 'live') return; finalizing = true;
+  try{
+    await update(R('state'), {phase:'result', result:{kind:'draw', team: ST.team, word: ST.word, correct: correct || null, applied:false}});
+  }catch(e){ finalizing = false; console.warn(e); }
+}
+let hdDrawn = new Set(), hdRound = '';
+function tickDrawHost(){
+  const cv = $('hdCv'); if (!cv) return;
+  if (!cv.width || hdRound !== ST.round || cv.dataset.r !== ST.round){ const w = cv.clientWidth || 300; cv.width = w * 2; cv.height = w * 2; cv.style.height = w + 'px'; cv.dataset.r = ST.round; hdDrawn = new Set(); hdRound = ST.round; }
+  paintStrokes(cv.getContext('2d'), cv.width, (play||{}).strokes, hdDrawn);
+  const t = now(), turn = drawTurn(ST, t);
+  $('hdTime').textContent = t < ST.startAt ? '준비' : (turn.drawing ? Math.ceil(turn.remain/1000) + '초' : '맞히기 ' + Math.max(0, Math.ceil((ST.guessEnd - t)/1000)) + '초');
+  $('hdWho').textContent = turn.drawing ? '그리는 중: ' + playerName(players, turn.pid) + ' (' + (turn.idx+1) + '/' + asList(ST.order).length + ')' : (t < ST.startAt ? '곧 시작' : '그리기 끝 · 맞히는 중');
+  const gs = Object.keys((play||{}).guesses || {}).sort().map(k => play.guesses[k]).filter(Boolean);
+  const ans = normAns(ST.word);
+  $('hdFeed').innerHTML = gs.slice(-8).reverse().map(g => `<div class="row"><span class="dot" style="background:${teamColor(g.team)}"></span><span style="font-weight:700">${esc(playerName(players,g.pid))}</span>
+    <span style="flex:1" class="${normAns(g.text)===ans?'':'muted'}">${esc(g.text)}${normAns(g.text)===ans?' ✔':''}</span></div>`).join('') || '<div class="muted">아직 없음</div>';
+  const hit = gs.filter(g => g.team && Number(g.team) !== Number(ST.team) && normAns(g.text) === ans).sort((a,b) => (a.at||0) - (b.at||0))[0];
+  if (hit) finalizeDraw({pid: hit.pid, name: playerName(players, hit.pid), team: Number(hit.team)});
+  else if (t > ST.guessEnd + 500) finalizeDraw(null);
+}
+
+// ── 폭탄 해체
+let bombSecs = 180;
+function bombPanel(){
+  const teams = activeTeams();
+  if (ST.phase === 'live'){
+    return `<div class="card"><div class="gl"><span style="color:var(--gold)">진행 중</span><span class="muted" id="hbTime"></span></div><div id="hbList"></div></div>
+      <div class="muted">팀마다 폭탄 담당 1명만 폭탄을 보고, 나머지는 매뉴얼을 봐요. 판마다 폭탄 담당이 바뀌어요.</div>
+      <button class="btn main" data-act="bombEnd">지금 끝내기</button>`;
+  }
+  const start = `${choiceRow('bombSecs', [120,180,240], bombSecs, '제한 시간')}
+    <button class="btn ${ST.phase==='result'?'ghost':'main'}" data-act="bombStart" ${teams.length?'':'disabled'}>${ST.phase==='result'?'한 판 더 (담당 교대)':'시작'} (${teams.length}팀 동시에)</button>`;
+  if (ST.phase === 'result'){
+    const r = ST.result || {}, rows = asList(r.rows);
+    const has = rows.some(x => x.mods > 0);
+    return teamRankRows(rows, x => x.at != null ? '해체 ' + fmtSec2(x.at) + '초' : (x.exploded ? '펑! ' : '') + x.mods + '/3 단계') +
+      (has ? applyBtn('점수 반영: 1·2·3위 팀 +3 / +2 / +1 (1단계 이상 푼 팀만)') : '') + start;
+  }
+  return `<div class="card"><div style="font-size:20px;font-weight:900">폭탄 해체</div>
+    <div class="muted" style="margin-top:4px">전선·버튼·기호 3단계. 실수 3번이면 펑. 먼저 다 푼 팀이 1등, 아무도 못 풀면 많이 푼 순.</div></div>${start}`;
+}
+function startBomb(){
+  const no = (ST.game === 'bomb' ? (Number(ST.bombNo)||0) + 1 : 0);
+  const bombs = {}, bombers = {};
+  activeTeams().forEach(t => { const mem = teamMembers(players, t); bombs[t] = genBomb(); bombers[t] = mem[no % mem.length]; });
+  const startAt = now() + COUNTDOWN_MS;
+  setState({game:'bomb', phase:'live', round: newRound(), startAt, endAt: startAt + bombSecs * 1000, bombs, bombers, bombNo: no});
+}
+async function finalizeBomb(){
+  if (finalizing || ST.phase !== 'live') return; finalizing = true;
+  try{
+    const prog = (await get(R('play/bomb/' + ST.round))).val() || {};
+    const rows = rankBomb(Object.keys(ST.bombs||{}).map(Number), prog);
+    await update(R('state'), {phase:'result', result:{kind:'bomb', rows, applied:false}});
+  }catch(e){ finalizing = false; console.warn(e); }
+}
+function tickBombHost(){
+  const el = $('hbList'); if (!el) return;
+  const t = now(), teams = Object.keys(ST.bombs||{}).map(Number);
+  const left = Math.max(0, ST.endAt - Math.max(t, ST.startAt));
+  $('hbTime').textContent = t < ST.startAt ? '준비' : Math.floor(left/60000) + ':' + String(Math.floor(left/1000) % 60).padStart(2,'0');
+  const rows = rankBomb(teams, play);
+  el.innerHTML = rows.map(r => `<div class="row"><span class="dot" style="background:${teamColor(r.team)}"></span><span style="flex:1;font-weight:700">${esc(teamName(cfg,r.team))}<span class="muted"> · 담당 ${esc(playerName(players, ST.bombers[r.team]))}</span></span>
+    <span class="muted">${r.at != null ? '해체 ' + fmtSec2(r.at) + '초' : (r.exploded ? '펑!' : r.mods + '/3 · 실수 ' + r.strikes)}</span></div>`).join('');
+  if (t > ST.startAt && (rows.every(r => r.at != null || r.exploded) || t > ST.endAt + 1000)) finalizeBomb();
+}
+
+// ── 개인전 공통: 시작/결과
+function soloStartBtn(act){
+  const n = Object.keys(players).length;
+  return `<button class="btn ${ST.phase==='result'?'ghost':'main'}" data-act="${act}" ${n?'':'disabled'}>${ST.phase==='result'?'한 판 더':'시작'} (접속 ${n}명 전원)</button>`;
+}
+function soloRows(rows, fmt){
+  return `<div class="card">${rows.map(x => `<div class="row"><span class="num">${x.rank || '-'}</span><span style="flex:1;font-weight:700">${esc(x.name)}</span><span class="muted">${fmt(x)}</span></div>`).join('')}</div>`;
+}
+
+// ── 10초 맞히기
+function t10Panel(){
+  if (ST.phase === 'live') return `<div class="card"><div class="gl"><span style="color:var(--gold)">진행 중</span><span class="muted" id="htInfo"></span></div><div id="htList"></div></div>
+    <button class="btn main" data-act="t10End">지금 끝내기</button>`;
+  if (ST.phase === 'result'){
+    const rows = asList((ST.result||{}).rows);
+    return soloRows(rows, x => x.ms != null ? fmtSec2(x.ms) + '초 (오차 ' + fmtSec2(x.err) + ')' : '안 누름') +
+      (rows.some(x => x.rank) ? applyBtn('점수 반영: 1·2·3등 +3 / +2 / +1 (개인 + 그 팀)') : '') + soloStartBtn('t10Start');
+  }
+  return `<div class="card"><div style="font-size:20px;font-weight:900">10초 맞히기</div><div class="muted" style="margin-top:4px">다 같이 시작해서 3초 뒤 숫자가 사라져요. 딱 10초에 멈춘 사람이 1등.</div></div>${soloStartBtn('t10Start')}`;
+}
+function startT10(){ setState({game:'t10', phase:'live', round: newRound(), startAt: now() + COUNTDOWN_MS, alive: Object.keys(players)}); }
+async function finalizeT10(){
+  if (finalizing || ST.phase !== 'live') return; finalizing = true;
+  try{
+    const data = (await get(R('play/t10/' + ST.round))).val() || {};
+    const rows = rankT10(asList(ST.alive), data).map(x => ({pid:x.pid, name: playerName(players,x.pid), ms:x.ms, err:x.err, rank:x.rank}));
+    await update(R('state'), {phase:'result', result:{kind:'t10', rows, applied:false}});
+  }catch(e){ finalizing = false; console.warn(e); }
+}
+function tickT10Host(){
+  const el = $('htList'); if (!el) return;
+  const t = now(), alive = asList(ST.alive);
+  const done = alive.filter(p => typeof play[p] === 'number');
+  $('htInfo').textContent = t < ST.startAt ? '준비' : '누른 사람 ' + done.length + ' / ' + alive.length + ' · ' + fmtSec2(t - ST.startAt) + '초';
+  el.innerHTML = done.sort((a,b) => play[a] - play[b]).map(p => `<div class="row"><span style="flex:1;font-weight:700">${esc(playerName(players,p))}</span><span class="muted">${fmtSec2(play[p])}초</span></div>`).join('') || '<div class="muted">아직 없음</div>';
+  if (t > ST.startAt && (done.length === alive.length || t > ST.startAt + 25000)) finalizeT10();
+}
+
+// ── 소수파 생존
+let minorIdx = 0;
+pts.minor = 2;
+function minorBuilder(){
+  const [a, b] = MINOR_PRESETS[minorIdx % MINOR_PRESETS.length];
+  return `<div class="card"><div class="gl"><span style="color:var(--gold)">다음 질문</span><button class="sm" data-act="minorNext">다른 질문</button></div>
+    <div class="grid2"><input class="field" data-custom="ma" maxlength="12" value="${esc(a)}" aria-label="보기 A"><input class="field" data-custom="mb" maxlength="12" value="${esc(b)}" aria-label="보기 B"></div>
+    <button class="btn main" data-act="minorOpen" style="margin-top:10px">질문 열기 (10초)</button></div>`;
+}
+function minorPanel(){
+  const n = Object.keys(players).length;
+  if (ST.phase === 'live'){
+    const q = ST.q, alive = asList(ST.alive);
+    let body = `<div class="card"><div class="gl"><span style="color:var(--gold)">생존 ${alive.length}명</span><span class="muted">${q ? q.n + '번째 질문' : '첫 질문 전'}</span></div>
+      <div class="muted">${alive.map(p => esc(playerName(players,p))).join(' · ')}</div></div>`;
+    if (q && !q.closed){
+      body += `<div class="card"><div style="font-size:22px;font-weight:900">${esc(q.a)} vs ${esc(q.b)}</div><div class="big" id="hmTime" style="font-size:44px"></div><div class="muted center" id="hmCount"></div></div>
+        <button class="btn ghost" data-act="minorClose">지금 마감</button>`;
+    } else {
+      if (q && q.closed){
+        const r = q.res || {};
+        body += `<div class="card"><div style="font-weight:700">${esc(q.a)} ${r.aN}명 vs ${esc(q.b)} ${r.bN}명${r.noneN ? ' · 안 고름 ' + r.noneN + '명' : ''}</div>
+          <div style="font-size:20px;font-weight:900;margin-top:4px">${r.tie ? '동점 — 모두 생존' : esc(r.winLabel) + ' 생존 ' + asList(r.survivors).length + '명'}</div></div>`;
+      }
+      const left = q && q.closed ? asList((q.res||{}).survivors).length : alive.length;
+      body += left > 1 ? minorBuilder() : `<div class="card muted" style="color:var(--gold)">${left === 1 ? '한 명 남았어요. 끝내기를 누르세요' : '남은 사람이 없어요. 끝내기를 누르세요'}</div>`;
+      body += `<button class="btn ghost" data-act="minorEnd">끝내기 (지금 생존자 확정)</button>`;
+    }
+    return body;
+  }
+  if (ST.phase === 'result'){
+    const r = ST.result || {};
+    return `<div class="card"><div class="sec-t">최종 생존 ${asList(r.survivors).length}명</div><div style="font-weight:700">${asList(r.survivorNames).map(esc).join(' · ') || '없음'}</div></div>
+      ${stepper('minor', '생존자 1명당 (개인 + 그 팀)')}
+      ${asList(r.survivors).length ? applyBtn('점수 반영: 생존자 +' + pts.minor) : ''}
+      <button class="btn ghost" data-act="minorStart" ${n?'':'disabled'}>새 게임 (전원 부활)</button>`;
+  }
+  return `<div class="card"><div style="font-size:20px;font-weight:900">소수파 생존</div><div class="muted" style="margin-top:4px">질문마다 둘 중 하나. 적게 고른 쪽만 살아남아요. 2~3명 남을 때까지 반복.</div></div>
+    <button class="btn main" data-act="minorStart" ${n?'':'disabled'}>시작 (접속 ${n}명 전원)</button>`;
+}
+function startMinor(){ setState({game:'minor', phase:'live', round: newRound(), alive: Object.keys(players), q: null}); }
+function openMinor(){
+  const a = ($('main').querySelector('[data-custom=ma]') || {}).value || MINOR_PRESETS[minorIdx % MINOR_PRESETS.length][0];
+  const b = ($('main').querySelector('[data-custom=mb]') || {}).value || MINOR_PRESETS[minorIdx % MINOR_PRESETS.length][1];
+  const q = ST.q;
+  const alive = q && q.closed ? asList((q.res||{}).survivors) : asList(ST.alive);
+  minorIdx++;
+  update(R('state'), {alive, q: {n: (q ? q.n : 0) + 1, a: a.trim().slice(0,12), b: b.trim().slice(0,12), closeAt: now() + 10000, closed: false}});
+}
+async function closeMinor(){
+  const q = ST.q; if (!q || q.closed || finalizing) return; finalizing = true;
+  try{
+    const votes = (await get(R('play/minor/' + ST.round + '/q' + q.n))).val() || {};
+    const alive = asList(ST.alive), j = judgeMinor(alive, votes);
+    const winLabel = j.tie ? '' : (j.a.length && (!j.b.length || j.a.length < j.b.length) ? q.a : q.b);
+    await update(R('state/q'), {closed: true, closeAt: Math.min(q.closeAt, now()), res: {aN: j.a.length, bN: j.b.length, noneN: j.none.length, survivors: j.survivors, voters: alive, tie: j.tie, winLabel}});
+  }catch(e){ console.warn(e); }
+  finalizing = false;
+}
+async function finalizeMinor(){
+  if (finalizing || ST.phase !== 'live') return; finalizing = true;
+  try{
+    const q = ST.q;
+    const surv = q && q.closed ? asList((q.res||{}).survivors) : asList(ST.alive);
+    await update(R('state'), {phase:'result', result:{kind:'minor', survivors: surv, survivorNames: surv.map(p => playerName(players,p)), applied:false}});
+  }catch(e){ finalizing = false; console.warn(e); }
+}
+function tickMinorHost(){
+  const q = ST.q; const el = $('hmTime'); if (!q || !el) return;
+  const t = now();
+  el.textContent = Math.max(0, Math.ceil((q.closeAt - t)/1000));
+  const votes = (play||{})['q' + q.n] || {}, alive = asList(ST.alive);
+  const a = alive.filter(p => votes[p] === 'a').length, b = alive.filter(p => votes[p] === 'b').length;
+  $('hmCount').textContent = '고른 사람 ' + (a + b) + ' / ' + alive.length + '명 (비율은 마감 후 공개)';
+  if (t > q.closeAt + 800) closeMinor();
+}
+
+// ── 치킨 버튼
+function chickenPanel(){
+  if (ST.phase === 'live') return `<div class="card"><div class="big" id="hcPot" style="font-size:72px;color:var(--gold)">0</div><div class="muted center">언제 터질지는 사회자도 몰라요 (8~25초 사이)</div></div>
+    <div class="card"><div class="sec-t">챙긴 사람</div><div id="hcList"></div></div>`;
+  if (ST.phase === 'result'){
+    const rows = asList((ST.result||{}).rows);
+    return soloRows(rows, x => x.v ? x.v + '점' : '펑 0점') +
+      (rows.some(x => x.rank) ? applyBtn('점수 반영: 1·2·3등 +3 / +2 / +1 (개인 + 그 팀)') : '') + soloStartBtn('chickenStart');
+  }
+  return `<div class="card"><div style="font-size:20px;font-weight:900">치킨 버튼</div><div class="muted" style="margin-top:4px">점수가 0.25초마다 1점씩 올라가요. 터지기 전에 챙긴 점수가 높은 순으로 1·2·3등.</div></div>${soloStartBtn('chickenStart')}`;
+}
+function startChicken(){
+  const startAt = now() + COUNTDOWN_MS;
+  setState({game:'chicken', phase:'live', round: newRound(), startAt, explodeAt: startAt + Math.round(rand(8000, 25000)), alive: Object.keys(players)});
+}
+async function finalizeChicken(){
+  if (finalizing || ST.phase !== 'live') return; finalizing = true;
+  try{
+    const data = (await get(R('play/chicken/' + ST.round))).val() || {};
+    const rows = rankChicken(asList(ST.alive), data, ST.startAt, ST.explodeAt).map(x => ({pid:x.pid, name: playerName(players,x.pid), v:x.v, rank:x.rank}));
+    await update(R('state'), {phase:'result', result:{kind:'chicken', rows, applied:false}});
+  }catch(e){ finalizing = false; console.warn(e); }
+}
+function tickChickenHost(){
+  const el = $('hcPot'); if (!el) return;
+  const t = now(), boom = t >= ST.explodeAt;
+  el.textContent = t < ST.startAt ? '준비' : (boom ? '펑!' : chickenValue(ST.startAt, t));
+  const list = Object.keys(play||{}).filter(p => typeof play[p] === 'number' && play[p] < ST.explodeAt).sort((a,b) => play[b] - play[a]);
+  $('hcList').innerHTML = list.map(p => `<div class="row"><span style="flex:1;font-weight:700">${esc(playerName(players,p))}</span><b>${chickenValue(ST.startAt, play[p])}점</b></div>`).join('') || '<div class="muted">아직 없음</div>';
+  if (t > ST.explodeAt + 1500) finalizeChicken();
+}
+
 // ── 진행 중 실시간 갱신
 function tick(){
   if (!started || TAB !== 'run' || ST.phase !== 'live') return;
@@ -669,6 +1190,12 @@ function tick(){
       <span class="muted">${r.out?'탈락':(r.fin!=null?'골인':r.p+'/'+ST.goal)}</span></div>`).join('');
     if (t > ST.startAt && (mugungAllDone(ST.alive || [], play) || t > ST.startAt + 120000)) finalizeMugung();
   }
+  if (ST.game === 'piano') tickPianoHost();
+  if (ST.game === 'draw') tickDrawHost();
+  if (ST.game === 'bomb') tickBombHost();
+  if (ST.game === 't10') tickT10Host();
+  if (ST.game === 'minor') tickMinorHost();
+  if (ST.game === 'chicken') tickChickenHost();
 }
 </script>
 </body>
