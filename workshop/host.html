@@ -544,7 +544,6 @@ async function tryKey(){
 }
 $('keyBtn').onclick = tryKey;
 $('keyIn').onkeydown = e => { if (e.key === 'Enter') tryKey(); };
-if (sessionStorage.getItem('ws26_host') === '1') openConsole();
 
 let started = false;
 function openConsole(){
@@ -1450,6 +1449,9 @@ function tick(){
   if (ST.game === 'minor') tickMinorHost();
   if (ST.game === 'chicken') tickChickenHost();
 }
+
+// 새로고침해도 로그인 유지 (모든 선언이 끝난 뒤에 실행)
+if (sessionStorage.getItem('ws26_host') === '1') openConsole();
 </script>
 </body>
 </html>
