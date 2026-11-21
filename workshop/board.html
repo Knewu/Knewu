@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>큰 화면 — 상임위원 워크숍</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{--ivory:#F5F2EA;--navy:#13234A;--panel:#1C2F5C;--line:#2C4176;--sub:#A9B3C7;--accent:#E8623A;--gold:#F2B544;--ink:#0C1834}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif;background:var(--navy);color:var(--ivory);overflow:hidden;font-size:1.6vh}
+.wrap{height:100vh;display:flex;flex-direction:column;padding:4vh 4vw 3vh;gap:3vh}
+.top{display:flex;justify-content:space-between;align-items:flex-end}
+.org{font-size:2vh;font-weight:700;letter-spacing:.2em;color:var(--sub)}
+.title{font-size:5vh;font-weight:900;margin-top:.5vh}
+.body{flex:1;display:flex;gap:2.4vw;min-height:0}
+.stage{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:3vh;padding:4vh 3vw;display:flex;flex-direction:column;justify-content:center;gap:3vh;min-width:0;transition:background .15s}
+.side{width:30vw;display:flex;flex-direction:column;gap:2vh}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:2.6vh;padding:2.4vh 2vw}
+.sec-t{font-size:1.9vh;font-weight:700;letter-spacing:.16em;color:var(--gold);margin-bottom:1.2vh}
+.row{display:flex;align-items:center;gap:1vw;padding:.9vh 0;font-size:2.6vh}
+.num{width:3vw;font-weight:900;color:var(--gold)}
+.dot{width:1.6vh;height:1.6vh;border-radius:99px;flex:none}
+.huge{font-size:18vh;font-weight:900;line-height:1;text-align:center;font-variant-numeric:tabular-nums}
+.gl{display:flex;justify-content:space-between;font-size:4vh;font-weight:900}
+.gauge{position:relative;height:6.5vh;border-radius:99px;overflow:hidden}
+.gauge .fill{height:100%;transition:width .15s linear}
+.gauge .mid{position:absolute;top:0;left:50%;width:.5vh;height:100%;background:var(--ink)}
+.sub{color:var(--sub);font-size:2.6vh}
+.strike{text-decoration:line-through;color:var(--sub)}
+.foot{font-size:2vh;color:var(--sub)}
+.list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:3vw}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div><div class="org">12.10 상임위원 워크숍</div><div class="title" id="title">게임</div></div><div class="sub" id="count"></div></div>
+  <div class="body">
+    <div class="stage" id="stage"></div>
+    <div class="side">
+      <div class="card"><div class="sec-t">팀 순위</div><div id="teams"></div></div>
+      <div class="card" style="flex:1;overflow:hidden"><div class="sec-t">개인 MVP</div><div id="mvp"></div></div>
+    </div>
+  </div>
+  <div class="foot" id="foot"></div>
+</div>
+<script type="module">
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB186Tg9fsrnR-K_lufo4X5iY9OVpgDeHk",
+  authDomain: "knewu24th-15ebc.firebaseapp.com",
+  databaseURL: "https://knewu24th-15ebc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "knewu24th-15ebc",
+  storageBucket: "knewu24th-15ebc.firebasestorage.app",
+  messagingSenderId: "617159229534",
+  appId: "1:617159229534:web:360195e7b3bc5a38b034cf"
+};
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ===== 공통 (host / index / board 동일) =====
+const ROOT = 'workshop_2026';
+const TEAM_COLORS = {1:'#E8623A',2:'#58A6F0',3:'#F2B544',4:'#3FC1A0'};
+const DEFAULT_TEAM_NAMES = {1:'1팀',2:'2팀',3:'3팀',4:'4팀'};
+const NUNCHI_WINDOW = 300;   // ms 안에 같이 누르면 동시
+const MUGUNG_GRACE = 250;    // 빨간불 받은 직후 봐주는 시간(ms)
+const TUG_SECONDS = 10;
+const COUNTDOWN_MS = 3500;
+const GAME_TITLES = {lobby:'대기', tug:'폰 줄다리기', nunchi:'눈치게임', mugung:'무궁화 꽃이 피었습니다'};
+
+function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function teamName(cfg, t){ return (cfg && cfg.teamNames && cfg.teamNames[t]) || DEFAULT_TEAM_NAMES[t] || '미배정'; }
+function teamColor(t){ return TEAM_COLORS[t] || '#2C4176'; }
+function teamCount(cfg){ const n = cfg && Number(cfg.teamCount); return (n===4) ? 4 : 3; }
+function teamList(cfg){ const n = teamCount(cfg); const a=[]; for(let i=1;i<=n;i++) a.push(i); return a; }
+function playerName(players, pid){ return (players && players[pid] && players[pid].name) || '(나감)'; }
+function teamMembers(players, t){
+  return Object.keys(players||{}).filter(pid => players[pid] && Number(players[pid].team) === t)
+    .sort((x,y)=> (players[x].at||0) - (players[y].at||0));
+}
+
+// ── 줄다리기: 팀 평균 연타수로 비교 (인원 다른 팀도 공정)
+function tugStats(players, taps, a, b){
+  const res = {};
+  [a,b].forEach(t=>{
+    const mem = teamMembers(players, t);
+    let sum = 0;
+    mem.forEach(pid=>{ sum += Math.max(0, Number((taps||{})[pid])||0); });
+    res[t] = {sum, n: mem.length, avg: mem.length ? sum/mem.length : 0};
+  });
+  const A = res[a].avg, B = res[b].avg, tot = A + B;
+  res.share = tot > 0 ? A / tot : 0.5;          // a팀 쪽 비율 0~1
+  res.winner = (A === B) ? 0 : (A > B ? a : b);
+  return res;
+}
+
+// ── 눈치게임 판정
+// alive: 참가자 pid 목록, presses: {pid: 서버시각(ms)}
+// 같은 숫자 = 그 숫자를 처음 누른 사람 기준 windowMs 안에 누른 사람들 → 모두 탈락
+// 한 명만 남으면 끝, 그 사람이 꼴찌 탈락 (그 뒤 누른 건 무효)
+function judgeNunchi(alive, presses, windowMs){
+  windowMs = windowMs || NUNCHI_WINDOW;
+  const aliveSet = new Set(alive);
+  const list = Object.keys(presses||{})
+    .filter(pid => aliveSet.has(pid) && typeof presses[pid] === 'number')
+    .map(pid => ({pid, ts: presses[pid]}))
+    .sort((x,y)=> (x.ts - y.ts) || (x.pid < y.pid ? -1 : 1));
+  const groups = [];
+  list.forEach(p=>{
+    const g = groups[groups.length-1];
+    if (g && p.ts - g.first < windowMs) g.pids.push(p.pid);
+    else groups.push({pids:[p.pid], first:p.ts});
+  });
+  let num = 0, remaining = alive.length, ended = remaining <= 1;
+  const rows = [], safe = [], out = [];
+  for (const g of groups){
+    if (ended) break;
+    num++;
+    if (g.pids.length === 1){ safe.push(g.pids[0]); rows.push({num, pids:g.pids.slice(), kind:'safe'}); }
+    else { g.pids.forEach(p=>out.push(p)); rows.push({num, pids:g.pids.slice(), kind:'clash'}); }
+    remaining -= g.pids.length;
+    if (remaining <= 1) ended = true;
+  }
+  const done = new Set(safe.concat(out));
+  const unpressed = alive.filter(p => !done.has(p));
+  return {rows, next: num + 1, safe, out, unpressed, ended, last: ended ? unpressed.slice() : []};
+}
+
+// ── 무궁화 순위: 골인 순 → 생존자 진행도 순 → 탈락자
+function rankMugung(alive, prog, goal){
+  const rows = alive.map(pid=>{
+    const d = (prog||{})[pid] || {};
+    return {pid, p: Math.min(goal, Math.max(0, Number(d.p)||0)), out: !!d.out, fin: (typeof d.fin === 'number') ? d.fin : null};
+  });
+  rows.sort((x,y)=>{
+    const gx = x.out ? 2 : (x.fin != null ? 0 : 1), gy = y.out ? 2 : (y.fin != null ? 0 : 1);
+    if (gx !== gy) return gx - gy;
+    if (gx === 0) return x.fin - y.fin;
+    return y.p - x.p;
+  });
+  let r = 0;
+  rows.forEach(row=>{ row.rank = row.out ? null : ++r; });
+  return rows;
+}
+function mugungAllDone(alive, prog){
+  return alive.length > 0 && alive.every(pid=>{ const d = (prog||{})[pid] || {}; return d.out || typeof d.fin === 'number'; });
+}
+const MUGUNG_POINTS = [3,2,1];
+
+// Firebase 는 배열을 객체로 돌려줄 때가 있어서 받자마자 배열로 맞춤
+function asList(v){ return Array.isArray(v) ? v.filter(x => x != null) : Object.values(v || {}); }
+function normState(s){
+  s = s || {game:'lobby'};
+  if (s.alive) s.alive = asList(s.alive);
+  if (s.result) ['survivors','losers','survivorNames','loserNames','rows'].forEach(k => { if (s.result[k]) s.result[k] = asList(s.result[k]); });
+  return s;
+}
+
+// 균등 랜덤 배정 (인원 차이 최대 1명)
+function balancedAssign(pids, n, rnd){
+  rnd = rnd || Math.random;
+  const a = pids.slice();
+  for (let i=a.length-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+  const out = {};
+  a.forEach((pid,i)=>{ out[pid] = (i % n) + 1; });
+  return out;
+}
+// ===== 공통 끝 =====
+
+const R = p => ref(db, ROOT + '/' + p);
+const $ = id => document.getElementById(id);
+let players = {}, cfg = {}, scores = {}, ST = {game:'lobby'}, offset = 0, play = {}, playKey = '', playUnsub = null, stageKey = '';
+const now = () => Date.now() + offset;
+
+$('foot').textContent = '참여 주소 ' + location.href.replace(/^https?:\/\//, '').replace(/[^/]*([?#].*)?$/, '') ;
+
+onValue(ref(db, '.info/serverTimeOffset'), s => { offset = s.val() || 0; });
+onValue(R('players'), s => { players = s.val() || {}; side(); stageKey = ''; });
+onValue(R('config'), s => { cfg = s.val() || {}; side(); stageKey = ''; });
+onValue(R('scores'), s => { scores = s.val() || {}; side(); });
+onValue(R('state'), s => {
+  ST = normState(s.val());
+  const key = (['tug','nunchi','mugung'].includes(ST.game) && ST.round) ? ST.game + '/' + ST.round : '';
+  if (key !== playKey){
+    if (playUnsub){ playUnsub(); playUnsub = null; }
+    playKey = key; play = {};
+    if (key) playUnsub = onValue(R('play/' + key), s2 => { play = s2.val() || {}; });
+  }
+  stageKey = '';
+});
+
+function side(){
+  $('count').textContent = '접속 ' + Object.keys(players).length + '명';
+  const ts = teamList(cfg).map(t => ({t, s: Number((scores.team||{})[t])||0})).sort((x,y) => y.s - x.s);
+  $('teams').innerHTML = ts.map((x,i) => `<div class="row"><span class="num">${i+1}</span><span class="dot" style="background:${teamColor(x.t)}"></span>
+    <span style="flex:1;font-weight:700">${esc(teamName(cfg,x.t))}</span><b style="font-size:3.4vh;color:${teamColor(x.t)}">${x.s}</b></div>`).join('');
+  const ps = Object.keys(players).map(pid => ({pid, s: Number((scores.player||{})[pid])||0})).filter(x => x.s > 0).sort((x,y) => y.s - x.s).slice(0, 6);
+  $('mvp').innerHTML = ps.map((x,i) => `<div class="row"><span class="num">${i+1}</span><span style="flex:1">${esc(players[x.pid].name)}</span><b>${x.s}점</b></div>`).join('') || '<div class="sub">아직 없음</div>';
+}
+
+function build(){
+  const g = ST.game || 'lobby', ph = ST.phase;
+  $('title').textContent = g === 'lobby' ? '곧 시작해요' : (GAME_TITLES[g] || '게임');
+  if (g === 'lobby' || ph === 'setup'){
+    const teams = teamList(cfg).map(t => `<div class="card" style="border:2px solid ${teamColor(t)};flex:1">
+      <div style="font-size:3.4vh;font-weight:900;color:${teamColor(t)}">${esc(teamName(cfg,t))}</div>
+      <div class="sub" style="margin-top:1vh">${teamMembers(players,t).map(p => esc(players[p].name)).join(' · ') || '아직 없음'}</div></div>`).join('');
+    return `<div style="font-size:4vh;font-weight:900">${ph === 'setup' ? esc(GAME_TITLES[g]) + ' 준비 중' : '휴대폰으로 접속해 주세요'}</div>
+      <div style="display:flex;gap:1.6vw">${teams}</div>`;
+  }
+  if (ph === 'result'){
+    $('title').textContent = (GAME_TITLES[g] || '게임') + ' 결과';
+    const r = ST.result || {};
+    if (r.kind === 'tug') return `<div class="huge" style="font-size:12vh;color:${r.winner?teamColor(r.winner):'var(--ivory)'}">${r.winner ? esc(teamName(cfg,r.winner)) + ' 승리!' : '무승부!'}</div>
+      <div class="gl" style="font-size:3vh"><span>${esc(teamName(cfg,r.a))} 평균 ${Number(r.avgA).toFixed(1)}</span><span>${esc(teamName(cfg,r.b))} 평균 ${Number(r.avgB).toFixed(1)}</span></div>`;
+    if (r.kind === 'nunchi') return `<div style="font-size:5vh;font-weight:900">생존 ${(r.survivors||[]).length}명</div>
+      <div style="font-size:3.4vh;line-height:1.6">${(r.survivorNames||[]).map(esc).join(' · ')}</div>
+      <div class="sub">탈락: ${(r.loserNames||[]).map(esc).join(' · ') || '없음'}</div>`;
+    if (r.kind === 'mugung') return `<div class="list">${(r.rows||[]).slice(0,12).map(x => `<div class="row"><span class="num">${x.rank||'-'}</span>
+      <span style="flex:1;font-weight:700" class="${x.out?'strike':''}">${esc(x.name)}</span><span class="sub">${x.out?'탈락':(x.fin?'골인':x.p)}</span></div>`).join('')}</div>`;
+    return '';
+  }
+  if (g === 'tug') return `<div class="huge" id="bTimer">10</div>
+    <div class="gl"><span>${esc(teamName(cfg,ST.a))}</span><span>${esc(teamName(cfg,ST.b))}</span></div>
+    <div class="gauge" style="background:${teamColor(ST.b)}"><div class="fill" id="bFill" style="width:50%;background:${teamColor(ST.a)}"></div><div class="mid"></div></div>
+    <div class="gl sub" style="font-size:3vh;font-weight:500"><span id="bA"></span><span id="bB"></span></div>`;
+  if (g === 'nunchi') return `<div style="display:flex;gap:3vw;align-items:center;height:100%">
+    <div style="width:30%;text-align:center"><div class="sub">다음 숫자</div><div class="huge" id="bNext" style="color:var(--gold)">1</div><div class="sub" id="bLeft"></div></div>
+    <div class="list" id="bList" style="flex:1"></div></div>`;
+  if (g === 'mugung') return `<div class="huge" id="bSign" style="font-size:12vh">준비</div><div class="list" id="bList"></div>`;
+  return '';
+}
+
+function tick(){
+  if (!stageKey){ stageKey = '1'; $('stage').innerHTML = build(); side(); }
+  const stage = $('stage');
+  stage.style.background = '';
+  if (ST.phase !== 'live') return;
+  const t = now();
+  if (ST.game === 'tug' && $('bTimer')){
+    $('bTimer').textContent = t < ST.startAt ? Math.ceil((ST.startAt - t)/1000) : (t <= ST.endAt ? Math.max(0, Math.ceil((ST.endAt - t)/1000)) : '끝!');
+    const s = tugStats(players, play, ST.a, ST.b);
+    $('bFill').style.width = (s.share*100).toFixed(1) + '%';
+    $('bA').textContent = '평균 ' + s[ST.a].avg.toFixed(1) + '회';
+    $('bB').textContent = '평균 ' + s[ST.b].avg.toFixed(1) + '회';
+  }
+  if (ST.game === 'nunchi' && $('bNext')){
+    const j = judgeNunchi(ST.alive || [], play);
+    $('bNext').textContent = t < ST.startAt ? Math.ceil((ST.startAt - t)/1000) : (j.ended ? '끝' : j.next);
+    $('bLeft').textContent = '안 누른 사람 ' + j.unpressed.length + '명';
+    $('bList').innerHTML = j.rows.map(r => `<div class="row"><span class="num" style="${r.kind==='clash'?'color:var(--accent)':''}">${r.num}</span>
+      <span style="flex:1;font-weight:700" class="${r.kind==='clash'?'strike':''}">${r.pids.map(p => esc(playerName(players,p))).join(' · ')}</span></div>`).join('');
+  }
+  if (ST.game === 'mugung' && $('bSign')){
+    const red = ST.light === 'red', pre = t < ST.startAt;
+    $('bSign').textContent = pre ? Math.ceil((ST.startAt - t)/1000) : (red ? '멈춰!' : '무궁화 꽃이 피었습니다');
+    if (!pre) stage.style.background = red ? '#A8231C' : '#1E7A4C';
+    const rows = rankMugung(ST.alive || [], play, ST.goal);
+    $('bList').innerHTML = rows.slice(0,12).map(r => `<div class="row"><span class="num" style="color:var(--ivory)">${r.rank||'-'}</span>
+      <span style="flex:1;font-weight:700" class="${r.out?'strike':''}">${esc(playerName(players,r.pid))}</span><span>${r.out?'탈락':(r.fin!=null?'골인':r.p + '/' + ST.goal)}</span></div>`).join('');
+  }
+}
+setInterval(tick, 120);
+</script>
+</body>
+</html>

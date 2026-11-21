@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>상임위원 워크숍 게임</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{--ivory:#F5F2EA;--navy:#13234A;--panel:#1C2F5C;--line:#2C4176;--sub:#A9B3C7;--accent:#E8623A;--gold:#F2B544;--ink:#0C1834}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif;background:var(--navy);color:var(--ivory);
+  min-height:100dvh;-webkit-user-select:none;user-select:none;touch-action:manipulation;transition:background .15s}
+body.green{background:#1E7A4C} body.red{background:#A8231C}
+button{font-family:inherit;cursor:pointer}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid rgba(245,242,234,.15)}
+.h-org{font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--sub)}
+body.green .h-org,body.red .h-org,body.green .muted,body.red .muted{color:rgba(245,242,234,.88)}
+.h-title{font-size:16px;font-weight:900;margin-top:2px}
+.chip{font-size:12px;font-weight:700;padding:6px 12px;border-radius:99px;background:var(--line);color:var(--ivory);white-space:nowrap}
+main{max-width:480px;margin:0 auto;padding:18px 16px 32px;display:flex;flex-direction:column;gap:14px;min-height:calc(100dvh - 68px)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+.sec-t{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--gold);margin-bottom:8px}
+.big{font-size:76px;font-weight:900;line-height:1;text-align:center;font-variant-numeric:tabular-nums}
+.gold{color:var(--gold)}
+.center{text-align:center}
+.muted{color:var(--sub);font-size:13px;line-height:1.6}
+.btn{width:100%;padding:16px;border-radius:16px;border:none;font-size:16px;font-weight:900;background:var(--ivory);color:var(--ink)}
+.btn:disabled{opacity:.35}
+.btn.huge{height:150px;font-size:48px;border-radius:24px;background:var(--gold)}
+.tap{display:block;margin:0 auto;width:min(72vw,280px);height:min(72vw,280px);border-radius:999px;border:8px solid var(--ivory);
+  font-size:48px;font-weight:900;color:var(--ink);background:var(--ivory);touch-action:none}
+.tap:active{transform:scale(.96)}
+.tap:disabled{opacity:.35}
+.grow{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.gl{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:8px}
+.gauge{position:relative;height:26px;border-radius:99px;overflow:hidden}
+.gauge .fill{height:100%;transition:width .15s linear}
+.gauge .mid{position:absolute;top:0;left:50%;width:3px;height:100%;background:var(--ink)}
+.bar{height:14px;border-radius:99px;background:rgba(12,24,52,.45);overflow:hidden}
+.bar>div{height:100%;background:var(--ivory);transition:width .1s}
+.row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
+.row:last-child{border-bottom:none}
+.num{width:30px;font-size:18px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
+.dot{width:10px;height:10px;border-radius:99px;flex:none}
+.strike{text-decoration:line-through;color:var(--sub)}
+.badge{font-size:12px;font-weight:700;padding:4px 8px;border-radius:99px;background:var(--accent);color:var(--ink);white-space:nowrap}
+.banner{padding:18px;border-radius:20px;text-align:center;color:var(--ink);font-size:30px;font-weight:900}
+input.field{width:100%;padding:16px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--ivory);font-size:18px;font-family:inherit;-webkit-user-select:text;user-select:text}
+#cd{position:fixed;inset:0;background:rgba(12,24,52,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:50;gap:10px}
+#cd.show{display:flex}
+#cd .n{font-size:150px;font-weight:900;line-height:1}
+.err{color:#FFB4A8;font-size:13px;min-height:20px}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="h-org">상임위원 워크숍</div><div class="h-title" id="hTitle">게임</div></div>
+  <span class="chip" id="hMe" style="display:none"></span>
+</header>
+<main id="main"><div class="grow"><div class="muted">연결 중…</div></div></main>
+<div id="cd"><div class="muted" id="cdLabel">곧 시작</div><div class="n" id="cdNum">3</div></div>
+
+<script type="module">
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, update, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB186Tg9fsrnR-K_lufo4X5iY9OVpgDeHk",
+  authDomain: "knewu24th-15ebc.firebaseapp.com",
+  databaseURL: "https://knewu24th-15ebc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "knewu24th-15ebc",
+  storageBucket: "knewu24th-15ebc.firebasestorage.app",
+  messagingSenderId: "617159229534",
+  appId: "1:617159229534:web:360195e7b3bc5a38b034cf"
+};
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ===== 공통 (host / index / board 동일) =====
+const ROOT = 'workshop_2026';
+const TEAM_COLORS = {1:'#E8623A',2:'#58A6F0',3:'#F2B544',4:'#3FC1A0'};
+const DEFAULT_TEAM_NAMES = {1:'1팀',2:'2팀',3:'3팀',4:'4팀'};
+const NUNCHI_WINDOW = 300;   // ms 안에 같이 누르면 동시
+const MUGUNG_GRACE = 250;    // 빨간불 받은 직후 봐주는 시간(ms)
+const TUG_SECONDS = 10;
+const COUNTDOWN_MS = 3500;
+const GAME_TITLES = {lobby:'대기', tug:'폰 줄다리기', nunchi:'눈치게임', mugung:'무궁화 꽃이 피었습니다'};
+
+function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function teamName(cfg, t){ return (cfg && cfg.teamNames && cfg.teamNames[t]) || DEFAULT_TEAM_NAMES[t] || '미배정'; }
+function teamColor(t){ return TEAM_COLORS[t] || '#2C4176'; }
+function teamCount(cfg){ const n = cfg && Number(cfg.teamCount); return (n===4) ? 4 : 3; }
+function teamList(cfg){ const n = teamCount(cfg); const a=[]; for(let i=1;i<=n;i++) a.push(i); return a; }
+function playerName(players, pid){ return (players && players[pid] && players[pid].name) || '(나감)'; }
+function teamMembers(players, t){
+  return Object.keys(players||{}).filter(pid => players[pid] && Number(players[pid].team) === t)
+    .sort((x,y)=> (players[x].at||0) - (players[y].at||0));
+}
+
+// ── 줄다리기: 팀 평균 연타수로 비교 (인원 다른 팀도 공정)
+function tugStats(players, taps, a, b){
+  const res = {};
+  [a,b].forEach(t=>{
+    const mem = teamMembers(players, t);
+    let sum = 0;
+    mem.forEach(pid=>{ sum += Math.max(0, Number((taps||{})[pid])||0); });
+    res[t] = {sum, n: mem.length, avg: mem.length ? sum/mem.length : 0};
+  });
+  const A = res[a].avg, B = res[b].avg, tot = A + B;
+  res.share = tot > 0 ? A / tot : 0.5;          // a팀 쪽 비율 0~1
+  res.winner = (A === B) ? 0 : (A > B ? a : b);
+  return res;
+}
+
+// ── 눈치게임 판정
+// alive: 참가자 pid 목록, presses: {pid: 서버시각(ms)}
+// 같은 숫자 = 그 숫자를 처음 누른 사람 기준 windowMs 안에 누른 사람들 → 모두 탈락
+// 한 명만 남으면 끝, 그 사람이 꼴찌 탈락 (그 뒤 누른 건 무효)
+function judgeNunchi(alive, presses, windowMs){
+  windowMs = windowMs || NUNCHI_WINDOW;
+  const aliveSet = new Set(alive);
+  const list = Object.keys(presses||{})
+    .filter(pid => aliveSet.has(pid) && typeof presses[pid] === 'number')
+    .map(pid => ({pid, ts: presses[pid]}))
+    .sort((x,y)=> (x.ts - y.ts) || (x.pid < y.pid ? -1 : 1));
+  const groups = [];
+  list.forEach(p=>{
+    const g = groups[groups.length-1];
+    if (g && p.ts - g.first < windowMs) g.pids.push(p.pid);
+    else groups.push({pids:[p.pid], first:p.ts});
+  });
+  let num = 0, remaining = alive.length, ended = remaining <= 1;
+  const rows = [], safe = [], out = [];
+  for (const g of groups){
+    if (ended) break;
+    num++;
+    if (g.pids.length === 1){ safe.push(g.pids[0]); rows.push({num, pids:g.pids.slice(), kind:'safe'}); }
+    else { g.pids.forEach(p=>out.push(p)); rows.push({num, pids:g.pids.slice(), kind:'clash'}); }
+    remaining -= g.pids.length;
+    if (remaining <= 1) ended = true;
+  }
+  const done = new Set(safe.concat(out));
+  const unpressed = alive.filter(p => !done.has(p));
+  return {rows, next: num + 1, safe, out, unpressed, ended, last: ended ? unpressed.slice() : []};
+}
+
+// ── 무궁화 순위: 골인 순 → 생존자 진행도 순 → 탈락자
+function rankMugung(alive, prog, goal){
+  const rows = alive.map(pid=>{
+    const d = (prog||{})[pid] || {};
+    return {pid, p: Math.min(goal, Math.max(0, Number(d.p)||0)), out: !!d.out, fin: (typeof d.fin === 'number') ? d.fin : null};
+  });
+  rows.sort((x,y)=>{
+    const gx = x.out ? 2 : (x.fin != null ? 0 : 1), gy = y.out ? 2 : (y.fin != null ? 0 : 1);
+    if (gx !== gy) return gx - gy;
+    if (gx === 0) return x.fin - y.fin;
+    return y.p - x.p;
+  });
+  let r = 0;
+  rows.forEach(row=>{ row.rank = row.out ? null : ++r; });
+  return rows;
+}
+function mugungAllDone(alive, prog){
+  return alive.length > 0 && alive.every(pid=>{ const d = (prog||{})[pid] || {}; return d.out || typeof d.fin === 'number'; });
+}
+const MUGUNG_POINTS = [3,2,1];
+
+// Firebase 는 배열을 객체로 돌려줄 때가 있어서 받자마자 배열로 맞춤
+function asList(v){ return Array.isArray(v) ? v.filter(x => x != null) : Object.values(v || {}); }
+function normState(s){
+  s = s || {game:'lobby'};
+  if (s.alive) s.alive = asList(s.alive);
+  if (s.result) ['survivors','losers','survivorNames','loserNames','rows'].forEach(k => { if (s.result[k]) s.result[k] = asList(s.result[k]); });
+  return s;
+}
+
+// 균등 랜덤 배정 (인원 차이 최대 1명)
+function balancedAssign(pids, n, rnd){
+  rnd = rnd || Math.random;
+  const a = pids.slice();
+  for (let i=a.length-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+  const out = {};
+  a.forEach((pid,i)=>{ out[pid] = (i % n) + 1; });
+  return out;
+}
+// ===== 공통 끝 =====
+
+const R = p => ref(db, ROOT + '/' + p);
+const $ = id => document.getElementById(id);
+
+let PID = localStorage.getItem('ws26_pid') || '';
+let players = null, cfg = {}, scores = {}, ST = {game:'lobby'}, offset = 0;
+let play = {}, playKey = '', playUnsub = null, playLoaded = false;
+let screenKey = '';
+let L = newLocal('');
+
+function newLocal(round){ return {round, taps:0, dirty:false, p:0, out:false, fin:false, pressed:false, redSeenAt:0, restored:false}; }
+const now = () => Date.now() + offset;
+const me = () => (players && PID && players[PID]) || null;
+const myTeam = () => { const m = me(); return m ? Number(m.team)||0 : 0; };
+const isLive = () => ST && ST.phase === 'live';
+const inAlive = () => Array.isArray(ST.alive) && ST.alive.includes(PID);
+
+// ── 구독
+onValue(ref(db, '.info/serverTimeOffset'), s => { offset = s.val() || 0; });
+onValue(R('players'), s => {
+  players = s.val() || {};
+  if (PID && !players[PID]) { PID = ''; localStorage.removeItem('ws26_pid'); }
+  render();
+});
+onValue(R('config'), s => { cfg = s.val() || {}; render(); });
+onValue(R('scores'), s => { scores = s.val() || {}; render(); });
+onValue(R('state'), s => {
+  const prev = ST;
+  ST = normState(s.val());
+  onStateChange(prev);
+  render();
+});
+
+function onStateChange(prev){
+  const g = ST.game, round = ST.round || '';
+  const key = (['tug','nunchi','mugung'].includes(g) && round) ? g + '/' + round : '';
+  if (key !== playKey){
+    if (playUnsub) { playUnsub(); playUnsub = null; }
+    playKey = key; play = {}; playLoaded = false;
+    if (key){
+      playUnsub = onValue(R('play/' + key), s => {
+        play = s.val() || {};
+        playLoaded = true;
+        restoreLocal();
+        render();
+      });
+    }
+  }
+  if (L.round !== round) L = newLocal(round);
+  if (g === 'mugung' && ST.light === 'red' && (prev.light !== 'red' || prev.lightAt !== ST.lightAt)){
+    L.redSeenAt = performance.now();
+    try { navigator.vibrate && navigator.vibrate(120); } catch(e){}
+  }
+}
+
+// 새로고침해도 내 기록 이어가기
+function restoreLocal(){
+  if (L.restored || L.round !== (ST.round||'') || !PID) return;
+  L.restored = true;
+  const mine = play[PID];
+  if (ST.game === 'tug') L.taps = Math.max(L.taps, Number(mine)||0);
+  if (ST.game === 'nunchi') L.pressed = L.pressed || typeof mine === 'number';
+  if (ST.game === 'mugung' && mine){
+    L.p = Math.max(L.p, Number(mine.p)||0);
+    L.out = L.out || !!mine.out;
+    L.fin = L.fin || typeof mine.fin === 'number';
+  }
+}
+
+// ── 전송 (줄다리기·무궁화 연타는 0.2초마다 몰아서)
+setInterval(() => {
+  if (!L.dirty || !PID || L.round !== (ST.round||'')) return;
+  L.dirty = false;
+  if (ST.game === 'tug') set(R('play/tug/' + ST.round + '/' + PID), L.taps);
+  if (ST.game === 'mugung' && !L.out && !L.fin) update(R('play/mugung/' + ST.round + '/' + PID), {p: L.p});
+}, 200);
+
+// ── 화면
+function render(){
+  renderHeader();
+  const key = screenKeyNow();
+  if (key !== screenKey){
+    screenKey = key;
+    $('main').innerHTML = buildScreen();
+    bindScreen();
+  }
+  tick();
+}
+
+function renderHeader(){
+  const m = me();
+  $('hTitle').textContent = GAME_TITLES[ST.game] || '게임';
+  const chip = $('hMe');
+  if (!m){ chip.style.display = 'none'; return; }
+  chip.style.display = '';
+  const t = Number(m.team)||0;
+  chip.textContent = m.name + (t ? ' · ' + teamName(cfg, t) : '');
+  chip.style.background = t ? teamColor(t) : 'var(--line)';
+  chip.style.color = t ? 'var(--ink)' : 'var(--ivory)';
+}
+
+function screenKeyNow(){
+  if (players === null) return 'loading';
+  if (!me()) return 'join';
+  const g = ST.game || 'lobby', ph = ST.phase || '', r = ST.round || '';
+  if (g === 'lobby') return 'lobby|' + JSON.stringify([players, cfg, scores]);
+  if (ph === 'setup') return 'setup|' + g + '|' + myTeam() + '|' + JSON.stringify(cfg);
+  if (ph === 'result') return 'result|' + r + '|' + JSON.stringify([ST.result, cfg]);
+  if (g === 'tug') return ['tug', r, ST.a, ST.b, myTeam(), JSON.stringify(cfg.teamNames||{})].join('|');
+  if (g === 'nunchi') return ['nunchi', r, inAlive()].join('|');
+  if (g === 'mugung') return ['mugung', r, inAlive(), L.out, L.fin].join('|');
+  return 'lobby';
+}
+
+function buildScreen(){
+  document.body.className = '';
+  if (screenKey === 'loading') return '<div class="grow"><div class="muted">연결 중…</div></div>';
+  if (screenKey === 'join') return joinView();
+  const g = ST.game || 'lobby';
+  if (g === 'lobby') return lobbyView();
+  if (ST.phase === 'setup') return introView();
+  if (ST.phase === 'result') return resultView();
+  if (g === 'tug') return tugView();
+  if (g === 'nunchi') return nunchiView();
+  if (g === 'mugung') return mugungView();
+  return lobbyView();
+}
+
+function bindScreen(){
+  const jb = $('joinBtn');
+  if (jb){
+    jb.onclick = join;
+    $('nameIn').onkeydown = e => { if (e.key === 'Enter') join(); };
+  }
+  const tb = $('tapBtn');
+  if (tb) tb.addEventListener('pointerdown', onTugTap, {passive:false});
+  const nb = $('nBtn');
+  if (nb) nb.addEventListener('pointerdown', onNunchiPress, {passive:false});
+  const mb = $('mBtn');
+  if (mb) mb.addEventListener('pointerdown', onMugungTap, {passive:false});
+}
+
+// ── 입장
+function joinView(){
+  return `<div class="grow" style="align-items:stretch">
+    <div class="center"><div style="font-size:26px;font-weight:900">워크숍 게임 입장</div>
+    <div class="muted" style="margin-top:6px">이름을 넣으면 바로 들어가요</div></div>
+    <input class="field" id="nameIn" maxlength="10" placeholder="이름 (예: 홍길동)" autocomplete="off">
+    <div class="err" id="joinMsg"></div>
+    <button class="btn" id="joinBtn">입장하기</button>
+  </div>`;
+}
+async function join(){
+  const v = ($('nameIn').value || '').trim();
+  const msg = $('joinMsg'), b = $('joinBtn');
+  if (v.length < 2 || v.length > 10){ msg.textContent = '이름을 2~10자로 넣어 주세요'; return; }
+  b.disabled = true; b.textContent = '입장 중…';
+  try{
+    const cur = (await get(R('players'))).val() || {};
+    if (Object.values(cur).some(p => p && p.name === v)){
+      msg.textContent = '같은 이름이 이미 있어요. 뒤에 지부나 이니셜을 붙여 주세요 (예: ' + v + 'B)';
+      b.disabled = false; b.textContent = '입장하기'; return;
+    }
+    const pid = 'p' + Math.random().toString(36).slice(2, 10);
+    await set(R('players/' + pid), {name: v, team: 0, at: serverTimestamp()});
+    PID = pid; localStorage.setItem('ws26_pid', pid);
+    render();
+  }catch(e){
+    msg.textContent = '연결이 안 돼요. 와이파이를 확인하고 다시 눌러 주세요';
+    b.disabled = false; b.textContent = '입장하기';
+  }
+}
+
+// ── 대기
+function lobbyView(){
+  const t = myTeam();
+  let teamCard;
+  if (t){
+    const mem = teamMembers(players, t).map(pid => esc(playerName(players, pid)) + (pid === PID ? ' <b class="gold">(나)</b>' : '')).join(' · ');
+    teamCard = `<div class="card" style="border:2px solid ${teamColor(t)}">
+      <div class="sec-t" style="color:${teamColor(t)}">우리 팀</div>
+      <div style="font-size:28px;font-weight:900">${esc(teamName(cfg, t))}</div>
+      <div class="muted" style="margin-top:6px">${mem}</div></div>`;
+  } else {
+    teamCard = `<div class="card"><div class="sec-t">우리 팀</div><div style="font-size:18px;font-weight:700">팀 배정 대기 중</div>
+      <div class="muted" style="margin-top:4px">사회자가 팀을 정하면 여기 떠요</div></div>`;
+  }
+  const ts = teamList(cfg).map(n => ({n, s: Number((scores.team||{})[n])||0})).sort((x,y)=>y.s-x.s);
+  const board = ts.map(x => `<div class="row"><span class="dot" style="background:${teamColor(x.n)}"></span>
+    <span style="flex:1;font-weight:700">${esc(teamName(cfg, x.n))}</span><b style="font-size:18px">${x.s}</b></div>`).join('');
+  const myScore = Number((scores.player||{})[PID])||0;
+  return `<div class="center" style="padding:10px 0 4px"><div style="font-size:22px;font-weight:900">곧 시작해요</div>
+    <div class="muted" style="margin-top:4px">사회자가 게임을 열면 이 화면이 자동으로 바뀌어요</div></div>
+    ${teamCard}
+    <div class="card"><div class="sec-t">팀 점수</div>${board}</div>
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:700">내 개인 점수</span><b style="font-size:22px">${myScore}</b></div>`;
+}
+
+// ── 게임 소개 (사회자가 게임을 열고 시작 전)
+const RULES = {
+  tug: ['두 팀이 10초 동안 버튼을 연타해요', '팀 평균 연타수가 높은 쪽으로 줄이 끌려가요', '안 뛰는 팀은 관전하면서 응원!'],
+  nunchi: ['1부터 차례로, 남이 안 누를 것 같을 때 「지금!」', '0.3초 안에 같이 누르면 둘 다 탈락', '마지막까지 못 누른 한 명도 탈락'],
+  mugung: ['초록불일 때 버튼을 연타해서 앞으로', '빨간불에 누르면 바로 탈락', '먼저 골인한 순서대로 1·2·3등']
+};
+function introView(){
+  const g = ST.game, t = myTeam();
+  const rules = (RULES[g]||[]).map((r,i) => `<div class="row"><span class="num">${i+1}</span><span style="flex:1">${esc(r)}</span></div>`).join('');
+  const teamLine = (g === 'tug')
+    ? (t ? `<div class="card center" style="border:2px solid ${teamColor(t)}"><div class="muted">우리 팀</div><div style="font-size:24px;font-weight:900">${esc(teamName(cfg,t))}</div></div>`
+         : `<div class="card center muted">팀 배정 전이라 이번엔 관전해요</div>`)
+    : '';
+  return `<div class="center" style="padding:14px 0 4px"><div class="muted">곧 시작</div>
+    <div style="font-size:30px;font-weight:900;margin-top:4px">${esc(GAME_TITLES[g]||'')}</div></div>
+    <div class="card"><div class="sec-t">규칙</div>${rules}</div>${teamLine}
+    <div class="muted center" style="margin-top:auto">사회자가 시작하면 3초 카운트다운 뒤에 바로 시작돼요</div>`;
+}
+
+// ── 줄다리기
+function tugPlaying(){ const t = myTeam(); return t && (t === ST.a || t === ST.b); }
+function tugView(){
+  const a = ST.a, b = ST.b, playing = tugPlaying();
+  const head = `<div class="big" id="tugTimer">${TUG_SECONDS}</div>
+  <div><div class="gl"><span>${esc(teamName(cfg,a))}</span><span>${esc(teamName(cfg,b))}</span></div>
+    <div class="gauge" style="background:${teamColor(b)}"><div class="fill" id="tugFill" style="width:50%;background:${teamColor(a)}"></div><div class="mid"></div></div>
+    <div class="gl muted" style="margin-top:8px;font-weight:500"><span id="tugA">평균 0회</span><span id="tugB">평균 0회</span></div></div>`;
+  if (!playing){
+    return head + `<div class="grow"><div style="font-size:26px;font-weight:900">관전 중</div>
+      <div class="muted center">이번 경기는 ${esc(teamName(cfg,a))} vs ${esc(teamName(cfg,b))}<br>목청껏 응원하세요!</div></div>`;
+  }
+  return head + `<div class="grow"><button class="tap" id="tapBtn" style="background:${teamColor(myTeam())}">당겨!</button></div>
+    <div class="muted center" id="tugMine">나 0회 · 팀 평균으로 비교해요</div>`;
+}
+function onTugTap(e){
+  e.preventDefault();
+  const t = now();
+  if (!isLive() || t < ST.startAt || t > ST.endAt || !tugPlaying()) return;
+  L.taps++; L.dirty = true;
+  tickTug();
+}
+function tickTug(){
+  const t = now();
+  const timer = $('tugTimer'); if (!timer) return;
+  if (t < ST.startAt) timer.textContent = TUG_SECONDS;
+  else if (t <= ST.endAt) timer.textContent = Math.max(0, Math.ceil((ST.endAt - t)/1000));
+  else timer.textContent = '끝!';
+  const taps = Object.assign({}, play);
+  if (tugPlaying()) taps[PID] = Math.max(Number(taps[PID])||0, L.taps);
+  const s = tugStats(players, taps, ST.a, ST.b);
+  $('tugFill').style.width = (s.share * 100).toFixed(1) + '%';
+  $('tugA').textContent = '평균 ' + s[ST.a].avg.toFixed(1) + '회';
+  $('tugB').textContent = '평균 ' + s[ST.b].avg.toFixed(1) + '회';
+  const mine = $('tugMine');
+  if (mine) mine.textContent = t > ST.endAt ? '결과 집계 중… 나 ' + L.taps + '회' : '나 ' + L.taps + '회 · 팀 평균으로 비교해요';
+  const btn = $('tapBtn');
+  if (btn) btn.disabled = t > ST.endAt;
+}
+
+// ── 눈치게임
+function nunchiView(){
+  const btn = inAlive()
+    ? `<button class="btn huge" id="nBtn">지금!</button>`
+    : `<div class="card center muted">게임 시작 뒤에 들어와서 이번 판은 구경만 해요</div>`;
+  return `<div class="center"><div class="muted">다음 숫자</div><div class="big gold" id="nNext">1</div>
+    <div class="muted" id="nLeft"></div></div>
+    <div class="card" id="nList" style="min-height:60px"></div>
+    <div class="center" id="nMine" style="font-size:18px;font-weight:900;min-height:26px"></div>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">${btn}
+    <div class="muted center">0.3초 안에 같이 누르면 둘 다 탈락 · 끝까지 못 누르면 탈락</div></div>`;
+}
+function onNunchiPress(e){
+  e.preventDefault();
+  if (!isLive() || now() < ST.startAt || L.pressed || !inAlive()) return;
+  const j = judgeNunchi(ST.alive||[], play);
+  if (j.ended) return;
+  L.pressed = true;
+  set(R('play/nunchi/' + ST.round + '/' + PID), serverTimestamp());
+  tickNunchi();
+}
+function tickNunchi(){
+  const nx = $('nNext'); if (!nx) return;
+  const j = judgeNunchi(ST.alive||[], play);
+  nx.textContent = j.ended ? '끝' : j.next;
+  $('nLeft').textContent = '아직 안 누른 사람 ' + j.unpressed.length + '명';
+  const html = j.rows.map(r => {
+    const names = r.pids.map(p => esc(playerName(players, p)) + (p === PID ? ' (나)' : '')).join(' · ');
+    return r.kind === 'safe'
+      ? `<div class="row"><span class="num">${r.num}</span><span style="flex:1;font-weight:700">${names}</span></div>`
+      : `<div class="row"><span class="num" style="color:var(--accent)">${r.num}</span><span class="strike" style="flex:1;font-weight:700">${names}</span><span class="badge">동시 · 탈락</span></div>`;
+  }).join('');
+  const lastHtml = j.last.length ? `<div class="row"><span class="num" style="color:var(--accent)">꼴</span><span class="strike" style="flex:1;font-weight:700">${j.last.map(p=>esc(playerName(players,p))).join(' · ')}</span><span class="badge">끝까지 못 누름</span></div>` : '';
+  $('nList').innerHTML = (html + lastHtml) || '<div class="muted center" style="padding:10px 0">누가 먼저 1을 부를까요?</div>';
+  let mine = '';
+  const sr = j.rows.find(r => r.pids.includes(PID));
+  if (sr) mine = sr.kind === 'safe' ? sr.num + '번 성공! 살았어요' : '동시에 눌러서 탈락…';
+  else if (j.last.includes(PID)) mine = '마지막까지 못 눌러서 탈락…';
+  else if (L.pressed) mine = '전송 중…';
+  $('nMine').textContent = mine;
+  const btn = $('nBtn');
+  if (btn) btn.disabled = L.pressed || j.ended || now() < (ST.startAt||0);
+}
+
+// ── 무궁화
+function mugungView(){
+  if (!inAlive()) return `<div class="grow"><div style="font-size:24px;font-weight:900">관전 중</div>
+    <div class="muted center">게임 시작 뒤에 들어와서 이번 판은 구경만 해요</div></div><div class="card" id="mBoard"></div>`;
+  if (L.out) return `<div class="grow" style="flex:0;padding:24px 0"><div style="font-size:80px;font-weight:900;line-height:1">탈락!</div>
+    <div class="muted center">빨간불에 눌렀어요. 남은 사람들 구경해요</div></div><div class="card" id="mBoard"></div>`;
+  if (L.fin) return `<div class="grow" style="flex:0;padding:24px 0"><div style="font-size:64px;font-weight:900;line-height:1">골인!</div>
+    <div id="mRank" style="font-size:26px;font-weight:900"></div></div><div class="card" id="mBoard"></div>`;
+  return `<div><div class="gl"><span>내 위치</span><span id="mPct">0 / ${ST.goal}</span></div><div class="bar"><div id="mFill" style="width:0%"></div></div></div>
+    <div class="grow">
+      <div id="mSign" style="font-size:42px;font-weight:900;text-align:center;line-height:1.2"></div>
+      <button class="tap" id="mBtn">연타!</button>
+    </div>
+    <div class="muted center" id="mInfo"></div>`;
+}
+function onMugungTap(e){
+  e.preventDefault();
+  if (!isLive() || now() < ST.startAt || L.out || L.fin || !inAlive()) return;
+  if (ST.light === 'green'){
+    L.p++;
+    if (L.p >= ST.goal){
+      L.fin = true; L.dirty = false;
+      update(R('play/mugung/' + ST.round + '/' + PID), {p: L.p, fin: serverTimestamp()});
+      render(); return;
+    }
+    L.dirty = true;
+  } else if (performance.now() - L.redSeenAt > MUGUNG_GRACE){
+    L.out = true; L.dirty = false;
+    update(R('play/mugung/' + ST.round + '/' + PID), {p: L.p, out: true});
+    try { navigator.vibrate && navigator.vibrate([80,60,80]); } catch(e){}
+    render(); return;
+  }
+  tickMugung();
+}
+function tickMugung(){
+  const started = isLive() && now() >= (ST.startAt||0);
+  document.body.className = started && !L.out && !L.fin && inAlive() ? (ST.light === 'red' ? 'red' : 'green') : '';
+  const goal = ST.goal || 50;
+  const rows = rankMugung(ST.alive||[], play, goal);
+  const fin = $('mFill');
+  if (fin){
+    fin.style.width = Math.min(100, L.p / goal * 100).toFixed(1) + '%';
+    $('mPct').textContent = L.p + ' / ' + goal;
+    const red = ST.light === 'red';
+    $('mSign').innerHTML = !started ? '준비' : (red ? '멈춰!' : '무궁화 꽃이<br>피었습니다');
+    $('mBtn').textContent = red ? '누르면 탈락' : '연타!';
+    $('mInfo').textContent = '생존 ' + rows.filter(r=>!r.out).length + '명 · 골인 ' + rows.filter(r=>r.fin!=null).length + '명';
+  }
+  const rk = $('mRank');
+  if (rk){ const mine = rows.find(r => r.pid === PID); rk.textContent = mine && mine.rank ? mine.rank + '등' : ''; }
+  const bd = $('mBoard');
+  if (bd){
+    bd.innerHTML = '<div class="sec-t">현재 순위</div>' + rows.map(r => `<div class="row">
+      <span class="num">${r.rank || '-'}</span><span style="flex:1;font-weight:700" class="${r.out?'strike':''}">${esc(playerName(players, r.pid))}${r.pid===PID?' (나)':''}</span>
+      <span class="muted">${r.out ? '탈락' : (r.fin!=null ? '골인' : r.p + '/' + goal)}</span></div>`).join('');
+  }
+}
+
+// ── 결과
+function resultView(){
+  const res = ST.result || {};
+  let body = '';
+  if (res.kind === 'tug'){
+    const w = res.winner;
+    body = (w ? `<div class="banner" style="background:${teamColor(w)}">${esc(teamName(cfg, w))} 승리!</div>`
+             : `<div class="banner" style="background:var(--ivory)">무승부!</div>`) +
+      `<div class="card"><div class="row"><span class="dot" style="background:${teamColor(res.a)}"></span><span style="flex:1;font-weight:700">${esc(teamName(cfg,res.a))}</span><span class="muted">평균 ${Number(res.avgA).toFixed(1)}회 · 합계 ${res.sumA}</span></div>
+      <div class="row"><span class="dot" style="background:${teamColor(res.b)}"></span><span style="flex:1;font-weight:700">${esc(teamName(cfg,res.b))}</span><span class="muted">평균 ${Number(res.avgB).toFixed(1)}회 · 합계 ${res.sumB}</span></div></div>`;
+  } else if (res.kind === 'nunchi'){
+    const surv = (res.survivors||[]).includes(PID), lost = (res.losers||[]).includes(PID);
+    body = `<div class="banner" style="background:${surv ? 'var(--gold)' : 'var(--ivory)'}">${surv ? '살아남았어요!' : (lost ? '아쉽게 탈락' : '눈치게임 끝')}</div>
+      <div class="card"><div class="sec-t">생존 ${(res.survivors||[]).length}명</div><div class="muted" style="color:var(--ivory)">${(res.survivorNames||[]).map(esc).join(' · ') || '없음'}</div></div>
+      <div class="card"><div class="sec-t">탈락</div><div class="muted">${(res.loserNames||[]).map(esc).join(' · ') || '없음'}</div></div>`;
+  } else if (res.kind === 'mugung'){
+    const rows = res.rows || [];
+    body = `<div class="banner" style="background:var(--gold)">${rows[0] && rows[0].rank ? esc(rows[0].name) + ' 1등!' : '무궁화 끝'}</div>
+      <div class="card">${rows.map(r => `<div class="row"><span class="num">${r.rank || '-'}</span>
+      <span style="flex:1;font-weight:700" class="${r.out?'strike':''}">${esc(r.name)}${r.pid===PID?' (나)':''}</span>
+      <span class="muted">${r.out ? '탈락' : (r.fin ? '골인' : r.p + '/' + res.goal)}</span></div>`).join('')}</div>`;
+  }
+  return `<div class="center muted">${esc(GAME_TITLES[ST.game] || '')} 결과</div>${body}
+    <div class="muted center" style="margin-top:auto">다음 게임을 기다려요</div>`;
+}
+
+// ── 시계 (카운트다운·타이머)
+function tick(){
+  const cd = $('cd');
+  const showCd = isLive() && ST.startAt && now() < ST.startAt && screenKey !== 'join' && !screenKey.startsWith('result');
+  if (showCd){
+    cd.classList.add('show');
+    $('cdNum').textContent = Math.max(1, Math.ceil((ST.startAt - now())/1000));
+    $('cdLabel').textContent = GAME_TITLES[ST.game] || '곧 시작';
+  } else cd.classList.remove('show');
+  if (!isLive()) { if (ST.game !== 'mugung') document.body.className = ''; return; }
+  if (ST.game === 'tug') tickTug();
+  else if (ST.game === 'nunchi') tickNunchi();
+  else if (ST.game === 'mugung') tickMugung();
+}
+setInterval(tick, 100);
+</script>
+</body>
+</html>
