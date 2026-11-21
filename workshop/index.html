@@ -70,6 +70,11 @@ body.flash{background:#7A1E18 !important}
 .choice:disabled{opacity:.5}
 .sm{min-width:64px;min-height:40px;border-radius:10px;border:none;background:var(--line);color:var(--ivory);font-weight:700;font-size:13px}
 .sm:disabled{opacity:.4}
+.rate{min-height:54px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--ivory);font-size:17px;font-weight:700}
+.rate.on{border-color:var(--gold);background:var(--gold);color:var(--ink)}
+.ebar{display:flex;align-items:center;gap:8px;font-size:13px;margin:5px 0}
+.ebar .tr{flex:1;height:10px;border-radius:99px;background:var(--navy);overflow:hidden}
+.ebar .tr>div{height:100%;background:var(--gold)}
 </style>
 </head>
 <body>
@@ -105,8 +110,8 @@ const MUGUNG_GRACE = 250;    // 빨간불 받은 직후 봐주는 시간(ms)
 const TUG_SECONDS = 10;
 const COUNTDOWN_MS = 3500;
 const GAME_TITLES = {lobby:'대기', tug:'폰 줄다리기', nunchi:'눈치게임', mugung:'무궁화 꽃이 피었습니다',
-  piano:'인간 피아노', draw:'릴레이 캐치마인드', bomb:'폭탄 해체', t10:'10초 맞히기', minor:'소수파 생존', chicken:'치킨 버튼'};
-const PLAY_GAMES = ['tug','nunchi','mugung','piano','draw','bomb','t10','minor','chicken'];
+  ennea:'에니어그램 팀 짜기', piano:'인간 피아노', draw:'릴레이 캐치마인드', bomb:'폭탄 해체', t10:'10초 맞히기', minor:'소수파 생존', chicken:'치킨 버튼'};
+const PLAY_GAMES = ['ennea','tug','nunchi','mugung','piano','draw','bomb','t10','minor','chicken'];
 
 function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function teamName(cfg, t){ return (cfg && cfg.teamNames && cfg.teamNames[t]) || DEFAULT_TEAM_NAMES[t] || '미배정'; }
@@ -356,6 +361,121 @@ function rankChicken(alive, data, startAt, explodeAt){
   let r = 0; rows.forEach(x => x.rank = x.v > 0 ? ++r : null);
   return rows;
 }
+
+// ── 에니어그램 팀 짜기 (공개된 9유형 개념을 바탕으로 직접 쓴 재미용 문항)
+const ENNEA_TYPES = {
+  1:{n:'개혁가', d:'원칙과 기준이 분명한 완벽주의자. 틀린 걸 바로잡는 힘'},
+  2:{n:'조력가', d:'사람을 먼저 챙기는 따뜻한 해결사'},
+  3:{n:'성취가', d:'목표를 정하면 결과로 보여주는 에이스'},
+  4:{n:'예술가', d:'자기만의 감성과 색깔이 뚜렷한 개성파'},
+  5:{n:'탐구가', d:'깊이 파고들어 판을 읽는 분석가'},
+  6:{n:'충성가', d:'위험을 미리 대비하는 믿음직한 동료'},
+  7:{n:'열정가', d:'어디서든 분위기를 띄우는 아이디어 뱅크'},
+  8:{n:'도전가', d:'앞장서서 밀어붙이는 추진력의 리더'},
+  9:{n:'중재자', d:'갈등을 녹이고 판을 편하게 만드는 평화주의자'}
+};
+const ENNEA_CENTER = {8:0, 9:0, 1:0, 2:1, 3:1, 4:1, 5:2, 6:2, 7:2};
+const CENTER_NAMES = ['장형','가슴형','머리형'];
+const CENTER_DESC = ['본능·행동으로 먼저 움직이는 사람들','감정·관계를 먼저 살피는 사람들','생각·분석으로 판을 짜는 사람들'];
+const ENNEA_ITEMS = [
+  {id:'a1', t:1, q:'일이 대충 처리되면 내가 다시 손봐야 마음이 편하다'},
+  {id:'b1', t:1, q:'옳고 그름은 분명하게 가려야 한다고 생각한다'},
+  {id:'a2', t:2, q:'주변 사람이 뭐가 필요한지가 먼저 눈에 들어온다'},
+  {id:'b2', t:2, q:'부탁을 받으면 거절하기가 정말 어렵다'},
+  {id:'a3', t:3, q:'목표를 정하면 숫자나 결과로 증명하고 싶다'},
+  {id:'b3', t:3, q:'남들한테 일 잘하는 사람으로 보이는 게 중요하다'},
+  {id:'a4', t:4, q:'나는 남들과는 다른 나만의 색깔이 있다고 느낀다'},
+  {id:'b4', t:4, q:'내 기분이나 속마음을 몰라주면 서운함이 오래 간다'},
+  {id:'a5', t:5, q:'결정하기 전에 충분히 알아보고 혼자 생각할 시간이 필요하다'},
+  {id:'b5', t:5, q:'사람들 속에 오래 있으면 기운이 빠져서 혼자 쉬고 싶다'},
+  {id:'a6', t:6, q:'일이 틀어질 경우를 미리 대비해 둬야 안심이 된다'},
+  {id:'b6', t:6, q:'믿고 기댈 수 있는 조직과 동료가 나한테 정말 중요하다'},
+  {id:'a7', t:7, q:'재밌는 계획을 세우는 것만으로도 신이 난다'},
+  {id:'b7', t:7, q:'힘든 일은 오래 붙잡기보다 빨리 털고 다음으로 넘어간다'},
+  {id:'a8', t:8, q:'부당한 걸 보면 앞에 나서서 맞서야 직성이 풀린다'},
+  {id:'b8', t:8, q:'누가 나를 좌지우지하려 들면 강하게 반발한다'},
+  {id:'a9', t:9, q:'갈등이 생기면 일단 분위기부터 가라앉히고 싶다'},
+  {id:'b9', t:9, q:'웬만하면 내 고집보다 다른 사람 의견에 맞춰 주는 편이다'}
+];
+const ENNEA_SCALE = ['전혀 아니다','아닌 편','보통','그런 편','완전 나다'];
+// answers {itemId: 1~5} → 유형별 평균(×2), 최고 유형, 중심 점수
+function enneaScore(ans){
+  ans = ans || {};
+  const by = {}, mx = {};
+  ENNEA_ITEMS.forEach(it => { const v = Number(ans[it.id]); if (v >= 1 && v <= 5){ (by[it.t] = by[it.t] || []).push(v); mx[it.t] = Math.max(mx[it.t] || 0, v); } });
+  const n = Object.values(by).reduce((a,x) => a + x.length, 0);
+  const scores = {};
+  for (let t=1;t<=9;t++){ const a = by[t] || []; scores[t] = a.length ? a.reduce((x,y)=>x+y,0) / a.length * 2 : 0; }
+  let type = null;
+  if (n >= 6){
+    type = 1;
+    for (let t=2;t<=9;t++){
+      if (scores[t] > scores[type] || (scores[t] === scores[type] && (mx[t]||0) > (mx[type]||0))) type = t;
+    }
+  }
+  const cs = [0,1,2].map(c => [1,2,3,4,5,6,7,8,9].filter(t => ENNEA_CENTER[t] === c).reduce((a,t) => a + scores[t], 0) / 3);
+  return {scores, type, center: type ? ENNEA_CENTER[type] : null, cs, answered: n};
+}
+function seededShuffle(arr, seedStr){
+  let h = 2166136261; for (const ch of String(seedStr)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  const rnd = () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const a = arr.slice();
+  for (let i=a.length-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); const x = a[i]; a[i] = a[j]; a[j] = x; }
+  return a;
+}
+// 섞기: 정원(인원 차 최대 1명) 안에서, 그 중심(장·가슴·머리)이 가장 적은 팀 → 같은 유형이 적은 팀 → 인원 적은 팀 순으로 배정
+function enneaMix(people, n, rnd){
+  rnd = rnd || Math.random;
+  const N = people.length, cap = [];
+  for (let t=1;t<=n;t++) cap[t] = Math.floor(N / n) + (t <= N % n ? 1 : 0);
+  const typed = people.filter(p => p.type).map(p => ({...p, k: rnd()})).sort((x,y) => (x.center - y.center) || (x.type - y.type) || (x.k - y.k));
+  const rest = people.filter(p => !p.type).map(p => ({...p, k: rnd()})).sort((x,y) => x.k - y.k);
+  const out = {}, size = {}, cc = {}, tc = {};
+  for (let t=1;t<=n;t++){ size[t] = 0; cc[t] = [0,0,0]; tc[t] = {}; }
+  typed.concat(rest).forEach(p => {
+    let best = null;
+    for (let t=1;t<=n;t++){
+      if (size[t] >= cap[t]) continue;
+      const key = [p.type ? cc[t][p.center] : 0, p.type ? (tc[t][p.type] || 0) : 0, size[t], rnd()];
+      if (!best || key[0] < best.key[0] || (key[0] === best.key[0] && (key[1] < best.key[1] || (key[1] === best.key[1] && (key[2] < best.key[2] || (key[2] === best.key[2] && key[3] < best.key[3])))))) best = {t, key};
+    }
+    out[p.pid] = best.t; size[best.t]++;
+    if (p.type){ cc[best.t][p.center]++; tc[best.t][p.type] = (tc[best.t][p.type] || 0) + 1; }
+  });
+  return {teams: out, scouted: {}};
+}
+// 모으기(3팀): 장형=1팀, 가슴형=2팀, 머리형=3팀. 넘치면 다른 중심 점수가 가장 가까운 사람을 옮김
+function enneaGroup(people, rnd){
+  rnd = rnd || Math.random;
+  const N = people.length, base = Math.floor(N / 3), extra = N % 3;
+  const natural = [0,1,2].map(c => people.filter(p => p.type && p.center === c).length);
+  const order = [0,1,2].sort((a,b) => natural[b] - natural[a]);
+  const cap = [base, base, base]; order.slice(0, extra).forEach(c => cap[c]++);
+  const team = {}, scouted = {};
+  people.forEach(p => { if (p.type) team[p.pid] = p.center; });
+  const count = c => Object.values(team).filter(x => x === c).length;
+  people.filter(p => !p.type).map(p => ({p, k: rnd()})).sort((a,b) => a.k - b.k).forEach(({p}) => {
+    const under = [0,1,2].filter(c => count(c) < cap[c]);
+    team[p.pid] = under.length ? under[0] : [0,1,2].sort((a,b) => count(a) - count(b))[0];
+  });
+  for (let guard = 0; guard < 100; guard++){
+    const over = [0,1,2].filter(c => count(c) > cap[c]), under = [0,1,2].filter(c => count(c) < cap[c]);
+    if (!over.length || !under.length) break;
+    let best = null;
+    people.forEach(p => {
+      if (!over.includes(team[p.pid])) return;
+      under.forEach(u => {
+        const own = p.cs ? p.cs[team[p.pid]] : 0, tgt = p.cs ? p.cs[u] : 0;
+        const cost = own - tgt + rnd() * 1e-6;
+        if (!best || cost < best.cost) best = {pid: p.pid, to: u, cost};
+      });
+    });
+    if (!best) break;
+    team[best.pid] = best.to; scouted[best.pid] = best.to + 1;
+  }
+  const out = {}; Object.keys(team).forEach(pid => out[pid] = team[pid] + 1);
+  return {teams: out, scouted};
+}
 // ===== 공통 끝 =====
 
 const R = p => ref(db, ROOT + '/' + p);
@@ -367,7 +487,7 @@ let play = {}, playKey = '', playUnsub = null, playLoaded = false;
 let screenKey = '';
 let L = newLocal('');
 
-function newLocal(round){ return {round, taps:0, dirty:false, p:0, out:false, fin:false, pressed:false, redSeenAt:0, restored:false, lastMiss:null, holdStart:0, t10:null, chick:0, pick:null, pickQ:null}; }
+function newLocal(round){ return {round, taps:0, dirty:false, p:0, out:false, fin:false, pressed:false, redSeenAt:0, restored:false, lastMiss:null, holdStart:0, t10:null, chick:0, pick:null, pickQ:null, en:null}; }
 const now = () => Date.now() + offset;
 const me = () => (players && PID && players[PID]) || null;
 const myTeam = () => { const m = me(); return m ? Number(m.team)||0 : 0; };
@@ -420,6 +540,7 @@ function restoreLocal(){
   if (ST.game === 'tug') L.taps = Math.max(L.taps, Number(mine)||0);
   if (['nunchi','t10','chicken'].includes(ST.game)) L.pressed = L.pressed || typeof mine === 'number';
   if (ST.game === 't10' && typeof mine === 'number') L.t10 = mine;
+  if (ST.game === 'ennea'){ enInit(); L.en.ans = Object.assign({}, mine || {}, L.en.ans); L.en.idx = enFirstOpen(); }
   if (ST.game === 'mugung' && mine){
     L.p = Math.max(L.p, Number(mine.p)||0);
     L.out = L.out || !!mine.out;
@@ -469,6 +590,7 @@ function screenKeyNow(){
   if (g === 'tug') return ['tug', r, ST.a, ST.b, myTeam(), JSON.stringify(cfg.teamNames||{})].join('|');
   if (g === 'nunchi') return ['nunchi', r, inAlive()].join('|');
   if (g === 'mugung') return ['mugung', r, inAlive(), L.out, L.fin].join('|');
+  if (g === 'ennea') return ['ennea', r, enDone(), L.en ? L.en.review : 0].join('|');
   if (g === 'piano') return ['piano', r, myTeam(), pianoMine()].join('|');
   if (g === 'draw') return ['draw', r, myTeam(), JSON.stringify(cfg.teamNames||{})].join('|');
   if (g === 'bomb') return ['bomb', r, myTeam(), bombRole(), teamMembers(players, myTeam()).join(',')].join('|');
@@ -489,6 +611,7 @@ function buildScreen(){
   if (g === 'tug') return tugView();
   if (g === 'nunchi') return nunchiView();
   if (g === 'mugung') return mugungView();
+  if (g === 'ennea') return enneaView();
   if (g === 'piano') return pianoView();
   if (g === 'draw') return drawView();
   if (g === 'bomb') return bombView();
@@ -517,6 +640,7 @@ function bindScreen(){
   const tb2 = $('tBtn');
   if (tb2) tb2.addEventListener('pointerdown', onT10Press, {passive:false});
   if (ST.game === 'minor') bindMinor();
+  if (ST.game === 'ennea') bindEnnea();
   const cb = $('cBtn');
   if (cb) cb.addEventListener('pointerdown', onChickenPress, {passive:false});
 }
@@ -582,6 +706,7 @@ const RULES = {
   tug: ['두 팀이 10초 동안 버튼을 연타해요', '팀 평균 연타수가 높은 쪽으로 줄이 끌려가요', '안 뛰는 팀은 관전하면서 응원!'],
   nunchi: ['1부터 차례로, 남이 안 누를 것 같을 때 「지금!」', '0.3초 안에 같이 누르면 둘 다 탈락', '마지막까지 못 누른 한 명도 탈락'],
   mugung: ['초록불일 때 버튼을 연타해서 앞으로', '빨간불에 누르면 바로 탈락', '먼저 골인한 순서대로 1·2·3등'],
+  ennea: ['문장 18개에 나랑 얼마나 비슷한지 골라요 (2분)', '9가지 유형 중 내 유형이 나와요 · 재미로 보는 간이 테스트', '사회자가 팀 발표를 누르면 성향을 섞어서 팀이 정해져요'],
   piano: ['팀원마다 색 버튼이 하나씩 생겨요', '화면 순서대로 자기 색 차례에 누르기', '한 번 틀리면 처음부터 · 먼저 끝낸 팀이 1등'],
   draw: ['그리는 팀은 한 명씩 몇 초씩 이어서 그려요', '다른 팀은 보면서 정답을 입력', '먼저 맞힌 팀 +2, 그린 팀도 +1'],
   bomb: ['팀마다 한 명만 폭탄을 봐요', '나머지는 매뉴얼을 보고 말로 해체 방법을 알려줘요', '전선·버튼·기호 3단계 · 실수 3번이면 펑'],
@@ -599,7 +724,7 @@ function introView(){
   return `<div class="center" style="padding:14px 0 4px"><div class="muted">곧 시작</div>
     <div style="font-size:30px;font-weight:900;margin-top:4px">${esc(GAME_TITLES[g]||'')}</div></div>
     <div class="card"><div class="sec-t">규칙</div>${rules}</div>${teamLine}
-    <div class="muted center" style="margin-top:auto">사회자가 시작하면 3초 카운트다운 뒤에 바로 시작돼요</div>`;
+    <div class="muted center" style="margin-top:auto">${g === 'ennea' || g === 'minor' ? '사회자가 시작하면 바로 화면이 바뀌어요' : '사회자가 시작하면 3초 카운트다운 뒤에 바로 시작돼요'}</div>`;
 }
 
 // ── 줄다리기
@@ -742,6 +867,77 @@ function tickMugung(){
       <span class="num">${r.rank || '-'}</span><span style="flex:1;font-weight:700" class="${r.out?'strike':''}">${esc(playerName(players, r.pid))}${r.pid===PID?' (나)':''}</span>
       <span class="muted">${r.out ? '탈락' : (r.fin!=null ? '골인' : r.p + '/' + goal)}</span></div>`).join('');
   }
+}
+
+
+// ── 에니어그램 팀 짜기
+function enInit(){ if (!L.en) L.en = {order: seededShuffle(ENNEA_ITEMS, PID + (ST.round||'')), idx: 0, ans: {}, review: 0}; }
+function enFirstOpen(){ const i = L.en.order.findIndex(it => !L.en.ans[it.id]); return i < 0 ? L.en.order.length : i; }
+function enDone(){ if (!L.en) return false; return ENNEA_ITEMS.every(it => L.en.ans[it.id]) && !L.en.review; }
+function enneaCard(type, scores, showBars){
+  if (!type) return `<div class="card center"><div style="font-size:20px;font-weight:900">유형 없음</div><div class="muted">테스트를 다 못 해서 남는 자리에 들어갔어요</div></div>`;
+  const c = ENNEA_CENTER[type], T = ENNEA_TYPES[type];
+  let bars = '';
+  if (showBars && scores){
+    const top = [1,2,3,4,5,6,7,8,9].sort((a,b) => scores[b] - scores[a]).slice(0, 3);
+    bars = `<div style="margin-top:10px">${top.map(t => `<div class="ebar"><span style="width:70px;font-weight:700">${t}번 ${ENNEA_TYPES[t].n}</span><div class="tr"><div style="width:${(scores[t]/10*100).toFixed(0)}%"></div></div><span class="muted" style="width:28px;text-align:right">${scores[t].toFixed(1)}</span></div>`).join('')}</div>`;
+  }
+  return `<div class="card" style="border:2px solid var(--gold)"><div class="muted">내 유형 · ${CENTER_NAMES[c]}</div>
+    <div style="font-size:32px;font-weight:900;margin-top:2px">${type}번 ${T.n}</div>
+    <div style="margin-top:6px;line-height:1.5">${esc(T.d)}</div>
+    <div class="muted" style="margin-top:4px">${CENTER_NAMES[c]}: ${CENTER_DESC[c]}</div>${bars}</div>`;
+}
+function enneaView(){
+  enInit();
+  if (enDone()){
+    const r = enneaScore(L.en.ans);
+    return `<div class="center" style="padding:6px 0"><div style="font-size:22px;font-weight:900">테스트 완료!</div><div class="muted">재미로 보는 간이 테스트예요</div></div>
+      ${enneaCard(r.type, r.scores, true)}
+      <div class="card center"><div style="font-weight:700">사회자가 팀 발표를 누르면</div><div class="muted">성향을 섞어서 정한 우리 팀이 여기 떠요</div></div>
+      <button class="btn ghost" id="enRedo" style="margin-top:auto">답 다시 고르기</button>`;
+  }
+  return `<div><div class="gl"><span class="gold">내 성향 테스트</span><span id="enProg"></span></div><div class="bar" style="background:var(--line)"><div id="enFill" style="background:var(--gold)"></div></div></div>
+    <div class="card" style="min-height:150px;display:flex;align-items:center"><div id="enQ" style="font-size:22px;font-weight:900;line-height:1.45"></div></div>
+    <div style="display:flex;flex-direction:column;gap:8px">${ENNEA_SCALE.map((x,i) => `<button class="rate" data-rate="${i+1}">${x}</button>`).join('')}</div>
+    <div style="display:flex;gap:8px;margin-top:auto"><button class="btn ghost" id="enBack">이전 문항</button></div>
+    <div class="muted center">정답 없어요. 평소 나랑 가까운 쪽으로 빠르게!</div>`;
+}
+function enShowQ(){
+  const q = $('enQ'); if (!q) return;
+  const N = L.en.order.length, i = Math.min(L.en.idx, N - 1), it = L.en.order[i];
+  q.textContent = it.q;
+  $('enProg').textContent = (i + 1) + ' / ' + N;
+  $('enFill').style.width = (Object.keys(L.en.ans).filter(k => L.en.ans[k]).length / N * 100).toFixed(0) + '%';
+  document.querySelectorAll('[data-rate]').forEach(b => b.classList.toggle('on', Number(b.dataset.rate) === Number(L.en.ans[it.id])));
+  $('enBack').disabled = i === 0;
+}
+function bindEnnea(){
+  enInit();
+  document.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => {
+    if (!isLive()) return;
+    const it = L.en.order[Math.min(L.en.idx, L.en.order.length - 1)], v = Number(b.dataset.rate);
+    L.en.ans[it.id] = v;
+    set(R('play/ennea/' + ST.round + '/' + PID + '/' + it.id), v);
+    if (L.en.review === 2 && L.en.idx < L.en.order.length - 1) L.en.idx++;      // 처음부터 다시: 한 문항씩
+    else { L.en.review = 0; L.en.idx = enFirstOpen(); }                          // 이전 문항 고친 뒤: 안 한 문항으로
+    if (enDone()) render(); else enShowQ();
+  });
+  const bk = $('enBack'); if (bk) bk.onclick = () => { if (L.en.idx > 0){ L.en.idx = Math.min(L.en.idx, L.en.order.length - 1) - 1; if (L.en.review !== 2) L.en.review = 1; enShowQ(); } };
+  const rd = $('enRedo'); if (rd) rd.onclick = () => { L.en.review = 2; L.en.idx = 0; render(); };
+  enShowQ();
+}
+function enneaResult(res){
+  const types = res.types || {}, mine = types[PID] || {};
+  const t = myTeam();
+  const mem = t ? teamMembers(players, t) : [];
+  const comp = [0,1,2].map(c => mem.filter(p => types[p] && types[p].c === c).length);
+  const sc = (res.scouted || {})[PID];
+  const scoutNote = sc && mine.t ? `<div class="card" style="border:1px dashed var(--gold)"><b class="gold">스카우트!</b> ${CENTER_NAMES[ENNEA_CENTER[mine.t]]}이 많아서, 그중 ${CENTER_NAMES[sc-1]} 점수가 가장 가까운 사람으로 뽑혀 이 팀에 왔어요</div>` : '';
+  return `${t ? `<div class="banner" style="background:${teamColor(t)}">${esc(teamName(cfg,t))}</div>` : ''}
+    ${enneaCard(mine.t, null, false)}${scoutNote}
+    <div class="card"><div class="gl"><span class="gold">우리 팀 구성</span><span class="muted">${comp.map((n,c) => CENTER_NAMES[c] + ' ' + n).join(' · ')}</span></div>
+    ${mem.map(p => { const x = types[p] || {}; return `<div class="row"><span style="flex:1;font-weight:700">${esc(playerName(players,p))}${p===PID?' (나)':''}</span>
+      <span class="muted">${x.t ? x.t + '번 ' + ENNEA_TYPES[x.t].n + ' · ' + CENTER_NAMES[x.c] : '유형 없음'}</span></div>`; }).join('')}</div>`;
 }
 
 // ── 인간 피아노
@@ -1108,6 +1304,7 @@ function resultView(){
       <span style="flex:1;font-weight:700" class="${r.out?'strike':''}">${esc(r.name)}${r.pid===PID?' (나)':''}</span>
       <span class="muted">${r.out ? '탈락' : (r.fin ? '골인' : r.p + '/' + res.goal)}</span></div>`).join('')}</div>`;
   }
+  else if (res.kind === 'ennea'){ body = enneaResult(res); }
   else if (res.kind === 'piano' || res.kind === 'bomb'){
     const rows = asList(res.rows), w = rows[0];
     const ok = r => res.kind === 'piano' ? r.fin != null : r.at != null;

@@ -70,8 +70,8 @@ const MUGUNG_GRACE = 250;    // 빨간불 받은 직후 봐주는 시간(ms)
 const TUG_SECONDS = 10;
 const COUNTDOWN_MS = 3500;
 const GAME_TITLES = {lobby:'대기', tug:'폰 줄다리기', nunchi:'눈치게임', mugung:'무궁화 꽃이 피었습니다',
-  piano:'인간 피아노', draw:'릴레이 캐치마인드', bomb:'폭탄 해체', t10:'10초 맞히기', minor:'소수파 생존', chicken:'치킨 버튼'};
-const PLAY_GAMES = ['tug','nunchi','mugung','piano','draw','bomb','t10','minor','chicken'];
+  ennea:'에니어그램 팀 짜기', piano:'인간 피아노', draw:'릴레이 캐치마인드', bomb:'폭탄 해체', t10:'10초 맞히기', minor:'소수파 생존', chicken:'치킨 버튼'};
+const PLAY_GAMES = ['ennea','tug','nunchi','mugung','piano','draw','bomb','t10','minor','chicken'];
 
 function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function teamName(cfg, t){ return (cfg && cfg.teamNames && cfg.teamNames[t]) || DEFAULT_TEAM_NAMES[t] || '미배정'; }
@@ -321,6 +321,121 @@ function rankChicken(alive, data, startAt, explodeAt){
   let r = 0; rows.forEach(x => x.rank = x.v > 0 ? ++r : null);
   return rows;
 }
+
+// ── 에니어그램 팀 짜기 (공개된 9유형 개념을 바탕으로 직접 쓴 재미용 문항)
+const ENNEA_TYPES = {
+  1:{n:'개혁가', d:'원칙과 기준이 분명한 완벽주의자. 틀린 걸 바로잡는 힘'},
+  2:{n:'조력가', d:'사람을 먼저 챙기는 따뜻한 해결사'},
+  3:{n:'성취가', d:'목표를 정하면 결과로 보여주는 에이스'},
+  4:{n:'예술가', d:'자기만의 감성과 색깔이 뚜렷한 개성파'},
+  5:{n:'탐구가', d:'깊이 파고들어 판을 읽는 분석가'},
+  6:{n:'충성가', d:'위험을 미리 대비하는 믿음직한 동료'},
+  7:{n:'열정가', d:'어디서든 분위기를 띄우는 아이디어 뱅크'},
+  8:{n:'도전가', d:'앞장서서 밀어붙이는 추진력의 리더'},
+  9:{n:'중재자', d:'갈등을 녹이고 판을 편하게 만드는 평화주의자'}
+};
+const ENNEA_CENTER = {8:0, 9:0, 1:0, 2:1, 3:1, 4:1, 5:2, 6:2, 7:2};
+const CENTER_NAMES = ['장형','가슴형','머리형'];
+const CENTER_DESC = ['본능·행동으로 먼저 움직이는 사람들','감정·관계를 먼저 살피는 사람들','생각·분석으로 판을 짜는 사람들'];
+const ENNEA_ITEMS = [
+  {id:'a1', t:1, q:'일이 대충 처리되면 내가 다시 손봐야 마음이 편하다'},
+  {id:'b1', t:1, q:'옳고 그름은 분명하게 가려야 한다고 생각한다'},
+  {id:'a2', t:2, q:'주변 사람이 뭐가 필요한지가 먼저 눈에 들어온다'},
+  {id:'b2', t:2, q:'부탁을 받으면 거절하기가 정말 어렵다'},
+  {id:'a3', t:3, q:'목표를 정하면 숫자나 결과로 증명하고 싶다'},
+  {id:'b3', t:3, q:'남들한테 일 잘하는 사람으로 보이는 게 중요하다'},
+  {id:'a4', t:4, q:'나는 남들과는 다른 나만의 색깔이 있다고 느낀다'},
+  {id:'b4', t:4, q:'내 기분이나 속마음을 몰라주면 서운함이 오래 간다'},
+  {id:'a5', t:5, q:'결정하기 전에 충분히 알아보고 혼자 생각할 시간이 필요하다'},
+  {id:'b5', t:5, q:'사람들 속에 오래 있으면 기운이 빠져서 혼자 쉬고 싶다'},
+  {id:'a6', t:6, q:'일이 틀어질 경우를 미리 대비해 둬야 안심이 된다'},
+  {id:'b6', t:6, q:'믿고 기댈 수 있는 조직과 동료가 나한테 정말 중요하다'},
+  {id:'a7', t:7, q:'재밌는 계획을 세우는 것만으로도 신이 난다'},
+  {id:'b7', t:7, q:'힘든 일은 오래 붙잡기보다 빨리 털고 다음으로 넘어간다'},
+  {id:'a8', t:8, q:'부당한 걸 보면 앞에 나서서 맞서야 직성이 풀린다'},
+  {id:'b8', t:8, q:'누가 나를 좌지우지하려 들면 강하게 반발한다'},
+  {id:'a9', t:9, q:'갈등이 생기면 일단 분위기부터 가라앉히고 싶다'},
+  {id:'b9', t:9, q:'웬만하면 내 고집보다 다른 사람 의견에 맞춰 주는 편이다'}
+];
+const ENNEA_SCALE = ['전혀 아니다','아닌 편','보통','그런 편','완전 나다'];
+// answers {itemId: 1~5} → 유형별 평균(×2), 최고 유형, 중심 점수
+function enneaScore(ans){
+  ans = ans || {};
+  const by = {}, mx = {};
+  ENNEA_ITEMS.forEach(it => { const v = Number(ans[it.id]); if (v >= 1 && v <= 5){ (by[it.t] = by[it.t] || []).push(v); mx[it.t] = Math.max(mx[it.t] || 0, v); } });
+  const n = Object.values(by).reduce((a,x) => a + x.length, 0);
+  const scores = {};
+  for (let t=1;t<=9;t++){ const a = by[t] || []; scores[t] = a.length ? a.reduce((x,y)=>x+y,0) / a.length * 2 : 0; }
+  let type = null;
+  if (n >= 6){
+    type = 1;
+    for (let t=2;t<=9;t++){
+      if (scores[t] > scores[type] || (scores[t] === scores[type] && (mx[t]||0) > (mx[type]||0))) type = t;
+    }
+  }
+  const cs = [0,1,2].map(c => [1,2,3,4,5,6,7,8,9].filter(t => ENNEA_CENTER[t] === c).reduce((a,t) => a + scores[t], 0) / 3);
+  return {scores, type, center: type ? ENNEA_CENTER[type] : null, cs, answered: n};
+}
+function seededShuffle(arr, seedStr){
+  let h = 2166136261; for (const ch of String(seedStr)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  const rnd = () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const a = arr.slice();
+  for (let i=a.length-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); const x = a[i]; a[i] = a[j]; a[j] = x; }
+  return a;
+}
+// 섞기: 정원(인원 차 최대 1명) 안에서, 그 중심(장·가슴·머리)이 가장 적은 팀 → 같은 유형이 적은 팀 → 인원 적은 팀 순으로 배정
+function enneaMix(people, n, rnd){
+  rnd = rnd || Math.random;
+  const N = people.length, cap = [];
+  for (let t=1;t<=n;t++) cap[t] = Math.floor(N / n) + (t <= N % n ? 1 : 0);
+  const typed = people.filter(p => p.type).map(p => ({...p, k: rnd()})).sort((x,y) => (x.center - y.center) || (x.type - y.type) || (x.k - y.k));
+  const rest = people.filter(p => !p.type).map(p => ({...p, k: rnd()})).sort((x,y) => x.k - y.k);
+  const out = {}, size = {}, cc = {}, tc = {};
+  for (let t=1;t<=n;t++){ size[t] = 0; cc[t] = [0,0,0]; tc[t] = {}; }
+  typed.concat(rest).forEach(p => {
+    let best = null;
+    for (let t=1;t<=n;t++){
+      if (size[t] >= cap[t]) continue;
+      const key = [p.type ? cc[t][p.center] : 0, p.type ? (tc[t][p.type] || 0) : 0, size[t], rnd()];
+      if (!best || key[0] < best.key[0] || (key[0] === best.key[0] && (key[1] < best.key[1] || (key[1] === best.key[1] && (key[2] < best.key[2] || (key[2] === best.key[2] && key[3] < best.key[3])))))) best = {t, key};
+    }
+    out[p.pid] = best.t; size[best.t]++;
+    if (p.type){ cc[best.t][p.center]++; tc[best.t][p.type] = (tc[best.t][p.type] || 0) + 1; }
+  });
+  return {teams: out, scouted: {}};
+}
+// 모으기(3팀): 장형=1팀, 가슴형=2팀, 머리형=3팀. 넘치면 다른 중심 점수가 가장 가까운 사람을 옮김
+function enneaGroup(people, rnd){
+  rnd = rnd || Math.random;
+  const N = people.length, base = Math.floor(N / 3), extra = N % 3;
+  const natural = [0,1,2].map(c => people.filter(p => p.type && p.center === c).length);
+  const order = [0,1,2].sort((a,b) => natural[b] - natural[a]);
+  const cap = [base, base, base]; order.slice(0, extra).forEach(c => cap[c]++);
+  const team = {}, scouted = {};
+  people.forEach(p => { if (p.type) team[p.pid] = p.center; });
+  const count = c => Object.values(team).filter(x => x === c).length;
+  people.filter(p => !p.type).map(p => ({p, k: rnd()})).sort((a,b) => a.k - b.k).forEach(({p}) => {
+    const under = [0,1,2].filter(c => count(c) < cap[c]);
+    team[p.pid] = under.length ? under[0] : [0,1,2].sort((a,b) => count(a) - count(b))[0];
+  });
+  for (let guard = 0; guard < 100; guard++){
+    const over = [0,1,2].filter(c => count(c) > cap[c]), under = [0,1,2].filter(c => count(c) < cap[c]);
+    if (!over.length || !under.length) break;
+    let best = null;
+    people.forEach(p => {
+      if (!over.includes(team[p.pid])) return;
+      under.forEach(u => {
+        const own = p.cs ? p.cs[team[p.pid]] : 0, tgt = p.cs ? p.cs[u] : 0;
+        const cost = own - tgt + rnd() * 1e-6;
+        if (!best || cost < best.cost) best = {pid: p.pid, to: u, cost};
+      });
+    });
+    if (!best) break;
+    team[best.pid] = best.to; scouted[best.pid] = best.to + 1;
+  }
+  const out = {}; Object.keys(team).forEach(pid => out[pid] = team[pid] + 1);
+  return {teams: out, scouted};
+}
 // ===== 공통 끝 =====
 
 const R = p => ref(db, ROOT + '/' + p);
@@ -374,6 +489,14 @@ function build(){
       <div class="sub">탈락: ${(r.loserNames||[]).map(esc).join(' · ') || '없음'}</div>`;
     if (r.kind === 'mugung') return `<div class="list">${(r.rows||[]).slice(0,12).map(x => `<div class="row"><span class="num">${x.rank||'-'}</span>
       <span style="flex:1;font-weight:700" class="${x.out?'strike':''}">${esc(x.name)}</span><span class="sub">${x.out?'탈락':(x.fin?'골인':x.p)}</span></div>`).join('')}</div>`;
+    if (r.kind === 'ennea'){
+      const types = r.types || {};
+      return `<div style="display:flex;gap:1.6vw;align-items:stretch;height:100%">${teamList(cfg).map(t => { const mem = teamMembers(players, t);
+        const comp = [0,1,2].map(c => mem.filter(p => types[p] && types[p].c === c).length);
+        return `<div class="card" style="flex:1;border:2px solid ${teamColor(t)};display:flex;flex-direction:column;gap:.6vh">
+          <div style="font-size:3.6vh;font-weight:900;color:${teamColor(t)}">${esc(teamName(cfg,t))}</div><div class="sub" style="font-size:2vh">${comp.map((n,c) => CENTER_NAMES[c] + ' ' + n).join(' · ')}</div>
+          ${mem.map(p => { const x = types[p] || {}; return `<div style="font-size:2.6vh"><b>${esc(playerName(players,p))}</b> <span class="sub" style="font-size:2.2vh">${x.t ? x.t + '번 ' + ENNEA_TYPES[x.t].n : ''}</span></div>`; }).join('')}</div>`; }).join('')}</div>`;
+    }
     if (r.kind === 'piano' || r.kind === 'bomb') return `<div>${asList(r.rows).map(x => `<div class="row" style="font-size:4vh"><span class="num">${x.rank}</span><span class="dot" style="background:${teamColor(x.team)};width:2.4vh;height:2.4vh"></span>
       <span style="flex:1;font-weight:900">${esc(teamName(cfg,x.team))}</span><span class="sub" style="font-size:3vh">${r.kind==='piano' ? (x.fin!=null ? fmtSec2(x.fin)+'초' : x.pos+'칸') : (x.at!=null ? fmtSec2(x.at)+'초' : (x.exploded?'펑! ':'') + x.mods + '/3')}</span></div>`).join('')}</div>`;
     if (r.kind === 'draw') return `<div class="sub">정답</div><div style="font-size:10vh;font-weight:900">${esc(r.word)}</div>
@@ -391,6 +514,7 @@ function build(){
     <div style="width:30%;text-align:center"><div class="sub">다음 숫자</div><div class="huge" id="bNext" style="color:var(--gold)">1</div><div class="sub" id="bLeft"></div></div>
     <div class="list" id="bList" style="flex:1"></div></div>`;
   if (g === 'mugung') return `<div class="huge" id="bSign" style="font-size:12vh">준비</div><div class="list" id="bList"></div>`;
+  if (g === 'ennea') return `<div style="font-size:5vh;font-weight:900">각자 폰으로 성향 테스트 중</div><div class="huge" id="bEnN" style="font-size:11vh;color:var(--gold)">0</div><div class="sub" style="text-align:center">명 완료 · 끝나면 사회자가 팀을 발표해요</div><div class="list" id="bList" style="font-size:2vh"></div>`;
   if (g === 'piano' || g === 'bomb') return `<div class="huge" id="bClock" style="font-size:10vh">준비</div><div id="bTeamsLive"></div>`;
   if (g === 'draw') return `<div style="display:flex;gap:2.4vw;height:100%;align-items:center">
     <canvas id="bCv" style="height:56vh;width:56vh;border-radius:2vh;background:#F5F2EA;flex:none"></canvas>
@@ -435,6 +559,11 @@ let bDrawn = new Set(), bCvRound = '';
 function tick2(){
   if (ST.phase !== 'live') return;
   const t = now();
+  if (ST.game === 'ennea' && $('bEnN')){
+    const done = Object.keys(players).filter(p => Object.keys(play[p] || {}).length >= ENNEA_ITEMS.length);
+    $('bEnN').textContent = done.length + ' / ' + Object.keys(players).length;
+    $('bList').innerHTML = done.map(p => `<div class="row" style="font-size:2.2vh;padding:.3vh 0"><span style="flex:1;font-weight:700">${esc(playerName(players,p))}</span><span class="sub" style="font-size:2vh">완료</span></div>`).join('');
+  }
   if ((ST.game === 'piano' || ST.game === 'bomb') && $('bTeamsLive')){
     const teams = Object.keys((ST.game === 'piano' ? ST.seqs : ST.bombs) || {}).map(Number);
     if (ST.game === 'piano'){
