@@ -404,6 +404,54 @@ function enneaMix(people, n, rnd){
   });
   return {teams: out, scouted: {}};
 }
+
+// 점수까지 보고 섞기: 섞기 결과에서 팀끼리 사람을 맞바꿔 팀별 행동·공감·전략 평균을 비슷하게
+// (팀 인원, 파별 인원 차이는 절대 나빠지지 않게)
+function teamCenterAvg(people, teams, n){
+  const out = {};
+  for (let t=1;t<=n;t++){
+    const mem = people.filter(p => teams[p.pid] === t && p.cs);
+    out[t] = [0,1,2].map(c => mem.length ? mem.reduce((a,p) => a + p.cs[c], 0) / mem.length : 0);
+  }
+  return out;
+}
+function enneaSpread(people, teams, n){
+  return [0,1,2].map(c => { const k = []; for (let t=1;t<=n;t++) k.push(people.filter(p => p.type && p.center === c && teams[p.pid] === t).length); return Math.max(...k) - Math.min(...k); });
+}
+function enneaObjective(people, teams, n){
+  const avg = teamCenterAvg(people, teams, n);
+  let v = 0;
+  for (let c=0;c<3;c++){ const xs = []; for (let t=1;t<=n;t++) xs.push(avg[t][c]); const m = xs.reduce((a,b)=>a+b,0)/n; v += xs.reduce((a,x)=>a+(x-m)*(x-m),0)/n; }
+  return v;
+}
+function enneaBalance(people, teams, n, rnd){
+  rnd = rnd || Math.random;
+  teams = Object.assign({}, teams);
+  const base = enneaSpread(people, teams, n);
+  let best = enneaObjective(people, teams, n);
+  const ids = people.map(p => p.pid);
+  for (let pass=0; pass<40; pass++){
+    let improved = false;
+    const pairs = [];
+    for (let i=0;i<ids.length;i++) for (let j=i+1;j<ids.length;j++) if (teams[ids[i]] !== teams[ids[j]]) pairs.push([ids[i], ids[j], rnd()]);
+    pairs.sort((a,b) => a[2] - b[2]);
+    for (const [a,b] of pairs){
+      if (teams[a] === teams[b]) continue;
+      const ta = teams[a], tb = teams[b];
+      teams[a] = tb; teams[b] = ta;
+      const sp = enneaSpread(people, teams, n), ok = sp.every((x,c) => x <= base[c]);
+      const v = ok ? enneaObjective(people, teams, n) : Infinity;
+      if (v < best - 1e-9){ best = v; improved = true; } else { teams[a] = ta; teams[b] = tb; }
+    }
+    if (!improved) break;
+  }
+  return teams;
+}
+function enneaMixBalanced(people, n, rnd){
+  const m = enneaMix(people, n, rnd);
+  return {teams: enneaBalance(people, m.teams, n, rnd), scouted: {}};
+}
+
 // 모으기(3팀): 행동파=1팀, 공감파=2팀, 전략파=3팀. 넘치면 다른 중심 점수가 가장 가까운 사람을 옮김
 function enneaGroup(people, rnd){
   rnd = rnd || Math.random;
